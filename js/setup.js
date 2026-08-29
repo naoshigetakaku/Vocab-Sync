@@ -53,7 +53,9 @@ export function initSetup(handlers) {
     const url = urlField.value.trim();
     const passphrase = passphraseField.value.trim();
 
-    if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url)) {
+    // Personal accounts get /macros/s/<id>/exec; Workspace accounts get
+    // /a/macros/<domain>/s/<id>/exec. Both are valid deployments.
+    if (!/^https:\/\/script\.google\.com\/(a\/macros\/[^/]+|macros)\/s\/[^/]+\/exec$/.test(url)) {
       showError('That does not look like a Web App /exec URL.');
       return;
     }
