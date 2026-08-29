@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- maximum-scale/user-scalable hold in the installed Home Screen app; iOS
+       Safari ignores them by design and keeps pinch zoom available. -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
 
@@ -36,7 +39,7 @@
       <h1 class="app-header__title">Vocabulary</h1>
       <span class="app-header__count" id="word-count" aria-live="polite"></span>
 
-      <button class="sort" id="sort-button" type="button" aria-label="Change sort order">
+      <button class="sort" id="sort-button" type="button" aria-haspopup="listbox">
         <svg class="sort__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M4 7h13M4 12h9M4 17h5" />
         </svg>
@@ -71,6 +74,8 @@
 
   <!-- Detail view: every field of a single word. -->
   <dialog class="sheet" id="detail-dialog" aria-labelledby="detail-word">
+    <div class="sheet__grip" aria-hidden="true"><span class="sheet__handle"></span></div>
+
     <div class="sheet__dismiss">
       <button class="icon-button" type="button" data-close aria-label="Close">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -102,6 +107,8 @@
 
   <!-- Add / edit form. Field order is fixed: word, part of speech, definition, note. -->
   <dialog class="sheet" id="form-dialog" aria-labelledby="form-title">
+    <div class="sheet__grip" aria-hidden="true"><span class="sheet__handle"></span></div>
+
     <div class="sheet__dismiss">
       <button class="icon-button" type="button" data-close aria-label="Cancel">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -119,10 +126,18 @@
                autocomplete="off" autocapitalize="none" spellcheck="false">
       </label>
 
-      <label class="field">
-        <span class="field__label">Part of speech</span>
-        <select class="field__input field__select" id="field-pos" name="pos" required></select>
-      </label>
+      <!-- A button, not a <select>: the native control opens the iOS wheel
+           picker, which cannot be styled to match the rest of the app. -->
+      <div class="field">
+        <span class="field__label" id="pos-label">Part of speech</span>
+        <button class="field__input field__trigger" id="field-pos" type="button"
+                aria-labelledby="pos-label" aria-haspopup="listbox">
+          <span class="field__value" id="field-pos-value"></span>
+          <svg class="field__chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      </div>
 
       <label class="field">
         <span class="field__label">Definition</span>
@@ -141,6 +156,36 @@
         <button class="button" id="form-submit" type="submit">Save</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- Shared option picker: part of speech and sort order both use it. -->
+  <dialog class="sheet sheet--picker" id="picker-dialog" aria-labelledby="picker-title">
+    <div class="sheet__grip" aria-hidden="true"><span class="sheet__handle"></span></div>
+
+    <div class="sheet__head">
+      <h2 class="sheet__title" id="picker-title"></h2>
+      <button class="icon-button" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="sheet__body">
+      <ul class="options" id="picker-options" role="listbox" aria-labelledby="picker-title"></ul>
+    </div>
+  </dialog>
+
+  <!-- Centred confirmation. Tapping outside cancels. -->
+  <dialog class="alert" id="confirm-dialog" aria-labelledby="confirm-title">
+    <div class="alert__body">
+      <h2 class="alert__title" id="confirm-title"></h2>
+      <p class="alert__text" id="confirm-text"></p>
+    </div>
+    <div class="alert__actions">
+      <button class="button button--ghost" id="confirm-cancel" type="button">Cancel</button>
+      <button class="button button--danger" id="confirm-accept" type="button">Delete</button>
+    </div>
   </dialog>
 
   <!-- First-run setup: endpoint + passphrase are stored on the device, never in the repo. -->

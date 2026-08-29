@@ -1,19 +1,28 @@
 /**
  * sort.js — ordering of the word list.
  *
- * One button that cycles through the modes, rather than a menu: the whole set
- * is four options and a single tap is faster than opening a picker.
+ * The mode is chosen from the shared picker rather than cycled on tap, so the
+ * whole set is visible and reachable in one step.
  */
 
 import { STORAGE_KEYS } from './config.js';
 import { readJson, writeJson } from './storage.js';
+import { openPicker } from './picker.js';
 
 const MODES = [
-  { id: 'newest', label: 'Newest' },
-  { id: 'oldest', label: 'Oldest' },
-  { id: 'az', label: 'A–Z' },
-  { id: 'za', label: 'Z–A' },
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'az', label: 'A–Z' },
+  { value: 'za', label: 'Z–A' },
 ];
+
+/** Shorter wording for the header button, where space is tight. */
+const SHORT_LABELS = {
+  newest: 'Newest',
+  oldest: 'Oldest',
+  az: 'A–Z',
+  za: 'Z–A',
+};
 
 const COMPARATORS = {
   newest: (a, b) => byDate(b, a),
@@ -34,19 +43,19 @@ function byWord(a, b) {
   });
 }
 
-function indexOfMode(id) {
-  const index = MODES.findIndex((mode) => mode.id === id);
-  return index === -1 ? 0 : index;
+function isKnown(value) {
+  return MODES.some((mode) => mode.value === value);
 }
 
-let current = indexOfMode(readJson(STORAGE_KEYS.sort, 'newest'));
+let current = readJson(STORAGE_KEYS.sort, 'newest');
+if (!isKnown(current)) current = 'newest';
 
 export function getMode() {
-  return MODES[current].id;
+  return current;
 }
 
 export function sortWords(words) {
-  return words.slice().sort(COMPARATORS[getMode()]);
+  return words.slice().sort(COMPARATORS[current]);
 }
 
 export function initSort(onChange) {
@@ -55,21 +64,29 @@ export function initSort(onChange) {
   if (!button || !label) return;
 
   const paint = (animate) => {
-    label.textContent = MODES[current].label;
-    button.setAttribute('aria-label', 'Sort: ' + MODES[current].label + '. Tap to change.');
+    label.textContent = SHORT_LABELS[current];
+    button.setAttribute('aria-label', 'Sort: ' + SHORT_LABELS[current] + '. Tap to change.');
 
     if (!animate) return;
     label.classList.remove('is-changed');
-    // Force a reflow so the animation restarts on every tap.
+    // Force a reflow so the animation restarts on every change.
     void label.offsetWidth;
     label.classList.add('is-changed');
   };
 
   button.addEventListener('click', () => {
-    current = (current + 1) % MODES.length;
-    writeJson(STORAGE_KEYS.sort, getMode());
-    paint(true);
-    onChange();
+    openPicker({
+      title: 'Sort by',
+      options: MODES,
+      value: current,
+      onSelect: (value) => {
+        if (!isKnown(value) || value === current) return;
+        current = value;
+        writeJson(STORAGE_KEYS.sort, current);
+        paint(true);
+        onChange();
+      },
+    });
   });
 
   paint(false);

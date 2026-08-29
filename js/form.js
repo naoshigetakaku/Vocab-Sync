@@ -7,13 +7,16 @@
 import { PARTS_OF_SPEECH } from './config.js';
 import { createWord, updateWord } from './store.js';
 import { openDialog, closeDialog, wireDismiss } from './dialog.js';
-import { toast } from './toast.js';
+import { openPicker } from './picker.js';
+
+const PLACEHOLDER = 'Choose…';
 
 const dialog = document.getElementById('form-dialog');
 const form = document.getElementById('word-form');
 const titleElement = document.getElementById('form-title');
 const wordField = document.getElementById('field-word');
-const posField = document.getElementById('field-pos');
+const posTrigger = document.getElementById('field-pos');
+const posValue = document.getElementById('field-pos-value');
 const definitionField = document.getElementById('field-definition');
 const noteField = document.getElementById('field-note');
 const errorElement = document.getElementById('form-error');
@@ -21,22 +24,15 @@ const submitButton = document.getElementById('form-submit');
 const cancelButton = document.getElementById('form-cancel');
 
 let editingId = null;
+let pos = '';
 let busy = false;
 let afterSave = () => {};
 
-function buildOptions() {
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = 'Choose…';
-  placeholder.disabled = true;
-  posField.appendChild(placeholder);
-
-  PARTS_OF_SPEECH.forEach((pos) => {
-    const option = document.createElement('option');
-    option.value = pos;
-    option.textContent = pos;
-    posField.appendChild(option);
-  });
+function setPos(value) {
+  pos = PARTS_OF_SPEECH.includes(value) ? value : '';
+  posValue.textContent = pos || PLACEHOLDER;
+  posTrigger.classList.toggle('is-empty', !pos);
+  posTrigger.removeAttribute('aria-invalid');
 }
 
 function showError(message) {
@@ -53,7 +49,7 @@ function clearError() {
   errorElement.textContent = '';
   form.classList.remove('is-invalid');
   wordField.removeAttribute('aria-invalid');
-  posField.removeAttribute('aria-invalid');
+  posTrigger.removeAttribute('aria-invalid');
 }
 
 function setBusy(value) {
@@ -67,7 +63,7 @@ export function openCreateForm() {
   editingId = null;
   titleElement.textContent = 'New word';
   form.reset();
-  posField.value = '';
+  setPos('');
   clearError();
   setBusy(false);
   openDialog(dialog);
@@ -79,7 +75,7 @@ export function openEditForm(word) {
   editingId = word.id;
   titleElement.textContent = 'Edit word';
   wordField.value = word.word || '';
-  posField.value = PARTS_OF_SPEECH.includes(word.pos) ? word.pos : '';
+  setPos(word.pos);
   definitionField.value = word.definition || '';
   noteField.value = word.note || '';
   clearError();
@@ -90,7 +86,7 @@ export function openEditForm(word) {
 function readFields() {
   return {
     word: wordField.value.trim(),
-    pos: posField.value,
+    pos: pos,
     definition: definitionField.value.trim(),
     note: noteField.value.trim(),
   };
@@ -103,8 +99,7 @@ function validate(fields) {
     return 'Enter a word.';
   }
   if (!fields.pos) {
-    posField.setAttribute('aria-invalid', 'true');
-    posField.focus();
+    posTrigger.setAttribute('aria-invalid', 'true');
     return 'Choose a part of speech.';
   }
   return null;
@@ -112,10 +107,22 @@ function validate(fields) {
 
 export function initForm(handlers) {
   afterSave = handlers.afterSave || (() => {});
-  buildOptions();
+  setPos('');
 
   wireDismiss(dialog, () => {
     editingId = null;
+  });
+
+  posTrigger.addEventListener('click', () => {
+    openPicker({
+      title: 'Part of speech',
+      options: PARTS_OF_SPEECH.map((value) => ({ value, label: value })),
+      value: pos,
+      onSelect: (value) => {
+        setPos(value);
+        clearError();
+      },
+    });
   });
 
   cancelButton.addEventListener('click', () => {
@@ -124,9 +131,7 @@ export function initForm(handlers) {
     editingId = null;
   });
 
-  [wordField, posField].forEach((field) => {
-    field.addEventListener('input', clearError);
-  });
+  wordField.addEventListener('input', clearError);
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();

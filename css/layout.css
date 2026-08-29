@@ -2,22 +2,15 @@
    layout.css — app shell, header, word list.
    ========================================================================== */
 
+/* Outside the scroller, so it cannot move with the list. */
 .app-header {
-  position: sticky;
-  top: 0;
+  flex: none;
   z-index: 10;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
   padding-top: var(--safe-top);
   padding-left: max(var(--page-pad), var(--safe-left));
   padding-right: max(var(--page-pad), var(--safe-right));
-}
-
-/* Fallback for engines without color-mix support. */
-@supports not (background: color-mix(in srgb, red 50%, transparent)) {
-  .app-header { background: var(--bg); }
 }
 
 .app-header__bar {
@@ -102,12 +95,23 @@
 /* Hide the WebKit clear button; it breaks the monochrome look. */
 .search__input::-webkit-search-cancel-button { -webkit-appearance: none; }
 
+/* The only scrolling region on the home screen. */
 .app-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Keeps a scroll that runs off the end from reaching the document. */
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding-left: max(var(--page-pad), var(--safe-left));
   padding-right: max(var(--page-pad), var(--safe-right));
   /* Leave room for the floating button plus the home indicator. */
   padding-bottom: calc(112px + var(--safe-bottom));
 }
+
+/* Held still while a dialog is open; see js/scroll-lock.js. */
+.app-main.is-locked { overflow: hidden; }
 
 /* --- Word list ----------------------------------------------------------- */
 /* The home screen shows the word and nothing else. */

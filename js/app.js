@@ -11,6 +11,8 @@ import { initForm, openCreateForm, openEditForm } from './form.js';
 import { initSetup, openSetup } from './setup.js';
 import { initInstallHint } from './install-hint.js';
 import { initSort } from './sort.js';
+import { initPicker } from './picker.js';
+import { initConfirm } from './confirm.js';
 import { toast } from './toast.js';
 
 const searchInput = document.getElementById('search-input');
@@ -98,6 +100,10 @@ function initServiceWorker() {
 
 function start() {
   subscribe(render);
+
+  // Shared dialogs first: the views below open them.
+  initPicker();
+  initConfirm();
 
   initList(openDetail);
   initDetail({ onEdit: openEditForm });

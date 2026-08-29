@@ -92,6 +92,10 @@ all. Filling it in trades that for one less field during setup.
 | `js/api.js` | Transport to Apps Script. |
 | `js/store.js` | State, cache, offline outbox. |
 | `js/dialog.js` | Animated open/close for `<dialog>`. |
+| `js/swipe.js` | Swipe a sheet down to dismiss it. |
+| `js/scroll-lock.js` | Freezes the list behind an open dialog. |
+| `js/picker.js` | The app's own option list, replacing `<select>`. |
+| `js/confirm.js` | Centred confirmation popup. |
 | `js/toast.js` | Transient messages. |
 | `js/sort.js` | List ordering and the header control. |
 | `js/list.js` | Home screen. |

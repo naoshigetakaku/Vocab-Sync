@@ -9,7 +9,7 @@
  * serving new files to a device that never stops using the old ones.
  */
 
-var CACHE_VERSION = 'v1';
+var CACHE_VERSION = 'v2';
 var CACHE_NAME = 'vocabsync-' + CACHE_VERSION;
 
 var SHELL = [
@@ -24,15 +24,19 @@ var SHELL = [
   './js/api.js',
   './js/auth.js',
   './js/config.js',
+  './js/confirm.js',
   './js/detail.js',
   './js/dialog.js',
   './js/form.js',
   './js/install-hint.js',
   './js/list.js',
+  './js/picker.js',
+  './js/scroll-lock.js',
   './js/setup.js',
   './js/sort.js',
   './js/storage.js',
   './js/store.js',
+  './js/swipe.js',
   './js/toast.js',
   './icons/icon.svg',
   './icons/icon-180.png',

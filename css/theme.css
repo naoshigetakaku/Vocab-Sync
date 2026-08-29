@@ -93,7 +93,14 @@ html {
 
 body {
   margin: 0;
-  min-height: 100dvh;
+  /* The page itself never scrolls: the header and the add button stay put and
+     the list scrolls inside .app-main. This also removes the document-level
+     rubber-band effect in standalone mode. */
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -102,8 +109,10 @@ body {
   line-height: 1.5;
   /* Kill the grey flash on tap in iOS Safari. */
   -webkit-tap-highlight-color: transparent;
-  /* Stop the whole page from rubber-banding in standalone mode. */
-  overscroll-behavior-y: none;
+  /* Suppresses double-tap-to-zoom. Pinch zoom is governed by the viewport tag,
+     which iOS Safari ignores but the installed Home Screen app honours. */
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
 h1, h2, h3, p { margin: 0; }

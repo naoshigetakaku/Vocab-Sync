@@ -1,5 +1,6 @@
 /* ==========================================================================
-   components.css — floating button, dialogs, forms, buttons, banners, toast.
+   components.css — floating button, dialogs, pickers, forms, buttons,
+   banners, toast.
    ========================================================================== */
 
 /* --- Floating add button -------------------------------------------------- */
@@ -26,7 +27,7 @@
 .fab:active { transform: scale(0.9); }
 .fab__icon { width: 24px; height: 24px; stroke-width: 2.2; }
 
-/* --- Dialogs -------------------------------------------------------------- */
+/* --- Bottom sheets -------------------------------------------------------- */
 /* Bottom sheet on phones, centred card from 700px up. */
 
 .sheet {
@@ -51,22 +52,54 @@
   flex-direction: column;
 }
 
-.sheet__dismiss {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+/* Drag affordance. Also the one area where a downward drag always wins over
+   scrolling, whatever the body is doing. */
+.sheet__grip {
+  flex: none;
   display: flex;
-  justify-content: flex-end;
-  padding: 12px 12px 0;
-  background: var(--surface);
+  justify-content: center;
+  padding: 10px 0 4px;
+  cursor: grab;
+  touch-action: none;
 }
 
+.sheet__handle {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+.sheet__dismiss {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 12px;
+}
+
+.sheet__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px var(--page-pad) 8px;
+}
+
+.sheet__head .sheet__title { flex: 1; margin-bottom: 0; }
+
 .sheet__body {
-  padding: 4px var(--page-pad) 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* The generous bottom padding keeps the last block — usually the note —
+     from sitting flush against the action row. */
+  padding: 4px var(--page-pad) 26px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
+
+/* The form ends in its own action row, so it does not want the extra room. */
+.form.sheet__body { padding-bottom: 8px; }
 
 .sheet__title {
   font-size: 22px;
@@ -83,6 +116,7 @@
 }
 
 .sheet__actions {
+  flex: none;
   display: flex;
   gap: 10px;
   justify-content: flex-end;
@@ -105,6 +139,9 @@
     max-height: 80dvh;
   }
   .sheet__actions { padding-bottom: 14px; }
+  /* No swipe gesture with a mouse; the handle would only mislead. */
+  .sheet__grip { display: none; }
+  .sheet__dismiss { padding-top: 12px; }
 }
 
 /* --- Detail view ---------------------------------------------------------- */
@@ -147,6 +184,90 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* --- Option picker -------------------------------------------------------- */
+
+.options { padding-bottom: 4px; }
+
+.options li + li { border-top: 1px solid var(--line); }
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 13px 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 17px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+
+.option:active {
+  background: var(--press);
+  transform: scale(0.99);
+}
+
+.option__label { flex: 1; }
+
+.option.is-selected .option__label { font-weight: 650; }
+
+.option__check {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  stroke-width: 2.4;
+}
+
+/* --- Confirmation popup --------------------------------------------------- */
+
+.alert {
+  width: calc(100% - 48px);
+  max-width: 340px;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.alert::backdrop { background: var(--scrim); }
+
+.alert__body {
+  padding: 26px var(--page-pad) 18px;
+  text-align: center;
+}
+
+.alert__title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+.alert__text {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.alert__actions {
+  display: flex;
+  gap: 10px;
+  padding: 0 var(--page-pad) 18px;
+}
+
+.alert__actions .button { flex: 1; }
 
 /* --- Form ----------------------------------------------------------------- */
 
@@ -195,15 +316,24 @@
   line-height: 1.55;
 }
 
-/* Custom chevron so the select matches the monochrome palette. */
-.field__select {
-  padding-right: 38px;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
-                    linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 19px) calc(50% + 1px),
-                       calc(100% - 14px) calc(50% + 1px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
+/* Opens the shared picker rather than a native select. */
+.field__trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.field__value { flex: 1; }
+
+.field__trigger.is-empty .field__value { color: var(--text-faint); }
+
+.field__chevron {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--text-dim);
 }
 
 .form__error {
@@ -236,11 +366,12 @@
   color: var(--text-dim);
 }
 
-/* Second tap confirms the delete — no native confirm() dialog. */
-.button--armed {
+/* Outlined rather than filled: the palette is greyscale, so red is reserved
+   for meaning and is easier to read as an outline in both themes. */
+.button--danger {
   border-color: var(--danger);
+  background: transparent;
   color: var(--danger);
-  font-weight: 700;
 }
 
 .icon-button {

@@ -4,6 +4,7 @@
 
 import { getWord, deleteWord, isPending } from './store.js';
 import { openDialog, closeDialog, wireDismiss } from './dialog.js';
+import { askConfirm } from './confirm.js';
 import { toast } from './toast.js';
 
 const dialog = document.getElementById('detail-dialog');
@@ -17,14 +18,7 @@ const deleteButton = document.getElementById('detail-delete');
 const editButton = document.getElementById('detail-edit');
 
 let currentId = null;
-let deleteArmed = false;
 let onEdit = () => {};
-
-function disarmDelete() {
-  deleteArmed = false;
-  deleteButton.textContent = 'Delete';
-  deleteButton.classList.remove('button--armed');
-}
 
 function fill(word) {
   posElement.textContent = word.pos || '';
@@ -43,7 +37,6 @@ export function openDetail(id) {
   if (!word) return;
 
   currentId = id;
-  disarmDelete();
   fill(word);
   openDialog(dialog);
 }
@@ -66,7 +59,6 @@ export function initDetail(handlers) {
 
   wireDismiss(dialog, () => {
     currentId = null;
-    disarmDelete();
   });
 
   editButton.addEventListener('click', () => {
@@ -89,16 +81,17 @@ export function initDetail(handlers) {
       return;
     }
 
-    // First tap arms, second tap commits.
-    if (!deleteArmed) {
-      deleteArmed = true;
-      deleteButton.textContent = 'Confirm delete';
-      deleteButton.classList.add('button--armed');
-      setTimeout(disarmDelete, 4000);
-      return;
-    }
+    const word = getWord(currentId);
+    if (!word) return;
 
-    const id = currentId;
+    const confirmed = await askConfirm({
+      title: 'Delete this word?',
+      text: '“' + word.word + '” will be removed from the sheet. This cannot be undone.',
+      accept: 'Delete',
+    });
+    if (!confirmed) return;
+
+    const id = word.id;
     closeDetail();
     try {
       await deleteWord(id);
