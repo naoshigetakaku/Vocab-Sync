@@ -87,7 +87,21 @@ word picks the right shade in light and dark.
 
 After changing any file, bump `CACHE_VERSION` in [`sw.js`](sw.js) before
 pushing. Without that, devices keep serving the old version out of cache
-forever. On the next visit the app shows a "new version is ready" banner.
+forever.
+
+The worker updates itself: on the next visit it caches the new shell, takes
+over, and the page reloads once. There is nothing to accept.
+
+Two rules in `sw.js` exist because breaking either one bricks the app:
+
+- **The page and its modules must come from one cache generation.** Serving
+  fresh HTML from the network while the scripts still come from the previous
+  cache pairs new markup with old code, and the old code reaches for elements
+  that no longer exist.
+- **The updater must survive a broken release.** `start()` in
+  [`js/app.js`](js/app.js) registers the worker outside the try/catch that
+  wraps the interface, so the code that fetches the fix is never the code that
+  just crashed.
 
 To change `Code.gs`: **Deploy → Manage deployments →** edit the existing entry
 → Version: **New version**. That keeps the same URL. Picking "New deployment"

@@ -16,8 +16,6 @@ import { initConfirm } from './confirm.js';
 import { toast } from './toast.js';
 
 const addButton = document.getElementById('add-button');
-const updateBanner = document.getElementById('update-banner');
-const updateReload = document.getElementById('update-reload');
 
 let syncing = false;
 
@@ -48,42 +46,19 @@ async function sync(quiet) {
 
 /* --- Service worker ------------------------------------------------------- */
 
-function announceUpdate(worker) {
-  updateBanner.hidden = false;
-  updateReload.addEventListener(
-    'click',
-    () => {
-      updateReload.disabled = true;
-      worker.postMessage({ type: 'SKIP_WAITING' });
-    },
-    { once: true }
-  );
-}
-
+/**
+ * A new worker installs, activates and claims this page on its own; all that
+ * is left here is to reload once so the running code matches the shell that
+ * has just taken over.
+ */
 function initServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
 
-  navigator.serviceWorker.register('./sw.js').then((registration) => {
-    if (registration.waiting && navigator.serviceWorker.controller) {
-      announceUpdate(registration.waiting);
-    }
-
-    registration.addEventListener('updatefound', () => {
-      const installing = registration.installing;
-      if (!installing) return;
-
-      installing.addEventListener('statechange', () => {
-        // A controller already present means this is an update, not a first install.
-        if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-          announceUpdate(installing);
-        }
-      });
-    });
-  }).catch(() => {
+  navigator.serviceWorker.register('./sw.js').catch(() => {
     // Offline support is a bonus; the app works fine without it.
   });
 
-  // On the very first install the worker takes control without an update
+  // On the very first install the worker claims the page without an update
   // having happened; reloading then would be a pointless flash.
   const hadController = Boolean(navigator.serviceWorker.controller);
   let reloading = false;
@@ -91,13 +66,25 @@ function initServiceWorker() {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloading) return;
     reloading = true;
+
+    // Never yank the page out from under someone mid-entry.
+    if (document.querySelector('dialog[open]')) {
+      const retry = setInterval(() => {
+        if (!document.querySelector('dialog[open]')) {
+          clearInterval(retry);
+          window.location.reload();
+        }
+      }, 1000);
+      return;
+    }
+
     window.location.reload();
   });
 }
 
 /* --- Start ---------------------------------------------------------------- */
 
-function start() {
+function wireUi() {
   subscribe(render);
 
   // Shared dialogs first: the views below open them.
@@ -136,6 +123,17 @@ function start() {
 
   if (hasCredentials()) sync(true);
   else openSetup();
+}
+
+function start() {
+  // The updater has to run even when the interface fails to come up. Without
+  // this, one bad release can never be replaced by a good one: the code that
+  // fetches the fix is the same code that just crashed.
+  try {
+    wireUi();
+  } catch (error) {
+    console.error('VocabSync: interface failed to initialise.', error);
+  }
 
   initServiceWorker();
 }

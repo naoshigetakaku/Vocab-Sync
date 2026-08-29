@@ -5,11 +5,27 @@
  * far more often than in a browser tab. Serving the shell from cache is what
  * makes that relaunch feel instant.
  *
- * Bump CACHE_VERSION on every release. Without it, GitHub Pages would keep
- * serving new files to a device that never stops using the old ones.
+ * Two rules keep an update from breaking the app, both learned the hard way:
+ *
+ *   1. The page and its modules must come from the SAME cache generation.
+ *      Serving fresh HTML from the network while the scripts still come from
+ *      the previous cache pairs new markup with old code, and the old code
+ *      reaches for elements that no longer exist. Navigations are therefore
+ *      cache-first, exactly like every other asset.
+ *
+ *   2. A new worker takes over on its own. Waiting for the user to accept an
+ *      update is fine until the release that needs accepting is the one that
+ *      crashed on load — then nothing is left running to accept it.
+ *
+ *   3. The precache must bypass the HTTP cache. cache.addAll() is allowed to
+ *      answer from it, and GitHub Pages serves assets with a ten-minute
+ *      max-age — so a new worker can happily fill its brand-new cache with the
+ *      previous release's files and look, from the outside, like it updated.
+ *
+ * Bump CACHE_VERSION on every release.
  */
 
-var CACHE_VERSION = 'v3';
+var CACHE_VERSION = 'v5';
 var CACHE_NAME = 'vocabsync-' + CACHE_VERSION;
 
 var SHELL = [
@@ -48,11 +64,22 @@ var SHELL = [
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function (cache) {
-      return cache.addAll(SHELL);
+      // cache: 'reload' forces every request past the HTTP cache. See rule 3.
+      return Promise.all(
+        SHELL.map(function (url) {
+          var request = new Request(url, { cache: 'reload' });
+          return fetch(request).then(function (response) {
+            if (!response || !response.ok) {
+              throw new Error('Could not cache ' + url);
+            }
+            return cache.put(url, response);
+          });
+        })
+      );
     })
   );
-  // No skipWaiting() here on purpose: the page shows a Reload banner and the
-  // user decides when to switch, so an update never interrupts typing.
+  // Take over as soon as the new shell is cached. See rule 2 above.
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', function (event) {
@@ -63,12 +90,12 @@ self.addEventListener('activate', function (event) {
           return name === CACHE_NAME ? null : caches.delete(name);
         })
       );
+    }).then(function () {
+      // Control the open page immediately so it is not left half on the old
+      // generation; the page reloads itself once when this lands.
+      return self.clients.claim();
     })
   );
-});
-
-self.addEventListener('message', function (event) {
-  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', function (event) {
@@ -80,12 +107,13 @@ self.addEventListener('fetch', function (event) {
   // Apps Script calls must always hit the network, never a cache.
   if (url.origin !== self.location.origin) return;
 
-  // Navigations: try the network so a new deploy is picked up, fall back to
-  // the cached shell when offline.
+  // Navigations come from the cache like everything else, so the markup and
+  // the modules are always the same generation. A new deploy arrives when the
+  // worker updates, not halfway through a page load.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(function () {
-        return caches.match('./index.html');
+      caches.match('./index.html').then(function (cached) {
+        return cached || fetch(request);
       })
     );
     return;
