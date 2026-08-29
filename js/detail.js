@@ -3,6 +3,7 @@
  */
 
 import { getWord, deleteWord, isPending } from './store.js';
+import { DEFAULT_COLOR, YOUGLISH_BASE, YOUGLISH_LANGUAGE } from './config.js';
 import { openDialog, closeDialog, wireDismiss } from './dialog.js';
 import { askConfirm } from './confirm.js';
 import { toast } from './toast.js';
@@ -14,6 +15,7 @@ const definitionBlock = document.getElementById('detail-definition-block');
 const definitionElement = document.getElementById('detail-definition');
 const noteBlock = document.getElementById('detail-note-block');
 const noteElement = document.getElementById('detail-note');
+const youglishLink = document.getElementById('detail-youglish');
 const deleteButton = document.getElementById('detail-delete');
 const editButton = document.getElementById('detail-edit');
 
@@ -23,7 +25,14 @@ let onEdit = () => {};
 function fill(word) {
   posElement.textContent = word.pos || '';
   posElement.hidden = !word.pos;
+
   wordElement.textContent = word.word;
+  wordElement.dataset.color = word.color || DEFAULT_COLOR;
+
+  // Opens the web page; on iOS the YouGlish app may claim the link itself,
+  // which is up to the OS rather than anything this page can force.
+  youglishLink.href = YOUGLISH_BASE + encodeURIComponent(word.word) + '/' + YOUGLISH_LANGUAGE;
+  youglishLink.setAttribute('aria-label', 'Hear “' + word.word + '” on YouGlish');
 
   definitionElement.textContent = word.definition || '';
   definitionBlock.hidden = !word.definition;

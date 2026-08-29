@@ -131,6 +131,24 @@
   margin: 8px calc(var(--page-pad) * -1) 0;
 }
 
+/* Opens to just under the header title, so the entry has room to breathe. */
+.sheet--tall {
+  height: calc(100dvh - var(--safe-top) - 72px);
+  max-height: calc(100dvh - var(--safe-top) - 72px);
+}
+
+.sheet--tall .sheet__body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Short entries settle in the middle; long ones scroll from the top, which a
+   justify-content:center would break by clipping the overflow. */
+.detail__content {
+  width: 100%;
+  margin-block: auto;
+}
+
 @media (min-width: 700px) {
   .sheet {
     max-width: 520px;
@@ -142,6 +160,8 @@
   /* No swipe gesture with a mouse; the handle would only mislead. */
   .sheet__grip { display: none; }
   .sheet__dismiss { padding-top: 12px; }
+  /* A full-height card looks wrong once it is centred in a window. */
+  .sheet--tall { height: auto; max-height: 80dvh; }
 }
 
 /* --- Detail view ---------------------------------------------------------- */
@@ -158,13 +178,45 @@
   color: var(--text-dim);
 }
 
-.detail__word {
+.detail__headline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 14px;
   margin: 10px 0 22px;
+}
+
+.detail__word {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 34px;
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.03em;
   overflow-wrap: anywhere;
+}
+
+.youglish {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 2px;
+  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-spring);
+}
+
+.youglish:active { transform: scale(0.94); }
+
+.youglish__chevron {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.4;
 }
 
 .detail__block + .detail__block { margin-top: 20px; }
@@ -209,10 +261,7 @@
               transform var(--dur-fast) var(--ease-out);
 }
 
-.option:active {
-  background: var(--press);
-  transform: scale(0.99);
-}
+.option:active { transform: scale(0.99); }
 
 .option__label { flex: 1; }
 
@@ -336,6 +385,52 @@
   color: var(--text-dim);
 }
 
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.swatch {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-spring);
+}
+
+.swatch:active { transform: scale(0.9); }
+
+.swatch[aria-checked="true"] { border-color: var(--accent); }
+
+.swatch__dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* The default swatch is the ordinary ink, drawn as an outline so it reads as
+   "no colour" rather than as black or white paint. */
+.swatch[data-color="default"] .swatch__dot {
+  background: transparent;
+  border: 2px solid var(--text-dim);
+}
+
+.swatch[data-color="blue"]   { color: var(--word-blue); }
+.swatch[data-color="green"]  { color: var(--word-green); }
+.swatch[data-color="orange"] { color: var(--word-orange); }
+.swatch[data-color="red"]    { color: var(--word-red); }
+.swatch[data-color="grey"]   { color: var(--word-grey); }
+.swatch[data-color="purple"] { color: var(--word-purple); }
+
 .form__error {
   font-size: 14px;
   color: var(--danger);
@@ -389,7 +484,7 @@
               transform var(--dur-fast) var(--ease-out);
 }
 
-.icon-button:active { background: var(--press); transform: scale(0.92); }
+.icon-button:active { transform: scale(0.92); }
 .icon-button svg { width: 19px; height: 19px; }
 
 /* --- Toast & banners ------------------------------------------------------ */

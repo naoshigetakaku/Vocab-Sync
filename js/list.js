@@ -7,26 +7,15 @@
 
 import { getWords } from './store.js';
 import { sortWords } from './sort.js';
+import { DEFAULT_COLOR } from './config.js';
 
 const listElement = document.getElementById('word-list');
 const emptyElement = document.getElementById('empty-state');
-const noResultsElement = document.getElementById('no-results');
 const countElement = document.getElementById('word-count');
 
-let query = '';
 let staggerDone = false;
 let staggerTimer;
 let newestId = null;
-
-/** Matches the word first, but definition and note are searchable too. */
-function matches(word) {
-  if (!query) return true;
-  const haystack = [word.word, word.definition, word.note, word.pos]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-  return haystack.includes(query);
-}
 
 function buildRow(word) {
   const item = document.createElement('li');
@@ -37,6 +26,9 @@ function buildRow(word) {
   if (word.pending) button.classList.add('word-row--pending');
   if (word.id === newestId) button.classList.add('is-new');
   button.dataset.id = word.id;
+  // The colour is applied through the attribute so the stylesheet keeps
+  // control of the actual shade in each theme.
+  button.dataset.color = word.color || DEFAULT_COLOR;
   // textContent, never innerHTML — the content comes from a shared sheet.
   button.textContent = word.word;
 
@@ -45,20 +37,17 @@ function buildRow(word) {
 }
 
 export function render() {
-  const all = sortWords(getWords());
-  const visible = all.filter(matches);
+  const words = sortWords(getWords());
 
   const fragment = document.createDocumentFragment();
-  visible.forEach((word) => fragment.appendChild(buildRow(word)));
+  words.forEach((word) => fragment.appendChild(buildRow(word)));
   listElement.replaceChildren(fragment);
 
-  countElement.textContent = all.length ? String(all.length) : '';
-  emptyElement.hidden = all.length !== 0;
-  noResultsElement.hidden = !(all.length > 0 && visible.length === 0);
+  countElement.textContent = words.length ? String(words.length) : '';
+  emptyElement.hidden = words.length !== 0;
 
-  // Stagger the entrance once per session; re-running it on every keystroke
-  // would make the search feel sluggish.
-  if (!staggerDone && visible.length) {
+  // Stagger the entrance once per session, not on every re-render.
+  if (!staggerDone && words.length) {
     staggerDone = true;
     listElement.classList.add('is-entering');
     clearTimeout(staggerTimer);
@@ -71,11 +60,6 @@ export function render() {
 /** Called after a create so the new row animates in on its own. */
 export function highlightNew(id) {
   newestId = id;
-}
-
-export function setQuery(value) {
-  query = value.trim().toLowerCase();
-  render();
 }
 
 export function initList(onSelect) {

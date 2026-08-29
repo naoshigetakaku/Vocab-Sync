@@ -27,8 +27,17 @@
   --on-accent:  #ffffff;
 
   /* Feedback */
-  --press:  rgba(0, 0, 0, 0.05);
   --danger: #b00020;
+
+  /* Word colours. Muted on purpose; the key is stored, not the hex, so the
+     same word follows the device between light and dark. */
+  --word-default: currentColor;
+  --word-blue:    #3F6392;
+  --word-green:   #456F53;
+  --word-orange:  #9C6428;
+  --word-red:     #9A4444;
+  --word-grey:    #767676;
+  --word-purple:  #54406B;
 
   /* Elevation */
   --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.14);
@@ -57,26 +66,34 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:            #000000;
-    --surface:       #0d0d0d;
-    --surface-raise: #161616;
+    /* Charcoal rather than pure black: rgb(32, 32, 32). */
+    --bg:            #202020;
+    --surface:       #282828;
+    --surface-raise: #2f2f2f;
     --scrim:         rgba(0, 0, 0, 0.6);
 
-    --text:      #f4f4f4;
-    --text-dim:  #9d9d9d;
-    --text-faint:#6c6c6c;
+    --text:      #f0f0f0;
+    --text-dim:  #a3a3a3;
+    --text-faint:#787878;
 
-    --line:        #242424;
-    --line-strong: #343434;
+    --line:        #3a3a3a;
+    --line-strong: #4a4a4a;
 
-    --accent:    #f4f4f4;
-    --on-accent: #0b0b0b;
+    --accent:    #f0f0f0;
+    --on-accent: #202020;
 
-    --press:  rgba(255, 255, 255, 0.07);
-    --danger: #ff6b6b;
+    --danger: #e08a8a;
 
-    --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.6);
-    --shadow-fab:   0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.55);
+    --shadow-fab:   0 4px 16px rgba(0, 0, 0, 0.45);
+
+    /* Word colours, lifted so they stay legible on charcoal. */
+    --word-blue:   #8AAAD8;
+    --word-green:  #8CBE9C;
+    --word-orange: #D3A063;
+    --word-red:    #D98C8C;
+    --word-grey:   #9C9C9C;
+    --word-purple: #A992C4;
   }
 }
 
@@ -135,10 +152,40 @@ code {
   font-size: 0.9em;
 }
 
+/* No tap highlight, no long-press selection or callout anywhere in the
+   chrome. Body text below opts back in, so a definition can still be copied. */
+button,
+a,
+.word-row,
+.option,
+.swatch,
+.sheet__grip,
+.app-header {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.detail__text,
+.detail__word {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Only ever shown for keyboard navigation, never for a tap. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Word colours apply to the word itself and nowhere else: labels, the part of
+   speech badge and body text all keep the normal ink. */
+.word-row[data-color="blue"],   .detail__word[data-color="blue"]   { color: var(--word-blue); }
+.word-row[data-color="green"],  .detail__word[data-color="green"]  { color: var(--word-green); }
+.word-row[data-color="orange"], .detail__word[data-color="orange"] { color: var(--word-orange); }
+.word-row[data-color="red"],    .detail__word[data-color="red"]    { color: var(--word-red); }
+.word-row[data-color="grey"],   .detail__word[data-color="grey"]   { color: var(--word-grey); }
+.word-row[data-color="purple"], .detail__word[data-color="purple"] { color: var(--word-purple); }
 
 /* Inline SVG icons are drawn as strokes so they inherit the text colour. */
 svg {

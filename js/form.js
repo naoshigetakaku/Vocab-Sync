@@ -4,7 +4,7 @@
  * Field order is fixed by design: word, part of speech, definition, note.
  */
 
-import { PARTS_OF_SPEECH } from './config.js';
+import { PARTS_OF_SPEECH, WORD_COLORS, DEFAULT_COLOR } from './config.js';
 import { createWord, updateWord } from './store.js';
 import { openDialog, closeDialog, wireDismiss } from './dialog.js';
 import { openPicker } from './picker.js';
@@ -19,14 +19,51 @@ const posTrigger = document.getElementById('field-pos');
 const posValue = document.getElementById('field-pos-value');
 const definitionField = document.getElementById('field-definition');
 const noteField = document.getElementById('field-note');
+const colorField = document.getElementById('field-color');
 const errorElement = document.getElementById('form-error');
 const submitButton = document.getElementById('form-submit');
 const cancelButton = document.getElementById('form-cancel');
 
 let editingId = null;
 let pos = '';
+let color = DEFAULT_COLOR;
 let busy = false;
 let afterSave = () => {};
+
+/**
+ * Swatches rather than a picker sheet: seven options fit on one line, and a
+ * colour is easier to recognise than to read.
+ */
+function buildSwatches() {
+  const fragment = document.createDocumentFragment();
+
+  WORD_COLORS.forEach((option) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'swatch';
+    button.dataset.color = option.value;
+    button.setAttribute('role', 'radio');
+    button.setAttribute('aria-checked', 'false');
+    button.setAttribute('aria-label', option.label);
+
+    const dot = document.createElement('span');
+    dot.className = 'swatch__dot';
+    button.appendChild(dot);
+
+    fragment.appendChild(button);
+  });
+
+  colorField.replaceChildren(fragment);
+}
+
+function setColor(value) {
+  const known = WORD_COLORS.some((option) => option.value === value);
+  color = known ? value : DEFAULT_COLOR;
+
+  colorField.querySelectorAll('.swatch').forEach((swatch) => {
+    swatch.setAttribute('aria-checked', swatch.dataset.color === color ? 'true' : 'false');
+  });
+}
 
 function setPos(value) {
   pos = PARTS_OF_SPEECH.includes(value) ? value : '';
@@ -64,6 +101,7 @@ export function openCreateForm() {
   titleElement.textContent = 'New word';
   form.reset();
   setPos('');
+  setColor(DEFAULT_COLOR);
   clearError();
   setBusy(false);
   openDialog(dialog);
@@ -78,6 +116,7 @@ export function openEditForm(word) {
   setPos(word.pos);
   definitionField.value = word.definition || '';
   noteField.value = word.note || '';
+  setColor(word.color || DEFAULT_COLOR);
   clearError();
   setBusy(false);
   openDialog(dialog);
@@ -89,6 +128,7 @@ function readFields() {
     pos: pos,
     definition: definitionField.value.trim(),
     note: noteField.value.trim(),
+    color: color,
   };
 }
 
@@ -108,6 +148,13 @@ function validate(fields) {
 export function initForm(handlers) {
   afterSave = handlers.afterSave || (() => {});
   setPos('');
+  buildSwatches();
+  setColor(DEFAULT_COLOR);
+
+  colorField.addEventListener('click', (event) => {
+    const swatch = event.target.closest('.swatch');
+    if (swatch) setColor(swatch.dataset.color);
+  });
 
   wireDismiss(dialog, () => {
     editingId = null;

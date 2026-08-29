@@ -15,7 +15,7 @@
   <!-- Theme follows the device setting; no in-app toggle by design. -->
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)">
 
   <!-- iOS standalone web app -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -46,11 +46,6 @@
         <span class="sort__label" id="sort-label"></span>
       </button>
     </div>
-    <div class="search">
-      <input class="search__input" id="search-input" type="search"
-             placeholder="Search" aria-label="Search words"
-             autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-    </div>
   </header>
 
   <main class="app-main">
@@ -59,10 +54,6 @@
     <p class="empty" id="empty-state" hidden>
       <span class="empty__title">No words yet</span>
       <span class="empty__hint">Tap + to add your first one.</span>
-    </p>
-
-    <p class="empty" id="no-results" hidden>
-      <span class="empty__title">No matches</span>
     </p>
   </main>
 
@@ -73,7 +64,7 @@
   </button>
 
   <!-- Detail view: every field of a single word. -->
-  <dialog class="sheet" id="detail-dialog" aria-labelledby="detail-word">
+  <dialog class="sheet sheet--tall" id="detail-dialog" aria-labelledby="detail-word">
     <div class="sheet__grip" aria-hidden="true"><span class="sheet__handle"></span></div>
 
     <div class="sheet__dismiss">
@@ -85,18 +76,31 @@
     </div>
 
     <div class="sheet__body">
-      <p class="detail__pos" id="detail-pos"></p>
-      <h2 class="detail__word" id="detail-word"></h2>
+      <!-- margin-block:auto on this wrapper centres short entries without the
+           overflow clipping that justify-content:center would cause. -->
+      <div class="detail__content">
+        <p class="detail__pos" id="detail-pos"></p>
 
-      <section class="detail__block" id="detail-definition-block">
-        <h3 class="detail__label">Definition</h3>
-        <p class="detail__text" id="detail-definition"></p>
-      </section>
+        <div class="detail__headline">
+          <h2 class="detail__word" id="detail-word"></h2>
+          <a class="youglish" id="detail-youglish" target="_blank" rel="noopener noreferrer">
+            <span class="youglish__label">youglish</span>
+            <svg class="youglish__chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </a>
+        </div>
 
-      <section class="detail__block" id="detail-note-block">
-        <h3 class="detail__label">Note</h3>
-        <p class="detail__text" id="detail-note"></p>
-      </section>
+        <section class="detail__block" id="detail-definition-block">
+          <h3 class="detail__label">Definition</h3>
+          <p class="detail__text" id="detail-definition"></p>
+        </section>
+
+        <section class="detail__block" id="detail-note-block">
+          <h3 class="detail__label">Note</h3>
+          <p class="detail__text" id="detail-note"></p>
+        </section>
+      </div>
     </div>
 
     <div class="sheet__actions">
@@ -148,6 +152,11 @@
         <span class="field__label">Note</span>
         <textarea class="field__input field__textarea" id="field-note" name="note" rows="3"></textarea>
       </label>
+
+      <div class="field">
+        <span class="field__label" id="color-label">Colour</span>
+        <div class="swatches" id="field-color" role="radiogroup" aria-labelledby="color-label"></div>
+      </div>
 
       <p class="form__error" id="form-error" hidden></p>
 

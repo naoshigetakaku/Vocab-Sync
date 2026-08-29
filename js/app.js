@@ -5,7 +5,7 @@
 import { hasCredentials } from './auth.js';
 import { isRetryable } from './api.js';
 import { subscribe, refresh, reset } from './store.js';
-import { initList, render, setQuery, highlightNew } from './list.js';
+import { initList, render, highlightNew } from './list.js';
 import { initDetail, openDetail, syncDetail } from './detail.js';
 import { initForm, openCreateForm, openEditForm } from './form.js';
 import { initSetup, openSetup } from './setup.js';
@@ -15,7 +15,6 @@ import { initPicker } from './picker.js';
 import { initConfirm } from './confirm.js';
 import { toast } from './toast.js';
 
-const searchInput = document.getElementById('search-input');
 const addButton = document.getElementById('add-button');
 const updateBanner = document.getElementById('update-banner');
 const updateReload = document.getElementById('update-reload');
@@ -123,7 +122,6 @@ function start() {
   initInstallHint();
   initSort(render);
 
-  searchInput.addEventListener('input', (event) => setQuery(event.target.value));
   addButton.addEventListener('click', openCreateForm);
 
   // iOS suspends standalone web apps aggressively; re-sync whenever the app

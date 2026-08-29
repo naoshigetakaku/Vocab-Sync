@@ -17,7 +17,7 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 14px 0 10px;
+  padding: 14px 0 12px;
 }
 
 .app-header__title {
@@ -47,14 +47,10 @@
   color: var(--text-dim);
   cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out),
-              background-color var(--dur-fast) var(--ease-out),
               transform var(--dur-fast) var(--ease-spring);
 }
 
-.sort:active {
-  background: var(--press);
-  transform: scale(0.94);
-}
+.sort:active { transform: scale(0.94); }
 
 .sort__icon {
   width: 15px;
@@ -72,28 +68,6 @@
   min-width: 3.6em;
   text-align: left;
 }
-
-.search { padding-bottom: 12px; }
-
-.search__input {
-  width: 100%;
-  height: 40px;
-  padding: 0 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface-raise);
-  color: var(--text);
-  transition: border-color var(--dur-fast) var(--ease-out);
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.search__input::placeholder { color: var(--text-faint); }
-.search__input:focus { border-color: var(--line-strong); outline: none; }
-.search__input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-/* Hide the WebKit clear button; it breaks the monochrome look. */
-.search__input::-webkit-search-cancel-button { -webkit-appearance: none; }
 
 /* The only scrolling region on the home screen. */
 .app-main {
@@ -137,10 +111,7 @@
               transform var(--dur-fast) var(--ease-out);
 }
 
-.word-row:active {
-  background: var(--press);
-  transform: scale(0.985);
-}
+.word-row:active { transform: scale(0.985); }
 
 /* A word queued for upload is dimmed until the server confirms it. */
 .word-row--pending { color: var(--text-dim); }
@@ -174,7 +145,6 @@
 
 @media (min-width: 700px) {
   .app-header__bar,
-  .search,
   .word-list,
   .empty {
     max-width: 640px;

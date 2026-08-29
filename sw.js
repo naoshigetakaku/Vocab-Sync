@@ -9,7 +9,7 @@
  * serving new files to a device that never stops using the old ones.
  */
 
-var CACHE_VERSION = 'v2';
+var CACHE_VERSION = 'v3';
 var CACHE_NAME = 'vocabsync-' + CACHE_VERSION;
 
 var SHELL = [

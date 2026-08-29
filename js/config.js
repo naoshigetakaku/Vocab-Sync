@@ -14,6 +14,26 @@ export const DEFAULT_API_URL = '';
 /** Fixed vocabulary of the part-of-speech selector. */
 export const PARTS_OF_SPEECH = ['Verb', 'Adj', 'Adv', 'Noun', 'Idiom', 'Expression'];
 
+/**
+ * Word colours. The key is what gets stored, never the hex, so the same word
+ * picks up the right shade in light and dark.
+ */
+export const WORD_COLORS = [
+  { value: 'default', label: 'Default' },
+  { value: 'blue', label: 'Blue' },
+  { value: 'green', label: 'Green' },
+  { value: 'orange', label: 'Orange' },
+  { value: 'red', label: 'Red' },
+  { value: 'grey', label: 'Grey' },
+  { value: 'purple', label: 'Purple' },
+];
+
+export const DEFAULT_COLOR = 'default';
+
+/** Pronunciation clips for a word, searched across real videos. */
+export const YOUGLISH_BASE = 'https://youglish.com/pronounce/';
+export const YOUGLISH_LANGUAGE = 'english';
+
 export const STORAGE_KEYS = {
   credentials: 'vocabsync.credentials.v1',
   words: 'vocabsync.words.v1',

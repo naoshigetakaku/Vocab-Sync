@@ -29,6 +29,8 @@ the OS at any time and is never treated as authoritative.
    real passphrase must never be written into it. Leave the placeholder where
    it is.
 4. Run `setup()` once from the editor and approve the permission prompt.
+   Run it again after any future update to this file: it adds new columns to
+   an existing sheet without disturbing the rows already in it.
 5. **Deploy → New deployment → Web app**
    - Execute as: **Me**
    - Who has access: **Anyone**
@@ -55,6 +57,31 @@ full screen with no browser chrome, and gets its own icon.
 
 Deleting the icon deletes the local cache with it. Nothing is lost — the words
 are in the spreadsheet — but the app has to be connected again.
+
+## What is in the sheet
+
+One row per word, in a tab called `Words`:
+
+| Column | Field | Notes |
+|---|---|---|
+| A | `id` | UUID, generated server-side |
+| B | `word` | |
+| C | `pos` | Verb / Adj / Adv / Noun / Idiom / Expression |
+| D | `definition` | |
+| E | `note` | |
+| F | `createdAt` | ISO 8601 |
+| G | `updatedAt` | ISO 8601 |
+| H | `color` | `default`, `blue`, `green`, `orange`, `red`, `grey`, `purple` |
+
+New fields are always appended on the right. Inserting one in the middle would
+shift every existing row's data into the wrong column.
+
+`color` arrived after the first release. Running `setup()` again appends the
+header to an existing sheet without touching any row; words saved before the
+upgrade read back with no colour, which is the default. The colour changes the
+word's own type only — never the definition, the note, or the part-of-speech
+badge — and the stored value is the key rather than a hex code, so the same
+word picks the right shade in light and dark.
 
 ## Updating the code
 
