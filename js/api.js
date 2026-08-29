@@ -23,8 +23,12 @@ const MESSAGES = {
   BUSY: 'Another change is in flight. Try again.',
 };
 
-function describe(code) {
-  return MESSAGES[code] || 'Something went wrong on the server.';
+function describe(code, detail) {
+  if (MESSAGES[code]) return MESSAGES[code];
+  // The backend sends a `detail` string for anything it could not classify.
+  // Passing it through is what makes a version mismatch diagnosable instead
+  // of showing the same blank "something went wrong" every time.
+  return detail ? 'Server: ' + detail : 'Something went wrong on the server.';
 }
 
 /** True for failures that are worth retrying later rather than surfacing. */
@@ -73,7 +77,7 @@ async function call(action, payload) {
 
   if (!data || data.ok !== true) {
     const code = (data && data.error) || 'SERVER';
-    throw new ApiError(code, describe(code));
+    throw new ApiError(code, describe(code, data && data.detail));
   }
   return data;
 }

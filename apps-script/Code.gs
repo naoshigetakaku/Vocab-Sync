@@ -145,11 +145,16 @@ function getSheet_() {
  * sheet does not have yet. Existing columns keep their position, so data
  * written by an older version stays readable.
  *
- * @return {Object} map of field name to zero-based column index
+ * Returns the column map AND the width to read and write with. The width is
+ * derived from the map rather than from getLastColumn(), which can still
+ * report the old value for a column this same execution just created — that
+ * lag silently dropped the colour off the end of every row.
+ *
+ * @return {{map: Object, width: number}}
  */
 function ensureHeaders_(sheet) {
-  var width = Math.max(sheet.getLastColumn(), 1);
-  var header = sheet.getRange(1, 1, 1, width).getValues()[0];
+  var read = Math.max(sheet.getLastColumn(), 1);
+  var header = sheet.getRange(1, 1, 1, read).getValues()[0];
 
   var map = {};
   for (var i = 0; i < header.length; i++) {
@@ -164,14 +169,27 @@ function ensureHeaders_(sheet) {
 
   if (missing.length) {
     var start = header.length + 1;
+    var needed = start + missing.length - 1;
+    if (needed > sheet.getMaxColumns()) {
+      sheet.insertColumnsAfter(sheet.getMaxColumns(), needed - sheet.getMaxColumns());
+    }
+
     sheet.getRange(1, start, 1, missing.length).setValues([missing]);
     sheet.getRange(1, start, sheet.getMaxRows(), missing.length).setNumberFormat('@');
+
     for (var m = 0; m < missing.length; m++) {
       map[missing[m]] = header.length + m;
     }
+    // Make the new column real before anything measures the sheet again.
+    SpreadsheetApp.flush();
   }
 
-  return map;
+  var width = 0;
+  for (var key in map) {
+    if (map[key] + 1 > width) width = map[key] + 1;
+  }
+
+  return { map: map, width: width };
 }
 
 /**
@@ -274,13 +292,13 @@ function withLock_(operation) {
 
 function listWords_() {
   var sheet = getSheet_();
-  var map = ensureHeaders_(sheet);
+  var schema = ensureHeaders_(sheet);
+  var map = schema.map;
 
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  var width = sheet.getLastColumn();
-  var values = sheet.getRange(2, 1, lastRow - 1, width).getValues();
+  var values = sheet.getRange(2, 1, lastRow - 1, schema.width).getValues();
   var words = [];
 
   for (var i = 0; i < values.length; i++) {
@@ -295,8 +313,7 @@ function createWord_(input) {
 
   return withLock_(function () {
     var sheet = getSheet_();
-    var map = ensureHeaders_(sheet);
-    var width = sheet.getLastColumn();
+    var schema = ensureHeaders_(sheet);
     var now = new Date().toISOString();
 
     var record = {
@@ -310,7 +327,7 @@ function createWord_(input) {
       updatedAt: now
     };
 
-    sheet.appendRow(wordToRow_(record, map, width));
+    sheet.appendRow(wordToRow_(record, schema.map, schema.width));
     return record;
   });
 }
@@ -322,13 +339,13 @@ function updateWord_(input) {
 
   return withLock_(function () {
     var sheet = getSheet_();
-    var map = ensureHeaders_(sheet);
-    var width = sheet.getLastColumn();
+    var schema = ensureHeaders_(sheet);
+    var width = schema.width;
 
-    var row = findRow_(sheet, map, id);
+    var row = findRow_(sheet, schema.map, id);
     if (row === -1) fail_('NOT_FOUND', 'No row with that id.');
 
-    var existing = rowToWord_(sheet.getRange(row, 1, 1, width).getValues()[0], map);
+    var existing = rowToWord_(sheet.getRange(row, 1, 1, width).getValues()[0], schema.map);
 
     var record = {
       id: id,
@@ -341,7 +358,7 @@ function updateWord_(input) {
       updatedAt: new Date().toISOString()
     };
 
-    sheet.getRange(row, 1, 1, width).setValues([wordToRow_(record, map, width)]);
+    sheet.getRange(row, 1, 1, width).setValues([wordToRow_(record, schema.map, width)]);
     return record;
   });
 }
@@ -352,9 +369,9 @@ function deleteWord_(id) {
 
   return withLock_(function () {
     var sheet = getSheet_();
-    var map = ensureHeaders_(sheet);
+    var schema = ensureHeaders_(sheet);
 
-    var row = findRow_(sheet, map, target);
+    var row = findRow_(sheet, schema.map, target);
     if (row === -1) fail_('NOT_FOUND', 'No row with that id.');
 
     sheet.deleteRow(row);
@@ -374,8 +391,8 @@ function deleteWord_(id) {
 function setup() {
   var sheet = getSheet_();
   var before = sheet.getLastColumn();
-  var map = ensureHeaders_(sheet);
-  var after = sheet.getLastColumn();
+  var schema = ensureHeaders_(sheet);
+  var after = schema.width;
 
   Logger.log('Sheet "%s": %s data row(s).', SHEET_NAME, Math.max(0, sheet.getLastRow() - 1));
   Logger.log('Columns: %s', HEADERS.join(', '));
