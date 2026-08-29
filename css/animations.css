@@ -26,19 +26,6 @@
 @keyframes fade-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
 
-/* Animating the colour rather than the whole layer's opacity keeps the scrim
-   from being composited as a separate surface, which is where the visible
-   step came from. */
-@keyframes scrim-in {
-  from { background-color: transparent; }
-  to   { background-color: var(--scrim); }
-}
-
-@keyframes scrim-out {
-  from { background-color: var(--scrim); }
-  to   { background-color: transparent; }
-}
-
 @keyframes row-in {
   from { transform: translateY(8px); opacity: 0; }
   to   { transform: translateY(0);   opacity: 1; }
@@ -92,9 +79,8 @@
 .sheet.is-open    { animation: sheet-in  var(--dur-slow) var(--ease-spring) both; }
 .sheet.is-closing { animation: sheet-out var(--dur-mid)  var(--ease-out)    both; }
 
-/* Same duration as the sheet, so the two arrive together. */
-.sheet.is-open::backdrop    { animation: scrim-in  var(--dur-slow) var(--ease-out) both; }
-.sheet.is-closing::backdrop { animation: scrim-out var(--dur-mid)  var(--ease-out) both; }
+.sheet.is-open::backdrop    { animation: fade-in  var(--dur-mid)  var(--ease-out) both; }
+.sheet.is-closing::backdrop { animation: fade-out var(--dur-mid)  var(--ease-out) both; }
 
 @media (min-width: 700px) {
   .sheet.is-open    { animation: card-in  var(--dur-mid) var(--ease-spring) both; }
@@ -121,8 +107,8 @@
 .alert.is-open    { animation: alert-in  var(--dur-mid)  var(--ease-spring) both; }
 .alert.is-closing { animation: alert-out var(--dur-fast) var(--ease-out)    both; }
 
-.alert.is-open::backdrop    { animation: scrim-in  var(--dur-mid) var(--ease-out) both; }
-.alert.is-closing::backdrop { animation: scrim-out var(--dur-fast) var(--ease-out) both; }
+.alert.is-open::backdrop    { animation: fade-in  var(--dur-mid) var(--ease-out) both; }
+.alert.is-closing::backdrop { animation: fade-out var(--dur-mid) var(--ease-out) both; }
 
 /* --- Word list ------------------------------------------------------------ */
 /* Staggered only on the first paint after a full render. The delay comes from

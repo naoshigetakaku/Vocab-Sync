@@ -149,7 +149,6 @@ all. Filling it in trades that for one less field during setup.
 | `js/picker.js` | The app's own option list, replacing `<select>`. |
 | `js/confirm.js` | Centred confirmation popup. |
 | `js/toast.js` | Transient messages. |
-| `js/theme-color.js` | Eases the browser chrome colour with the backdrop. |
 | `js/sort.js` | List ordering and the header control. |
 | `js/list.js` | Home screen. |
 | `js/detail.js` | Detail dialog. |

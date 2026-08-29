@@ -10,7 +10,6 @@ import { initDetail, openDetail, syncDetail } from './detail.js';
 import { initForm, openCreateForm, openEditForm } from './form.js';
 import { initSetup, openSetup } from './setup.js';
 import { initInstallHint } from './install-hint.js';
-import { initThemeColor } from './theme-color.js';
 import { initSort } from './sort.js';
 import { initPicker } from './picker.js';
 import { initConfirm } from './confirm.js';
@@ -100,9 +99,6 @@ function initServiceWorker() {
 /* --- Start ---------------------------------------------------------------- */
 
 function wireUi() {
-  // Before anything can open a dialog, so the chrome colour has a baseline.
-  initThemeColor();
-
   subscribe(render);
 
   // Shared dialogs first: the views below open them.
