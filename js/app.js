@@ -10,12 +10,14 @@ import { initDetail, openDetail, syncDetail } from './detail.js';
 import { initForm, openCreateForm, openEditForm } from './form.js';
 import { initSetup, openSetup } from './setup.js';
 import { initInstallHint } from './install-hint.js';
+import { initThemeColor } from './theme-color.js';
 import { initSort } from './sort.js';
 import { initPicker } from './picker.js';
 import { initConfirm } from './confirm.js';
 import { toast } from './toast.js';
 
 const addButton = document.getElementById('add-button');
+const settingsButton = document.getElementById('settings-button');
 
 let syncing = false;
 let staleWarningShown = false;
@@ -28,7 +30,7 @@ let staleWarningShown = false;
 function warnIfBackendStale() {
   if (staleWarningShown || !isBackendStale()) return;
   staleWarningShown = true;
-  toast('Apps Script is out of date (v' + getBackendVersion() + '). Colours will not save.');
+  toast('Apps Script is out of date (v' + getBackendVersion() + '). Colours will not save — see Connection.');
 }
 
 /**
@@ -98,6 +100,9 @@ function initServiceWorker() {
 /* --- Start ---------------------------------------------------------------- */
 
 function wireUi() {
+  // Before anything can open a dialog, so the chrome colour has a baseline.
+  initThemeColor();
+
   subscribe(render);
 
   // Shared dialogs first: the views below open them.
@@ -123,6 +128,7 @@ function wireUi() {
   initSort(render);
 
   addButton.addEventListener('click', openCreateForm);
+  settingsButton.addEventListener('click', () => openSetup({ manual: true }));
 
   // iOS suspends standalone web apps aggressively; re-sync whenever the app
   // comes back to the foreground rather than polling on a timer.

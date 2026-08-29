@@ -46,6 +46,17 @@ Deploy from a branch**. Nothing needs to be configured or compiled.
 Open the site. It asks for the Web App URL and the passphrase, verifies them
 against the sheet, and stores them on the device.
 
+Afterwards the same sheet is reachable from the control at the top of the
+screen, as **Connection**: point the device at a different deployment,
+re-enter the passphrase after changing it in `Code.gs`, or disconnect
+entirely. Disconnecting clears both values from that device; the words stay in
+the spreadsheet.
+
+If the app reports that Apps Script is out of date, the deployment predates a
+column the app is already using — colours, for instance, get written nowhere.
+Paste the current `Code.gs`, run `setup()`, and deploy a **new version** of the
+existing deployment.
+
 Every device does this once. On iOS a page opened in Safari and the same page
 launched from the Home Screen have **separate storage**, so each one needs its
 own connection.
@@ -138,6 +149,7 @@ all. Filling it in trades that for one less field during setup.
 | `js/picker.js` | The app's own option list, replacing `<select>`. |
 | `js/confirm.js` | Centred confirmation popup. |
 | `js/toast.js` | Transient messages. |
+| `js/theme-color.js` | Eases the browser chrome colour with the backdrop. |
 | `js/sort.js` | List ordering and the header control. |
 | `js/list.js` | Home screen. |
 | `js/detail.js` | Detail dialog. |

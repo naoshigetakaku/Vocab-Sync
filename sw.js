@@ -25,7 +25,7 @@
  * Bump CACHE_VERSION on every release.
  */
 
-var CACHE_VERSION = 'v8';
+var CACHE_VERSION = 'v9';
 var CACHE_NAME = 'vocabsync-' + CACHE_VERSION;
 
 var SHELL = [
@@ -53,6 +53,7 @@ var SHELL = [
   './js/storage.js',
   './js/store.js',
   './js/swipe.js',
+  './js/theme-color.js',
   './js/toast.js',
   './icons/icon.svg',
   './icons/icon-180.png',

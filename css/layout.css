@@ -16,7 +16,7 @@
 .app-header__bar {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   padding: 14px 0 12px;
 }
 
@@ -32,12 +32,38 @@
   color: var(--text-faint);
 }
 
+/* Secondary header control; sits just left of the sort pill. */
+.header-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  align-self: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-spring);
+}
+
+.header-action:active { transform: scale(0.9); }
+
+.header-action svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 1.9;
+}
+
 /* Sort control, pinned to the right of the title row. */
 .sort {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin-left: auto;
   align-self: center;
   min-height: 34px;
   padding: 0 11px 0 9px;

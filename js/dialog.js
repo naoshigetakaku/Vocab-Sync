@@ -7,6 +7,7 @@
  */
 
 import { lock, unlock } from './scroll-lock.js';
+import { dim, undim } from './theme-color.js';
 import { enableSwipeToDismiss } from './swipe.js';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -29,13 +30,34 @@ const ENTER_TIMEOUT_MS = 420;
  * impossible whichever path got there first.
  */
 const holdsLock = new WeakSet();
+const holdsDim = new WeakSet();
 
-function acquireLock(dialog) {
-  if (holdsLock.has(dialog)) return;
-  holdsLock.add(dialog);
-  lock();
+function acquire(dialog) {
+  if (!holdsLock.has(dialog)) {
+    holdsLock.add(dialog);
+    lock();
+  }
+  if (!holdsDim.has(dialog)) {
+    holdsDim.add(dialog);
+    // Starts on the same frame as the backdrop, so the status bar and the page
+    // darken together instead of one trailing the other.
+    dim();
+  }
 }
 
+/**
+ * Released when the close BEGINS, not when it finishes. The scrim starts
+ * fading immediately, and the browser chrome has to travel with it — waiting
+ * for the exit animation to end left the strip above the app dark for the
+ * whole of it.
+ */
+function releaseDim(dialog) {
+  if (!holdsDim.has(dialog)) return;
+  holdsDim.delete(dialog);
+  undim();
+}
+
+/** The list stays frozen until the dialog is genuinely gone. */
 function releaseLock(dialog) {
   if (!holdsLock.has(dialog)) return;
   holdsLock.delete(dialog);
@@ -71,13 +93,14 @@ export function openDialog(dialog) {
   dialog.addEventListener('animationend', onEntered);
   setTimeout(settle, ENTER_TIMEOUT_MS);
 
-  acquireLock(dialog);
+  acquire(dialog);
 }
 
 /** Close immediately, skipping the exit animation. */
 export function finishClose(dialog) {
   dialog.classList.remove('is-open', 'is-closing');
   if (dialog.open) dialog.close();
+  releaseDim(dialog);
   releaseLock(dialog);
 }
 
@@ -85,6 +108,7 @@ export function closeDialog(dialog) {
   if (!dialog.open || dialog.classList.contains('is-closing')) return;
 
   dialog.classList.remove('is-open');
+  releaseDim(dialog);
 
   if (reducedMotion.matches) {
     dialog.close();

@@ -14,8 +14,10 @@
 
   <!-- Theme follows the device setting; no in-app toggle by design. -->
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)">
+  <!-- One tag, kept in step with the page by js/theme-color.js. Two
+       media-scoped tags cannot be animated, and the abrupt swap when a sheet
+       opens is exactly what this replaces. -->
+  <meta name="theme-color" id="theme-color" content="#ffffff">
 
   <!-- iOS standalone web app -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,6 +40,14 @@
     <div class="app-header__bar">
       <h1 class="app-header__title">Vocabulary</h1>
       <span class="app-header__count" id="word-count" aria-live="polite"></span>
+
+      <button class="header-action" id="settings-button" type="button" aria-label="Connection settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+          <circle cx="16" cy="7" r="2.4" />
+          <circle cx="8" cy="17" r="2.4" />
+        </svg>
+      </button>
 
       <button class="sort" id="sort-button" type="button" aria-haspopup="listbox">
         <svg class="sort__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -199,6 +209,16 @@
 
   <!-- First-run setup: endpoint + passphrase are stored on the device, never in the repo. -->
   <dialog class="sheet" id="setup-dialog" aria-labelledby="setup-title">
+    <div class="sheet__grip" id="setup-grip" aria-hidden="true" hidden><span class="sheet__handle"></span></div>
+
+    <div class="sheet__dismiss" id="setup-dismiss" hidden>
+      <button class="icon-button" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+
     <form class="sheet__body form" id="setup-form" novalidate>
       <h2 class="sheet__title" id="setup-title">Connect</h2>
       <p class="sheet__lead">
@@ -222,6 +242,7 @@
       <p class="form__error" id="setup-error" hidden></p>
 
       <div class="sheet__actions">
+        <button class="button button--danger" id="setup-disconnect" type="button" hidden>Disconnect</button>
         <button class="button" id="setup-submit" type="submit">Connect</button>
       </div>
     </form>
