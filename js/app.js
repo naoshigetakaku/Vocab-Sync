@@ -3,7 +3,7 @@
  */
 
 import { hasCredentials } from './auth.js';
-import { isRetryable } from './api.js';
+import { isRetryable, isBackendStale, getBackendVersion } from './api.js';
 import { subscribe, refresh, reset } from './store.js';
 import { initList, render, highlightNew } from './list.js';
 import { initDetail, openDetail, syncDetail } from './detail.js';
@@ -18,6 +18,18 @@ import { toast } from './toast.js';
 const addButton = document.getElementById('add-button');
 
 let syncing = false;
+let staleWarningShown = false;
+
+/**
+ * Saving Code.gs in the editor is not the same as deploying it, and a stale
+ * deployment fails quietly: the row is written without the columns it does not
+ * know about. Say so rather than letting the user wonder.
+ */
+function warnIfBackendStale() {
+  if (staleWarningShown || !isBackendStale()) return;
+  staleWarningShown = true;
+  toast('Apps Script is out of date (v' + getBackendVersion() + '). Colours will not save.');
+}
 
 /**
  * Pull from the sheet.
@@ -31,6 +43,7 @@ async function sync(quiet) {
 
   try {
     await refresh();
+    warnIfBackendStale();
   } catch (error) {
     if (error.code === 'UNAUTHORIZED' || error.code === 'NOT_CONFIGURED') {
       reset();

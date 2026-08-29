@@ -34,6 +34,17 @@
  */
 var PASSPHRASE = 'change-me-to-something-long-and-random';
 
+/**
+ * Bumped whenever this file gains a feature the front end depends on. The app
+ * compares it against its own expectation and says so when the deployment is
+ * behind — silently writing rows without a column the user asked for is the
+ * worst possible failure mode.
+ *
+ *   1  original schema
+ *   2  colour column
+ */
+var BACKEND_VERSION = 2;
+
 var SHEET_NAME = 'Words';
 
 /**
@@ -69,13 +80,13 @@ function handle_(e) {
 
     switch (request.action) {
       case 'list':
-        return json_({ ok: true, words: listWords_() });
+        return json_({ ok: true, version: BACKEND_VERSION, words: listWords_() });
       case 'create':
-        return json_({ ok: true, word: createWord_(request.word) });
+        return json_({ ok: true, version: BACKEND_VERSION, word: createWord_(request.word) });
       case 'update':
-        return json_({ ok: true, word: updateWord_(request.word) });
+        return json_({ ok: true, version: BACKEND_VERSION, word: updateWord_(request.word) });
       case 'delete':
-        return json_({ ok: true, id: deleteWord_(request.id) });
+        return json_({ ok: true, version: BACKEND_VERSION, id: deleteWord_(request.id) });
       default:
         return json_({ ok: false, error: 'BAD_REQUEST' });
     }
@@ -394,6 +405,7 @@ function setup() {
   var schema = ensureHeaders_(sheet);
   var after = schema.width;
 
+  Logger.log('Backend version %s.', BACKEND_VERSION);
   Logger.log('Sheet "%s": %s data row(s).', SHEET_NAME, Math.max(0, sheet.getLastRow() - 1));
   Logger.log('Columns: %s', HEADERS.join(', '));
 
@@ -406,4 +418,7 @@ function setup() {
   if (PASSPHRASE === 'change-me-to-something-long-and-random') {
     Logger.log('WARNING: PASSPHRASE is still the default. Change it before deploying.');
   }
+
+  Logger.log('Remember: saving this file is not deploying it. Deploy > Manage '
+    + 'deployments > edit the existing entry > Version: New version.');
 }

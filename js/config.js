@@ -42,5 +42,12 @@ export const STORAGE_KEYS = {
   sort: 'vocabsync.sort.v1',
 };
 
+/**
+ * The Code.gs version this build needs. Anything lower means the deployment
+ * predates a feature the app is already using — colours, for instance, get
+ * written nowhere.
+ */
+export const REQUIRED_BACKEND_VERSION = 2;
+
 /** Apps Script cold starts can take a couple of seconds; allow for that. */
 export const REQUEST_TIMEOUT_MS = 20000;

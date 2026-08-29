@@ -3,7 +3,7 @@
  */
 
 import { getCredentials } from './auth.js';
-import { REQUEST_TIMEOUT_MS } from './config.js';
+import { REQUEST_TIMEOUT_MS, REQUIRED_BACKEND_VERSION } from './config.js';
 
 export class ApiError extends Error {
   constructor(code, message) {
@@ -29,6 +29,22 @@ function describe(code, detail) {
   // Passing it through is what makes a version mismatch diagnosable instead
   // of showing the same blank "something went wrong" every time.
   return detail ? 'Server: ' + detail : 'Something went wrong on the server.';
+}
+
+/**
+ * Version reported by the last successful response. A deployment older than
+ * this build answers without the field at all, which reads as 0.
+ */
+let backendVersion = null;
+
+/** null until a request has succeeded; then the deployment's own version. */
+export function getBackendVersion() {
+  return backendVersion;
+}
+
+/** True once a response has proved the deployment predates this build. */
+export function isBackendStale() {
+  return backendVersion !== null && backendVersion < REQUIRED_BACKEND_VERSION;
 }
 
 /** True for failures that are worth retrying later rather than surfacing. */
@@ -79,6 +95,8 @@ async function call(action, payload) {
     const code = (data && data.error) || 'SERVER';
     throw new ApiError(code, describe(code, data && data.detail));
   }
+
+  backendVersion = Number(data.version) || 0;
   return data;
 }
 
