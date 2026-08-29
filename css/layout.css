@@ -1,0 +1,180 @@
+/* ==========================================================================
+   layout.css — app shell, header, word list.
+   ========================================================================== */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--line);
+  padding-top: var(--safe-top);
+  padding-left: max(var(--page-pad), var(--safe-left));
+  padding-right: max(var(--page-pad), var(--safe-right));
+}
+
+/* Fallback for engines without color-mix support. */
+@supports not (background: color-mix(in srgb, red 50%, transparent)) {
+  .app-header { background: var(--bg); }
+}
+
+.app-header__bar {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 0 10px;
+}
+
+.app-header__title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.app-header__count {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+/* Sort control, pinned to the right of the title row. */
+.sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  align-self: center;
+  min-height: 34px;
+  padding: 0 11px 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out),
+              background-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-spring);
+}
+
+.sort:active {
+  background: var(--press);
+  transform: scale(0.94);
+}
+
+.sort__icon {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+  flex: none;
+}
+
+.sort__label {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  /* Fixed width keeps the button from resizing as the label cycles. */
+  min-width: 3.6em;
+  text-align: left;
+}
+
+.search { padding-bottom: 12px; }
+
+.search__input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-raise);
+  color: var(--text);
+  transition: border-color var(--dur-fast) var(--ease-out);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search__input::placeholder { color: var(--text-faint); }
+.search__input:focus { border-color: var(--line-strong); outline: none; }
+.search__input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Hide the WebKit clear button; it breaks the monochrome look. */
+.search__input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+.app-main {
+  padding-left: max(var(--page-pad), var(--safe-left));
+  padding-right: max(var(--page-pad), var(--safe-right));
+  /* Leave room for the floating button plus the home indicator. */
+  padding-bottom: calc(112px + var(--safe-bottom));
+}
+
+/* --- Word list ----------------------------------------------------------- */
+/* The home screen shows the word and nothing else. */
+
+.word-list { padding-top: 4px; }
+
+.word-list li { border-bottom: 1px solid var(--line); }
+
+.word-row {
+  display: block;
+  width: 100%;
+  padding: 17px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+
+.word-row:active {
+  background: var(--press);
+  transform: scale(0.985);
+}
+
+/* A word queued for upload is dimmed until the server confirms it. */
+.word-row--pending { color: var(--text-dim); }
+
+.word-row--pending::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  vertical-align: middle;
+}
+
+/* --- Empty states -------------------------------------------------------- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  padding: 96px 0;
+  text-align: center;
+}
+
+.empty__title { font-size: 17px; font-weight: 600; color: var(--text-dim); }
+.empty__hint  { font-size: 15px; color: var(--text-faint); }
+
+/* --- Wider screens ------------------------------------------------------- */
+
+@media (min-width: 700px) {
+  .app-header__bar,
+  .search,
+  .word-list,
+  .empty {
+    max-width: 640px;
+    margin-inline: auto;
+  }
+  .app-header__title { font-size: 30px; }
+}

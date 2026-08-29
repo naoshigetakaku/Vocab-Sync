@@ -1,0 +1,121 @@
+# VocabSync
+
+A minimal vocabulary notebook. Words live in a Google Spreadsheet, so the same
+list appears on every device. No server of your own, no build step, no fees.
+
+The home screen lists nothing but the words. Tap one to see its part of speech,
+definition and note.
+
+## How it fits together
+
+```
+Browser  ──►  Apps Script Web App  ──►  Google Spreadsheet
+static files       free API layer          the actual data
+```
+
+The spreadsheet is the source of truth. The browser keeps a local copy so the
+app opens instantly and still works offline, but that copy can be evicted by
+the OS at any time and is never treated as authoritative.
+
+## Setup
+
+### 1. Spreadsheet and backend
+
+1. Create a Google Spreadsheet.
+2. **Extensions → Apps Script**, and replace the default `Code.gs` with
+   [`apps-script/Code.gs`](apps-script/Code.gs).
+3. Change `PASSPHRASE` at the top to something long and random — **in the
+   Apps Script editor only**. The copy in this repository is public, so the
+   real passphrase must never be written into it. Leave the placeholder where
+   it is.
+4. Run `setup()` once from the editor and approve the permission prompt.
+5. **Deploy → New deployment → Web app**
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+6. Copy the `/exec` URL.
+
+### 2. Publish the front end
+
+Push this folder to a public GitHub repository and enable **Settings → Pages →
+Deploy from a branch**. Nothing needs to be configured or compiled.
+
+### 3. Connect
+
+Open the site. It asks for the Web App URL and the passphrase, verifies them
+against the sheet, and stores them on the device.
+
+Every device does this once. On iOS a page opened in Safari and the same page
+launched from the Home Screen have **separate storage**, so each one needs its
+own connection.
+
+## Adding it to the iOS Home Screen
+
+Open the site in Safari, tap Share, then **Add to Home Screen**. It then runs
+full screen with no browser chrome, and gets its own icon.
+
+Deleting the icon deletes the local cache with it. Nothing is lost — the words
+are in the spreadsheet — but the app has to be connected again.
+
+## Updating the code
+
+After changing any file, bump `CACHE_VERSION` in [`sw.js`](sw.js) before
+pushing. Without that, devices keep serving the old version out of cache
+forever. On the next visit the app shows a "new version is ready" banner.
+
+To change `Code.gs`: **Deploy → Manage deployments →** edit the existing entry
+→ Version: **New version**. That keeps the same URL. Picking "New deployment"
+mints a different URL and every device would need reconnecting.
+
+## What you should know about the security model
+
+The deployment is published as "Anyone", which is the only setting that lets a
+static page reach it. Apps Script cannot read request headers, so restricting
+by domain is impossible. **The passphrase is the only thing protecting the
+sheet.** Make it long, and do not put anything sensitive in there.
+
+Leaving `DEFAULT_API_URL` empty in [`js/config.js`](js/config.js) is
+deliberate: the deployment URL then never appears in the public repository at
+all. Filling it in trades that for one less field during setup.
+
+## Files
+
+| Path | Purpose |
+|---|---|
+| `index.html` | Markup. No inline styles or scripts. |
+| `css/theme.css` | Tokens, light/dark palette, base resets. |
+| `css/layout.css` | App shell, header, word list. |
+| `css/components.css` | Dialogs, forms, buttons, banners. |
+| `css/animations.css` | All motion, plus the reduced-motion escape hatch. |
+| `js/config.js` | Constants. |
+| `js/storage.js` | Guarded localStorage wrapper. |
+| `js/auth.js` | Device-local credentials. |
+| `js/api.js` | Transport to Apps Script. |
+| `js/store.js` | State, cache, offline outbox. |
+| `js/dialog.js` | Animated open/close for `<dialog>`. |
+| `js/toast.js` | Transient messages. |
+| `js/sort.js` | List ordering and the header control. |
+| `js/list.js` | Home screen. |
+| `js/detail.js` | Detail dialog. |
+| `js/form.js` | Add / edit form. |
+| `js/setup.js` | First-run connection sheet. |
+| `js/install-hint.js` | iOS Add-to-Home-Screen nudge. |
+| `js/app.js` | Bootstrap and wiring. |
+| `sw.js` | Offline shell. Bump `CACHE_VERSION` on release. |
+| `manifest.json` | PWA metadata. |
+| `icons/icon.svg` | Source of the mark. |
+| `apps-script/Code.gs` | Backend. Not served — paste into Apps Script. |
+
+## Replacing the icon
+
+`icons/icon.svg` is the source. iOS ignores SVG for Home Screen icons, so PNGs
+at 180, 192 and 512 px are also required. Any converter works; keep the same
+filenames and the background opaque, since iOS applies its own rounded mask.
+
+## Running it locally
+
+```
+python3 -m http.server 8765
+```
+
+Then open `http://localhost:8765`. Modules and service workers need a real
+origin, so opening `index.html` from the file system will not work.

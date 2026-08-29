@@ -1,0 +1,141 @@
+/* ==========================================================================
+   theme.css — design tokens, light/dark palette, base element resets.
+   The palette is greyscale only; the accent is pure black in light mode and
+   pure white in dark mode, so the UI stays monochrome in both.
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  /* Surfaces */
+  --bg:            #ffffff;
+  --surface:       #ffffff;
+  --surface-raise: #ffffff;
+  --scrim:         rgba(0, 0, 0, 0.32);
+
+  /* Ink */
+  --text:      #0b0b0b;
+  --text-dim:  #6e6e6e;
+  --text-faint:#9a9a9a;
+
+  /* Lines */
+  --line:        #e6e6e6;
+  --line-strong: #d2d2d2;
+
+  /* Accent = the inverse of the surface */
+  --accent:     #0b0b0b;
+  --on-accent:  #ffffff;
+
+  /* Feedback */
+  --press:  rgba(0, 0, 0, 0.05);
+  --danger: #b00020;
+
+  /* Elevation */
+  --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.14);
+  --shadow-fab:   0 4px 16px rgba(0, 0, 0, 0.22);
+
+  /* Metrics */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --gap:       16px;
+  --page-pad:  20px;
+
+  /* Motion */
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --dur-fast:    140ms;
+  --dur-mid:     240ms;
+  --dur-slow:    320ms;
+
+  /* Safe areas — resolve to 0px outside of standalone iOS. */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:            #000000;
+    --surface:       #0d0d0d;
+    --surface-raise: #161616;
+    --scrim:         rgba(0, 0, 0, 0.6);
+
+    --text:      #f4f4f4;
+    --text-dim:  #9d9d9d;
+    --text-faint:#6c6c6c;
+
+    --line:        #242424;
+    --line-strong: #343434;
+
+    --accent:    #f4f4f4;
+    --on-accent: #0b0b0b;
+
+    --press:  rgba(255, 255, 255, 0.07);
+    --danger: #ff6b6b;
+
+    --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.6);
+    --shadow-fab:   0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* --- Base ---------------------------------------------------------------- */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  /* Prevent iOS from enlarging text when the device is rotated. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  /* Kill the grey flash on tap in iOS Safari. */
+  -webkit-tap-highlight-color: transparent;
+  /* Stop the whole page from rubber-banding in standalone mode. */
+  overscroll-behavior-y: none;
+}
+
+h1, h2, h3, p { margin: 0; }
+
+/* Components below set an explicit display, which would otherwise beat the
+   user-agent rule for [hidden]. Keep the attribute authoritative. */
+[hidden] { display: none !important; }
+ul { margin: 0; padding: 0; list-style: none; }
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* 16px minimum on form controls — anything smaller makes iOS zoom on focus. */
+input, select, textarea { font-size: 16px; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Inline SVG icons are drawn as strokes so they inherit the text colour. */
+svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

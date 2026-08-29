@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; connect-src 'self' https://script.google.com https://script.googleusercontent.com; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
+
+  <title>VocabSync</title>
+  <meta name="description" content="A minimal vocabulary notebook synced through Google Sheets.">
+
+  <!-- Theme follows the device setting; no in-app toggle by design. -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+
+  <!-- iOS standalone web app -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="VocabSync">
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+
+  <link rel="stylesheet" href="./css/theme.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/animations.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-header__bar">
+      <h1 class="app-header__title">Vocabulary</h1>
+      <span class="app-header__count" id="word-count" aria-live="polite"></span>
+
+      <button class="sort" id="sort-button" type="button" aria-label="Change sort order">
+        <svg class="sort__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 7h13M4 12h9M4 17h5" />
+        </svg>
+        <span class="sort__label" id="sort-label"></span>
+      </button>
+    </div>
+    <div class="search">
+      <input class="search__input" id="search-input" type="search"
+             placeholder="Search" aria-label="Search words"
+             autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+    </div>
+  </header>
+
+  <main class="app-main">
+    <ul class="word-list" id="word-list" aria-label="Saved words"></ul>
+
+    <p class="empty" id="empty-state" hidden>
+      <span class="empty__title">No words yet</span>
+      <span class="empty__hint">Tap + to add your first one.</span>
+    </p>
+
+    <p class="empty" id="no-results" hidden>
+      <span class="empty__title">No matches</span>
+    </p>
+  </main>
+
+  <button class="fab" id="add-button" type="button" aria-label="Add a word">
+    <svg class="fab__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  </button>
+
+  <!-- Detail view: every field of a single word. -->
+  <dialog class="sheet" id="detail-dialog" aria-labelledby="detail-word">
+    <div class="sheet__dismiss">
+      <button class="icon-button" type="button" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="sheet__body">
+      <p class="detail__pos" id="detail-pos"></p>
+      <h2 class="detail__word" id="detail-word"></h2>
+
+      <section class="detail__block" id="detail-definition-block">
+        <h3 class="detail__label">Definition</h3>
+        <p class="detail__text" id="detail-definition"></p>
+      </section>
+
+      <section class="detail__block" id="detail-note-block">
+        <h3 class="detail__label">Note</h3>
+        <p class="detail__text" id="detail-note"></p>
+      </section>
+    </div>
+
+    <div class="sheet__actions">
+      <button class="button button--ghost" id="detail-delete" type="button">Delete</button>
+      <button class="button" id="detail-edit" type="button">Edit</button>
+    </div>
+  </dialog>
+
+  <!-- Add / edit form. Field order is fixed: word, part of speech, definition, note. -->
+  <dialog class="sheet" id="form-dialog" aria-labelledby="form-title">
+    <div class="sheet__dismiss">
+      <button class="icon-button" type="button" data-close aria-label="Cancel">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+
+    <form class="sheet__body form" id="word-form" novalidate>
+      <h2 class="sheet__title" id="form-title">New word</h2>
+
+      <label class="field">
+        <span class="field__label">Word</span>
+        <input class="field__input" id="field-word" name="word" type="text" required
+               autocomplete="off" autocapitalize="none" spellcheck="false">
+      </label>
+
+      <label class="field">
+        <span class="field__label">Part of speech</span>
+        <select class="field__input field__select" id="field-pos" name="pos" required></select>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Definition</span>
+        <textarea class="field__input field__textarea" id="field-definition" name="definition" rows="3"></textarea>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Note</span>
+        <textarea class="field__input field__textarea" id="field-note" name="note" rows="3"></textarea>
+      </label>
+
+      <p class="form__error" id="form-error" hidden></p>
+
+      <div class="sheet__actions">
+        <button class="button button--ghost" id="form-cancel" type="button">Cancel</button>
+        <button class="button" id="form-submit" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- First-run setup: endpoint + passphrase are stored on the device, never in the repo. -->
+  <dialog class="sheet" id="setup-dialog" aria-labelledby="setup-title">
+    <form class="sheet__body form" id="setup-form" novalidate>
+      <h2 class="sheet__title" id="setup-title">Connect</h2>
+      <p class="sheet__lead">
+        Paste the Web App URL from your Apps Script deployment and the passphrase you set in
+        <code>Code.gs</code>. Both are stored on this device only, so every device needs this once.
+      </p>
+
+      <label class="field">
+        <span class="field__label">Web App URL</span>
+        <input class="field__input" id="field-url" name="url" type="url"
+               placeholder="https://script.google.com/macros/s/.../exec"
+               autocomplete="off" autocapitalize="none" spellcheck="false" required>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Passphrase</span>
+        <input class="field__input" id="field-passphrase" name="passphrase" type="password"
+               autocomplete="off" autocapitalize="none" spellcheck="false" required>
+      </label>
+
+      <p class="form__error" id="setup-error" hidden></p>
+
+      <div class="sheet__actions">
+        <button class="button" id="setup-submit" type="submit">Connect</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <div class="banner" id="update-banner" hidden>
+    <span class="banner__text">A new version is ready.</span>
+    <button class="banner__action" id="update-reload" type="button">Reload</button>
+  </div>
+
+  <div class="banner banner--hint" id="install-hint" hidden>
+    <span class="banner__text">Add to Home Screen: tap Share, then “Add to Home Screen”.</span>
+    <button class="banner__action" id="install-dismiss" type="button">Got it</button>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
