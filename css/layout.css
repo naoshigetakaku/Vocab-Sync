@@ -94,6 +94,8 @@
 
 .sort:active { transform: scale(0.94); }
 
+.sort { box-shadow: inset 0 1px 0 var(--gloss-edge); }
+
 .sort__icon {
   width: 15px;
   height: 15px;
@@ -154,6 +156,8 @@
 }
 
 .folder-tile {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -167,11 +171,52 @@
   color: var(--text);
   text-align: left;
   cursor: pointer;
+  box-shadow: inset 0 1px 0 var(--gloss-edge);
   transition: transform var(--dur-fast) var(--ease-spring),
               border-color var(--dur-fast) var(--ease-out);
 }
 
 .folder-tile:active { transform: scale(0.96); }
+
+/* A soft sheen off the top-left. Skipped where a photo already fills the
+   tile, since it would only muddy the image. */
+.folder-tile:not(.folder-tile--photo)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(158deg, var(--gloss-sheen) 0%, transparent 46%);
+  pointer-events: none;
+}
+
+.folder-tile__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The border is drawn on the tile; the photo must not paint over it. */
+  border-radius: inherit;
+}
+
+/* Carries the photo into the flat background the caption sits on, so the text
+   never lands on busy pixels. */
+.folder-tile__veil {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    var(--tile-fade) 24%,
+    var(--surface-raise) 72%
+  );
+  pointer-events: none;
+}
+
+.folder-tile__name,
+.folder-tile__count {
+  position: relative;
+}
 
 .folder-tile--unsorted {
   border-style: dashed;
@@ -199,14 +244,16 @@
 
 .word-list li { border-bottom: 1px solid var(--line); }
 
+/* 11px padding with 17px type gives a ~48px row against the previous ~63px,
+   which is the ~1.3x more words per screen this was asked to hit. */
 .word-row {
   display: block;
   width: 100%;
-  padding: 17px 4px;
+  padding: 11px 4px;
   border: 0;
   background: transparent;
   color: var(--text);
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 500;
   letter-spacing: -0.01em;
   text-align: left;

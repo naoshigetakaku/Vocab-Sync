@@ -43,8 +43,9 @@ var PASSPHRASE = 'change-me-to-something-long-and-random';
  *   1  original schema
  *   2  colour column
  *   3  folder column and the Folders sheet
+ *   4  folder photos
  */
-var BACKEND_VERSION = 3;
+var BACKEND_VERSION = 4;
 
 var SHEET_NAME = 'Words';
 var FOLDER_SHEET_NAME = 'Folders';
@@ -58,9 +59,15 @@ var LEGACY_FOLDER = 'TOPS2026';
  */
 var HEADERS = ['id', 'word', 'pos', 'definition', 'note', 'createdAt', 'updatedAt', 'color', 'folder'];
 
-var FOLDER_HEADERS = ['id', 'name', 'createdAt'];
+var FOLDER_HEADERS = ['id', 'name', 'createdAt', 'photo'];
 
 var MAX_FOLDER_NAME_LENGTH = 60;
+
+/**
+ * A cell holds at most 50,000 characters, and the photo is a base64 data URL.
+ * The app downscales to stay well under this; the check is the backstop.
+ */
+var MAX_PHOTO_LENGTH = 46000;
 
 var PARTS_OF_SPEECH = ['Verb', 'Adj', 'Adv', 'Noun', 'Idiom', 'Expression'];
 var WORD_COLORS = ['default', 'blue', 'green', 'orange', 'red', 'grey', 'purple'];
@@ -101,6 +108,12 @@ function handle_(e) {
         return json_({ ok: true, version: BACKEND_VERSION, folder: renameFolder_(request.id, request.name) });
       case 'deleteFolder':
         return json_({ ok: true, version: BACKEND_VERSION, id: deleteFolder_(request.id) });
+      case 'setFolderPhoto':
+        return json_({
+          ok: true,
+          version: BACKEND_VERSION,
+          folder: setFolderPhoto_(request.id, request.photo)
+        });
       case 'create':
         return json_({ ok: true, version: BACKEND_VERSION, word: createWord_(request.word) });
       case 'update':
@@ -435,24 +448,98 @@ function getFolderSheet_() {
   return sheet;
 }
 
+/** Same additive migration as the Words sheet; see ensureHeaders_. */
+function ensureFolderHeaders_(sheet) {
+  var read = Math.max(sheet.getLastColumn(), 1);
+  var header = sheet.getRange(1, 1, 1, read).getValues()[0];
+
+  var map = {};
+  for (var i = 0; i < header.length; i++) {
+    var name = String(header[i]).trim();
+    if (name) map[name] = i;
+  }
+
+  var missing = [];
+  for (var h = 0; h < FOLDER_HEADERS.length; h++) {
+    if (!(FOLDER_HEADERS[h] in map)) missing.push(FOLDER_HEADERS[h]);
+  }
+
+  if (missing.length) {
+    var start = header.length + 1;
+    var needed = start + missing.length - 1;
+    if (needed > sheet.getMaxColumns()) {
+      sheet.insertColumnsAfter(sheet.getMaxColumns(), needed - sheet.getMaxColumns());
+    }
+    sheet.getRange(1, start, 1, missing.length).setValues([missing]);
+    sheet.getRange(1, start, sheet.getMaxRows(), missing.length).setNumberFormat('@');
+    for (var m = 0; m < missing.length; m++) map[missing[m]] = header.length + m;
+    SpreadsheetApp.flush();
+  }
+
+  var width = 0;
+  for (var key in map) {
+    if (map[key] + 1 > width) width = map[key] + 1;
+  }
+
+  return { map: map, width: width };
+}
+
 /** Oldest first, so the app can show folders in the order they were made. */
 function listFolders_() {
   var sheet = getFolderSheet_();
+  var schema = ensureFolderHeaders_(sheet);
+
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  var values = sheet.getRange(2, 1, lastRow - 1, FOLDER_HEADERS.length).getValues();
+  var values = sheet.getRange(2, 1, lastRow - 1, schema.width).getValues();
   var folders = [];
 
   for (var i = 0; i < values.length; i++) {
-    if (!values[i][0]) continue;
+    var row = values[i];
+    var read = function (field) {
+      var index = schema.map[field];
+      return index === undefined ? '' : toText_(row[index]);
+    };
+    if (!read('id')) continue;
     folders.push({
-      id: toText_(values[i][0]),
-      name: toText_(values[i][1]),
-      createdAt: toText_(values[i][2])
+      id: read('id'),
+      name: read('name'),
+      createdAt: read('createdAt'),
+      photo: read('photo')
     });
   }
   return folders;
+}
+
+function setFolderPhoto_(id, photo) {
+  if (!id) fail_('BAD_REQUEST', 'Missing folder id.');
+
+  var value = String(photo || '');
+  if (value && value.slice(0, 11) !== 'data:image/') {
+    fail_('BAD_REQUEST', 'Photo must be an image data URL.');
+  }
+  if (value.length > MAX_PHOTO_LENGTH) {
+    fail_('TOO_LARGE', 'That image is too large for a spreadsheet cell.');
+  }
+
+  var target = String(id);
+
+  return withLock_(function () {
+    var sheet = getFolderSheet_();
+    var schema = ensureFolderHeaders_(sheet);
+
+    var row = findFolderRow_(sheet, target);
+    if (row === -1) fail_('NOT_FOUND', 'No folder with that id.');
+
+    sheet.getRange(row, schema.map.photo + 1).setValue(value);
+
+    var folders = listFolders_();
+    for (var i = 0; i < folders.length; i++) {
+      if (folders[i].id === target) return folders[i];
+    }
+    fail_('NOT_FOUND', 'No folder with that id.');
+  });
 }
 
 function findFolderRow_(sheet, id) {
@@ -492,8 +579,20 @@ function createFolder_(input) {
       fail_('DUPLICATE', 'A folder with that name already exists.');
     }
 
-    var record = { id: Utilities.getUuid(), name: name, createdAt: new Date().toISOString() };
-    sheet.appendRow([escapeCell_(record.id), escapeCell_(record.name), escapeCell_(record.createdAt)]);
+    var schema = ensureFolderHeaders_(sheet);
+    var record = {
+      id: Utilities.getUuid(), name: name,
+      createdAt: new Date().toISOString(), photo: ''
+    };
+
+    var row = [];
+    for (var i = 0; i < schema.width; i++) row.push('');
+    for (var h = 0; h < FOLDER_HEADERS.length; h++) {
+      var index = schema.map[FOLDER_HEADERS[h]];
+      if (index !== undefined) row[index] = escapeCell_(record[FOLDER_HEADERS[h]]);
+    }
+
+    sheet.appendRow(row);
     return record;
   });
 }
@@ -517,13 +616,14 @@ function renameFolder_(id, input) {
       fail_('DUPLICATE', 'A folder with that name already exists.');
     }
 
+    var schema = ensureFolderHeaders_(sheet);
     var row = findFolderRow_(sheet, target);
-    sheet.getRange(row, 2).setValue(escapeCell_(name));
+    sheet.getRange(row, schema.map.name + 1).setValue(escapeCell_(name));
 
     // Words point at the folder by name, so they all have to follow.
     if (current.name !== name) relabelWords_(current.name, name);
 
-    return { id: target, name: name, createdAt: current.createdAt };
+    return { id: target, name: name, createdAt: current.createdAt, photo: current.photo };
   });
 }
 
@@ -603,9 +703,7 @@ function adoptUnfiledWords_() {
   range.setValues(values);
 
   if (!folderNameTaken_(listFolders_(), LEGACY_FOLDER, null)) {
-    getFolderSheet_().appendRow([
-      Utilities.getUuid(), LEGACY_FOLDER, new Date().toISOString()
-    ]);
+    createFolder_(LEGACY_FOLDER);
   }
 
   return touched;

@@ -216,6 +216,14 @@ export async function renameFolder(id, name) {
   return saved;
 }
 
+/** Pass an empty string to clear the photo. */
+export async function setFolderPhoto(id, photo) {
+  const saved = await api.setFolderPhoto(id, photo);
+  folders = folders.map((folder) => (folder.id === id ? saved : folder));
+  commit();
+  return saved;
+}
+
 export async function deleteFolder(id) {
   const previous = getFolder(id);
   await api.removeFolder(id);

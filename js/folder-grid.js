@@ -16,11 +16,27 @@ const emptyElement = document.getElementById('folders-empty');
 
 let onOpen = () => {};
 
-function buildTile(label, count, target) {
+function buildTile(label, count, target, photo) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'folder-tile';
   if (target === UNSORTED) button.classList.add('folder-tile--unsorted');
+
+  if (photo) {
+    button.classList.add('folder-tile--photo');
+
+    const image = document.createElement('img');
+    image.className = 'folder-tile__photo';
+    image.src = photo;
+    image.alt = '';
+    image.decoding = 'async';
+    button.appendChild(image);
+
+    // Carries the photo down into the flat background the caption sits on.
+    const veil = document.createElement('span');
+    veil.className = 'folder-tile__veil';
+    button.appendChild(veil);
+  }
 
   const name = document.createElement('span');
   name.className = 'folder-tile__name';
@@ -41,7 +57,7 @@ export function renderFolders() {
   const folders = getFolders();
 
   const tiles = folders.map((folder) =>
-    buildTile(folder.name, getWordsInFolder(folder.name).length, folder.name));
+    buildTile(folder.name, getWordsInFolder(folder.name).length, folder.name, folder.photo));
 
   // Only worth a tile when something actually landed there.
   const stray = countUnsorted();

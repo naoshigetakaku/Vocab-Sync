@@ -100,7 +100,10 @@ async function call(action, payload) {
   return data;
 }
 
-const MESSAGES_EXTRA = { DUPLICATE: 'A folder with that name already exists.' };
+const MESSAGES_EXTRA = {
+  DUPLICATE: 'A folder with that name already exists.',
+  TOO_LARGE: 'That image is too large to store.',
+};
 Object.assign(MESSAGES, MESSAGES_EXTRA);
 
 export const api = {
@@ -116,4 +119,6 @@ export const api = {
   createFolder: (name) => call('createFolder', { name }).then((data) => data.folder),
   renameFolder: (id, name) => call('renameFolder', { id, name }).then((data) => data.folder),
   removeFolder: (id) => call('deleteFolder', { id }).then(() => true),
+  setFolderPhoto: (id, photo) =>
+    call('setFolderPhoto', { id, photo }).then((data) => data.folder),
 };

@@ -11,6 +11,7 @@ const listeners = new Set();
 export const UNSORTED = Symbol('unsorted');
 
 let current = null;
+let mode = 'list';
 
 export function subscribeView(listener) {
   listeners.add(listener);
@@ -35,6 +36,17 @@ export function folderNameForNewWord() {
   return typeof current === 'string' ? current : '';
 }
 
+/** 'list' or 'reel'; only meaningful inside a folder. */
+export function getMode() {
+  return mode;
+}
+
+export function setMode(next) {
+  if (next === mode) return;
+  mode = next;
+  emit();
+}
+
 export function showHome() {
   if (current === null) return;
   current = null;
@@ -43,5 +55,7 @@ export function showHome() {
 
 export function openFolder(nameOrUnsorted) {
   current = nameOrUnsorted;
+  // Always arrive at the list; the reel is something you opt into.
+  mode = 'list';
   emit();
 }

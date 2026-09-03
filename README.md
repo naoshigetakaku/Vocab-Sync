@@ -3,8 +3,10 @@
 A minimal vocabulary notebook. Words live in a Google Spreadsheet, so the same
 list appears on every device. No server of your own, no build step, no fees.
 
-The home screen lists nothing but the words. Tap one to see its part of speech,
-definition and note.
+The home screen is a grid of folders, each of which can carry a photo. Inside a
+folder the words are listed by themselves; tap one for its part of speech,
+definition and note, or switch to **reel** and meet them one screen at a time
+in random order.
 
 ## How it fits together
 
@@ -86,7 +88,10 @@ One row per word, in a tab called `Words`:
 | I | `folder` | Folder name, or blank for unsorted |
 
 A second tab, `Folders`, is the register of folder names — `id`, `name`,
-`createdAt`. It exists so a folder you make on one device shows up on another
+`createdAt`, `photo`. The photo is a JPEG data URL: the app crops it square,
+scales it to 320px and steps the quality down until it fits, because a cell
+holds at most 50,000 characters. It is a thumbnail by design, not an archive
+of the original. It exists so a folder you make on one device shows up on another
 before it has any words in it. Words point at their folder by **name**, which
 keeps the sheet readable by eye; renaming a folder rewrites the column.
 
@@ -166,6 +171,8 @@ all. Filling it in trades that for one less field during setup.
 | `js/folder-grid.js` | The folder grid — two interlocking columns. |
 | `js/folder-form.js` | Naming a folder, for create and rename. |
 | `js/list.js` | The word list inside a folder. |
+| `js/reel.js` | One word per screen, shuffled. |
+| `js/photo.js` | Shrinks a picked image to fit a spreadsheet cell. |
 | `js/detail.js` | Detail dialog. |
 | `js/form.js` | Add / edit form. |
 | `js/setup.js` | First-run connection sheet. |

@@ -47,6 +47,17 @@
       <span class="app-header__count" id="word-count" aria-live="polite"></span>
 
       <div class="app-header__tools">
+        <button class="header-action" id="mode-button" type="button"
+                aria-label="Switch to reel" hidden>
+          <svg id="mode-icon-list" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 7h16M4 12h16M4 17h10" />
+          </svg>
+          <svg id="mode-icon-reel" viewBox="0 0 24 24" aria-hidden="true" focusable="false" hidden>
+            <rect x="5" y="4" width="14" height="16" rx="3" />
+            <path d="M9 10h6M9 14h4" />
+          </svg>
+        </button>
+
         <button class="header-action" id="folder-menu-button" type="button"
                 aria-label="Folder options" aria-haspopup="listbox" hidden>
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"
@@ -85,11 +96,16 @@
 
     <ul class="word-list" id="word-list" aria-label="Saved words" hidden></ul>
 
+    <div class="reel" id="reel" aria-label="Words, shuffled" hidden></div>
+
     <p class="empty" id="empty-state" hidden>
       <span class="empty__title">No words yet</span>
       <span class="empty__hint">Tap + to add your first one.</span>
     </p>
   </main>
+
+  <!-- Opens the photo library on iOS; never shown. -->
+  <input class="visually-hidden" id="photo-input" type="file" accept="image/*">
 
   <button class="fab" id="add-button" type="button" aria-label="Add a word">
     <svg class="fab__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">

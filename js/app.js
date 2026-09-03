@@ -7,12 +7,16 @@ import { isRetryable, isBackendStale, getBackendVersion } from './api.js';
 import {
   subscribe, refresh, reset,
   getFolders, findFolderByName, countUnsorted, getWordsInFolder, deleteFolder,
+  setFolderPhoto,
 } from './store.js';
 import { UNSORTED_LABEL } from './config.js';
 import {
   subscribeView, getCurrentFolder, isHome, showHome, openFolder, UNSORTED,
+  getMode, setMode,
 } from './view.js';
 import { initList, render as renderList, visibleWords, highlightNew } from './list.js';
+import { renderReel, shuffleReel } from './reel.js';
+import { fileToThumbnail } from './photo.js';
 import { initFolderGrid, renderFolders } from './folder-grid.js';
 import { initFolderForm, openCreateFolder, openRenameFolder } from './folder-form.js';
 import { initDetail, openDetail, syncDetail } from './detail.js';
@@ -34,9 +38,16 @@ const countElement = document.getElementById('word-count');
 const gridElement = document.getElementById('folder-grid');
 const foldersEmpty = document.getElementById('folders-empty');
 const wordListElement = document.getElementById('word-list');
+const reelElement = document.getElementById('reel');
+const mainElement = document.querySelector('.app-main');
+const modeButton = document.getElementById('mode-button');
+const modeIconList = document.getElementById('mode-icon-list');
+const modeIconReel = document.getElementById('mode-icon-reel');
+const photoInput = document.getElementById('photo-input');
 
 let syncing = false;
 let staleWarningShown = false;
+let photoTarget = null;
 
 /**
  * Saving Code.gs in the editor is not the same as deploying it, and a stale
@@ -46,7 +57,7 @@ let staleWarningShown = false;
 function warnIfBackendStale() {
   if (staleWarningShown || !isBackendStale()) return;
   staleWarningShown = true;
-  toast('Apps Script is out of date (v' + getBackendVersion() + '). Folders and colours will not save — see Connection.');
+  toast('Apps Script is out of date (v' + getBackendVersion() + '). Folders, photos and colours will not save — see Connection.');
 }
 
 /**
@@ -86,10 +97,25 @@ function paintHeader() {
   const home = isHome();
   const target = getCurrentFolder();
 
+  const reel = !home && getMode() === 'reel';
+
   backButton.hidden = home;
-  sortButton.hidden = home;
+  // Sorting has no meaning once the order is deliberately random.
+  sortButton.hidden = home || reel;
+  modeButton.hidden = home;
   // The unsorted pile is not a real folder, so it cannot be renamed or removed.
   folderMenuButton.hidden = home || target === UNSORTED;
+  // Connection lives on the home screen; a folder's header is crowded enough.
+  settingsButton.hidden = !home;
+
+  // The button offers the mode you are not in.
+  //
+  // toggleAttribute, not .hidden: `hidden` is an IDL property of HTMLElement,
+  // and these are SVG elements — assigning to .hidden there sets a plain
+  // JavaScript property and changes nothing on screen.
+  modeIconList.toggleAttribute('hidden', !reel);
+  modeIconReel.toggleAttribute('hidden', reel);
+  modeButton.setAttribute('aria-label', reel ? 'Switch to list' : 'Switch to reel');
 
   if (home) {
     titleElement.textContent = 'Folders';
@@ -115,12 +141,17 @@ function renderCurrent() {
   }
 
   const home = isHome();
+  const reel = !home && getMode() === 'reel';
 
   gridElement.hidden = !home;
-  wordListElement.hidden = home;
+  wordListElement.hidden = home || reel;
+  reelElement.hidden = !reel;
+  // The reel does its own snap scrolling, so the page must stop scrolling.
+  mainElement.classList.toggle('is-reel', reel);
   if (!home) foldersEmpty.hidden = true;
 
   if (home) renderFolders();
+  else if (reel) renderReel();
   else renderList();
 
   paintHeader();
@@ -133,21 +164,60 @@ function openFolderMenu() {
   const folder = findFolderByName(name);
   if (!folder) return;
 
+  const options = [
+    { value: 'rename', label: 'Rename folder' },
+    { value: 'photo', label: folder.photo ? 'Change photo' : 'Set photo' },
+  ];
+  if (folder.photo) options.push({ value: 'removePhoto', label: 'Remove photo' });
+  options.push({ value: 'delete', label: 'Delete folder' });
+
   openPicker({
     title: name,
-    options: [
-      { value: 'rename', label: 'Rename folder' },
-      { value: 'delete', label: 'Delete folder' },
-    ],
+    options,
     value: '',
     onSelect: (choice) => {
       if (choice === 'rename') {
         setTimeout(() => openRenameFolder(folder), 180);
+      } else if (choice === 'photo') {
+        // Opened straight from the tap: wrapping this in a timer would break
+        // the user gesture that Safari requires to show the file picker.
+        photoTarget = folder.id;
+        photoInput.value = '';
+        photoInput.click();
+      } else if (choice === 'removePhoto') {
+        setTimeout(() => clearFolderPhoto(folder), 180);
       } else if (choice === 'delete') {
         setTimeout(() => confirmDeleteFolder(folder), 180);
       }
     },
   });
+}
+
+async function clearFolderPhoto(folder) {
+  try {
+    await setFolderPhoto(folder.id, '');
+    toast('Photo removed.');
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function onPhotoChosen(event) {
+  const file = event.target.files && event.target.files[0];
+  const id = photoTarget;
+  photoTarget = null;
+  if (!file || !id) return;
+
+  try {
+    toast('Preparing photo…');
+    const thumbnail = await fileToThumbnail(file);
+    await setFolderPhoto(id, thumbnail);
+    toast('Photo set.');
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    event.target.value = '';
+  }
 }
 
 async function confirmDeleteFolder(folder) {
@@ -254,6 +324,14 @@ function wireUi() {
   });
   backButton.addEventListener('click', showHome);
   folderMenuButton.addEventListener('click', openFolderMenu);
+  photoInput.addEventListener('change', onPhotoChosen);
+
+  modeButton.addEventListener('click', () => {
+    const toReel = getMode() !== 'reel';
+    // A fresh deal every time the reel is opened, which is the point of it.
+    if (toReel) shuffleReel();
+    setMode(toReel ? 'reel' : 'list');
+  });
   settingsButton.addEventListener('click', () => openSetup({ manual: true }));
 
   initSort(renderCurrent);

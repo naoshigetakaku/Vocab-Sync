@@ -24,6 +24,15 @@
               opacity var(--dur-fast) var(--ease-out);
 }
 
+/* A faint highlight rolling off the top, rather than a flat disc. */
+.fab {
+  background-image: linear-gradient(
+    180deg,
+    var(--gloss-sheen) 0%,
+    transparent 58%
+  );
+}
+
 .fab:active { transform: scale(0.9); }
 .fab__icon { width: 24px; height: 24px; stroke-width: 2.2; }
 
@@ -46,6 +55,10 @@
 }
 
 .sheet::backdrop { background: var(--scrim); }
+
+/* Catches the light along the top edge where the sheet meets the scrim. */
+.sheet,
+.alert { box-shadow: var(--shadow-sheet), inset 0 1px 0 var(--gloss-edge); }
 
 .sheet[open] {
   display: flex;
@@ -237,6 +250,54 @@
   overflow-wrap: anywhere;
 }
 
+/* --- Reel ----------------------------------------------------------------- */
+/* One word per screen, snapped. The reel is its own scroller, so the page
+   behind it has to stop scrolling while it is up. */
+
+.app-main.is-reel {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.reel {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.reel::-webkit-scrollbar { display: none; }
+
+.reel-card {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-bottom: calc(96px + var(--safe-bottom));
+  scroll-snap-align: center;
+  /* Stops a hard flick from skimming past several words at once. */
+  scroll-snap-stop: always;
+}
+
+.reel-card__inner { width: 100%; }
+
+.reel-card__word {
+  margin: 12px 0 26px;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 700px) {
+  .reel-card__inner {
+    max-width: 640px;
+    margin-inline: auto;
+  }
+}
+
 /* --- Option picker -------------------------------------------------------- */
 
 .options { padding-bottom: 4px; }
@@ -352,6 +413,8 @@
   -webkit-appearance: none;
   appearance: none;
 }
+
+.field__input { box-shadow: inset 0 1px 0 var(--gloss-edge); }
 
 .field__input:focus { border-color: var(--accent); outline: none; }
 .field__input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }

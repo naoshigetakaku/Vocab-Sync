@@ -48,7 +48,7 @@ export const STORAGE_KEYS = {
  * predates a feature the app is already using — colours, for instance, get
  * written nowhere.
  */
-export const REQUIRED_BACKEND_VERSION = 3;
+export const REQUIRED_BACKEND_VERSION = 4;
 
 /** Shown for words whose folder is blank or names a folder that is gone. */
 export const UNSORTED_LABEL = 'Unsorted';
