@@ -100,6 +100,9 @@
 
 .sheet__head .sheet__title { flex: 1; margin-bottom: 0; }
 
+/* No close button in this one, so it needs its own breathing room. */
+.sheet__head--plain { padding: 4px var(--page-pad) 14px; }
+
 .sheet__body {
   flex: 1 1 auto;
   min-height: 0;
@@ -451,15 +454,17 @@
 .swatches {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   padding: 2px 0;
 }
 
+/* 34px across with an 8px gap puts eight on a row at 375px wide, so the
+   sixteen options land in two tidy rows. */
 .swatch {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: 1px solid transparent;
   border-radius: 50%;
@@ -474,8 +479,8 @@
 .swatch[aria-checked="true"] { border-color: var(--accent); }
 
 .swatch__dot {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: currentColor;
 }
@@ -487,12 +492,21 @@
   border: 2px solid var(--text-dim);
 }
 
-.swatch[data-color="blue"]   { color: var(--word-blue); }
-.swatch[data-color="green"]  { color: var(--word-green); }
-.swatch[data-color="orange"] { color: var(--word-orange); }
-.swatch[data-color="red"]    { color: var(--word-red); }
-.swatch[data-color="grey"]   { color: var(--word-grey); }
-.swatch[data-color="purple"] { color: var(--word-purple); }
+.swatch[data-color="red"]         { color: var(--word-red); }
+.swatch[data-color="orange"]      { color: var(--word-orange); }
+.swatch[data-color="amber"]       { color: var(--word-amber); }
+.swatch[data-color="yellow"]      { color: var(--word-yellow); }
+.swatch[data-color="lime"]        { color: var(--word-lime); }
+.swatch[data-color="green"]       { color: var(--word-green); }
+.swatch[data-color="teal"]        { color: var(--word-teal); }
+.swatch[data-color="cyan"]        { color: var(--word-cyan); }
+.swatch[data-color="blue"]        { color: var(--word-blue); }
+.swatch[data-color="indigo"]      { color: var(--word-indigo); }
+.swatch[data-color="violet"]      { color: var(--word-violet); }
+.swatch[data-color="purple"]      { color: var(--word-purple); }
+.swatch[data-color="magenta"]     { color: var(--word-magenta); }
+.swatch[data-color="pink"]        { color: var(--word-pink); }
+.swatch[data-color="grey"]        { color: var(--word-grey); }
 
 .form__error {
   font-size: 14px;

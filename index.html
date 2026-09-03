@@ -36,13 +36,6 @@
 
   <header class="app-header">
     <div class="app-header__bar">
-      <button class="header-action header-action--back" id="back-button" type="button"
-              aria-label="Back to folders" hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M15 5l-7 7 7 7" />
-        </svg>
-      </button>
-
       <h1 class="app-header__title" id="app-title">Folders</h1>
       <span class="app-header__count" id="word-count" aria-live="polite"></span>
 
@@ -58,21 +51,13 @@
           </svg>
         </button>
 
-        <button class="header-action" id="folder-menu-button" type="button"
-                aria-label="Folder options" aria-haspopup="listbox" hidden>
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"
-               fill="currentColor" stroke="none">
-            <circle cx="5" cy="12" r="1.7" />
-            <circle cx="12" cy="12" r="1.7" />
-            <circle cx="19" cy="12" r="1.7" />
+        <!-- Sorting and everything about the folder itself, in one place. -->
+        <button class="header-action" id="folder-settings-button" type="button"
+                aria-label="Folder settings" aria-haspopup="listbox" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="3.2" />
+            <path d="M12 3.2v2.4M12 18.4v2.4M5.1 7.6l2.1 1.2M16.8 15.2l2.1 1.2M5.1 16.4l2.1-1.2M16.8 8.8l2.1-1.2" />
           </svg>
-        </button>
-
-        <button class="sort" id="sort-button" type="button" aria-haspopup="listbox" hidden>
-          <svg class="sort__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M4 7h13M4 12h9M4 17h5" />
-          </svg>
-          <span class="sort__label" id="sort-label"></span>
         </button>
 
         <button class="header-action" id="settings-button" type="button" aria-label="Connection settings">
@@ -117,14 +102,6 @@
   <dialog class="sheet sheet--tall" id="detail-dialog" aria-labelledby="detail-word">
     <div class="sheet__grip" aria-hidden="true"><span class="sheet__handle"></span></div>
 
-    <div class="sheet__dismiss">
-      <button class="icon-button" type="button" data-close aria-label="Close">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
-      </button>
-    </div>
-
     <div class="sheet__body">
       <!-- margin-block:auto on this wrapper centres short entries without the
            overflow clipping that justify-content:center would cause. -->
@@ -163,17 +140,13 @@
   <dialog class="sheet" id="form-dialog" aria-labelledby="form-title">
     <div class="sheet__grip" aria-hidden="true"><span class="sheet__handle"></span></div>
 
-    <div class="sheet__dismiss">
-      <button class="icon-button" type="button" data-close aria-label="Cancel">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M6 6l12 12M18 6L6 18" />
-        </svg>
-      </button>
+    <!-- Outside the scroller, so the title and the grip stay put and a
+         downward swipe is always within reach. -->
+    <div class="sheet__head sheet__head--plain">
+      <h2 class="sheet__title" id="form-title">New word</h2>
     </div>
 
     <form class="sheet__body form" id="word-form" novalidate>
-      <h2 class="sheet__title" id="form-title">New word</h2>
-
       <label class="field">
         <span class="field__label">Word</span>
         <input class="field__input" id="field-word" name="word" type="text" required

@@ -1,8 +1,8 @@
 /**
  * sort.js — ordering of the word list.
  *
- * The mode is chosen from the shared picker rather than cycled on tap, so the
- * whole set is visible and reachable in one step.
+ * The control lives inside the folder settings menu now, so this module owns
+ * the mode and the picker, not a button.
  */
 
 import { STORAGE_KEYS } from './config.js';
@@ -15,14 +15,6 @@ const MODES = [
   { value: 'az', label: 'A–Z' },
   { value: 'za', label: 'Z–A' },
 ];
-
-/** Shorter wording for the header button, where space is tight. */
-const SHORT_LABELS = {
-  newest: 'Newest',
-  oldest: 'Oldest',
-  az: 'A–Z',
-  za: 'Z–A',
-};
 
 const COMPARATORS = {
   newest: (a, b) => byDate(b, a),
@@ -50,44 +42,36 @@ function isKnown(value) {
 let current = readJson(STORAGE_KEYS.sort, 'newest');
 if (!isKnown(current)) current = 'newest';
 
-export function getMode() {
+let onChange = () => {};
+
+export function getSortMode() {
   return current;
+}
+
+/** Wording for the settings menu, which shows the mode in place. */
+export function getSortLabel() {
+  const mode = MODES.find((entry) => entry.value === current);
+  return mode ? mode.label : '';
 }
 
 export function sortWords(words) {
   return words.slice().sort(COMPARATORS[current]);
 }
 
-export function initSort(onChange) {
-  const button = document.getElementById('sort-button');
-  const label = document.getElementById('sort-label');
-  if (!button || !label) return;
+export function initSort(handler) {
+  onChange = handler || (() => {});
+}
 
-  const paint = (animate) => {
-    label.textContent = SHORT_LABELS[current];
-    button.setAttribute('aria-label', 'Sort: ' + SHORT_LABELS[current] + '. Tap to change.');
-
-    if (!animate) return;
-    label.classList.remove('is-changed');
-    // Force a reflow so the animation restarts on every change.
-    void label.offsetWidth;
-    label.classList.add('is-changed');
-  };
-
-  button.addEventListener('click', () => {
-    openPicker({
-      title: 'Sort by',
-      options: MODES,
-      value: current,
-      onSelect: (value) => {
-        if (!isKnown(value) || value === current) return;
-        current = value;
-        writeJson(STORAGE_KEYS.sort, current);
-        paint(true);
-        onChange();
-      },
-    });
+export function openSortPicker() {
+  openPicker({
+    title: 'Sort by',
+    options: MODES,
+    value: current,
+    onSelect: (value) => {
+      if (!isKnown(value) || value === current) return;
+      current = value;
+      writeJson(STORAGE_KEYS.sort, current);
+      onChange();
+    },
   });
-
-  paint(false);
 }

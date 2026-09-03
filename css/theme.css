@@ -29,24 +29,36 @@
   /* Feedback */
   --danger: #b00020;
 
-  /* Word colours. Muted on purpose; the key is stored, not the hex, so the
-     same word follows the device between light and dark. */
+  /* Word colours. Vivid, but pitched to stay readable: darker on white,
+     lifted on charcoal. The key is stored, never the hex, so the same word
+     follows the device between light and dark. */
   --word-default: currentColor;
-  --word-blue:    #3F6392;
-  --word-green:   #456F53;
-  --word-orange:  #9C6428;
-  --word-red:     #9A4444;
-  --word-grey:    #767676;
-  --word-purple:  #54406B;
+  --word-red:      #DC2626;
+  --word-orange:   #E05A0C;
+  --word-amber:    #C07A00;
+  --word-yellow:   #9E8500;
+  --word-lime:     #5A9B10;
+  --word-green:    #0E8A45;
+  --word-teal:     #0A8A80;
+  --word-cyan:     #0678A8;
+  --word-blue:     #1D5FD8;
+  --word-indigo:   #3B3BC9;
+  --word-violet:   #6D28D9;
+  --word-purple:   #9124B0;
+  --word-magenta:  #C01B84;
+  --word-pink:     #DE2963;
+  --word-grey:     #6B6B6B;
 
   /* Gloss. Static gradients and inset hairlines only — no backdrop-filter,
      which is what makes a glassy look expensive to paint. */
   --gloss-edge:  rgba(255, 255, 255, 0.7);
   --gloss-sheen: rgba(255, 255, 255, 0.55);
 
-  /* Same colour as --surface-raise but fully transparent, so a photo can fade
-     into the caption's background without passing through grey. */
-  --tile-fade: rgba(255, 255, 255, 0);
+  /* The band a folder's caption sits on: a touch darker than the tile, so the
+     name reads as sitting on something. --tile-fade is the same colour fully
+     transparent, so a photo can fade into it without passing through grey. */
+  --tile-caption: #F0F0F0;
+  --tile-fade:    rgba(240, 240, 240, 0);
 
   /* Elevation */
   --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.14);
@@ -97,16 +109,26 @@
     --shadow-fab:   0 4px 16px rgba(0, 0, 0, 0.45);
 
     /* Word colours, lifted so they stay legible on charcoal. */
-    --word-blue:   #8AAAD8;
-    --word-green:  #8CBE9C;
-    --word-orange: #D3A063;
-    --word-red:    #D98C8C;
-    --word-grey:   #9C9C9C;
-    --word-purple: #A992C4;
+    --word-red:      #FF8080;
+    --word-orange:   #FFA351;
+    --word-amber:    #F5C244;
+    --word-yellow:   #E6D84A;
+    --word-lime:     #AEE04F;
+    --word-green:    #4FD98B;
+    --word-teal:     #3FD6C8;
+    --word-cyan:     #54C8EE;
+    --word-blue:     #84A9FF;
+    --word-indigo:   #A0A2FF;
+    --word-violet:   #BC9BFF;
+    --word-purple:   #E29AF4;
+    --word-magenta:  #FF8CCB;
+    --word-pink:     #FF93B4;
+    --word-grey:     #A3A3A3;
 
     --gloss-edge:  rgba(255, 255, 255, 0.065);
     --gloss-sheen: rgba(255, 255, 255, 0.04);
-    --tile-fade:   rgba(47, 47, 47, 0);
+    --tile-caption: #252525;
+    --tile-fade:    rgba(37, 37, 37, 0);
   }
 }
 
@@ -204,12 +226,21 @@ a,
 
 /* Word colours apply to the word itself and nowhere else: labels, the part of
    speech badge and body text all keep the normal ink. */
-.word-row[data-color="blue"],   .detail__word[data-color="blue"],   .reel-card__word[data-color="blue"]   { color: var(--word-blue); }
-.word-row[data-color="green"],  .detail__word[data-color="green"],  .reel-card__word[data-color="green"]  { color: var(--word-green); }
+.word-row[data-color="red"], .detail__word[data-color="red"], .reel-card__word[data-color="red"] { color: var(--word-red); }
 .word-row[data-color="orange"], .detail__word[data-color="orange"], .reel-card__word[data-color="orange"] { color: var(--word-orange); }
-.word-row[data-color="red"],    .detail__word[data-color="red"],    .reel-card__word[data-color="red"]    { color: var(--word-red); }
-.word-row[data-color="grey"],   .detail__word[data-color="grey"],   .reel-card__word[data-color="grey"]   { color: var(--word-grey); }
+.word-row[data-color="amber"], .detail__word[data-color="amber"], .reel-card__word[data-color="amber"] { color: var(--word-amber); }
+.word-row[data-color="yellow"], .detail__word[data-color="yellow"], .reel-card__word[data-color="yellow"] { color: var(--word-yellow); }
+.word-row[data-color="lime"], .detail__word[data-color="lime"], .reel-card__word[data-color="lime"] { color: var(--word-lime); }
+.word-row[data-color="green"], .detail__word[data-color="green"], .reel-card__word[data-color="green"] { color: var(--word-green); }
+.word-row[data-color="teal"], .detail__word[data-color="teal"], .reel-card__word[data-color="teal"] { color: var(--word-teal); }
+.word-row[data-color="cyan"], .detail__word[data-color="cyan"], .reel-card__word[data-color="cyan"] { color: var(--word-cyan); }
+.word-row[data-color="blue"], .detail__word[data-color="blue"], .reel-card__word[data-color="blue"] { color: var(--word-blue); }
+.word-row[data-color="indigo"], .detail__word[data-color="indigo"], .reel-card__word[data-color="indigo"] { color: var(--word-indigo); }
+.word-row[data-color="violet"], .detail__word[data-color="violet"], .reel-card__word[data-color="violet"] { color: var(--word-violet); }
 .word-row[data-color="purple"], .detail__word[data-color="purple"], .reel-card__word[data-color="purple"] { color: var(--word-purple); }
+.word-row[data-color="magenta"], .detail__word[data-color="magenta"], .reel-card__word[data-color="magenta"] { color: var(--word-magenta); }
+.word-row[data-color="pink"], .detail__word[data-color="pink"], .reel-card__word[data-color="pink"] { color: var(--word-pink); }
+.word-row[data-color="grey"], .detail__word[data-color="grey"], .reel-card__word[data-color="grey"] { color: var(--word-grey); }
 
 /* Present for the file picker, never seen. */
 .visually-hidden {

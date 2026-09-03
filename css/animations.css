@@ -87,6 +87,32 @@
   .sheet.is-closing { animation: card-out var(--dur-fast) var(--ease-out)   both; }
 }
 
+/* --- Moving between screens ------------------------------------------------ */
+
+@keyframes view-in-forward {
+  from { transform: translateX(16%);  opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes view-in-back {
+  from { transform: translateX(-16%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.view-in-forward { animation: view-in-forward var(--dur-slow) var(--ease-out) both; }
+.view-in-back    { animation: view-in-back    var(--dur-slow) var(--ease-out) both; }
+
+/* Dragged rightwards to leave a folder; see js/nav-swipe.js. */
+.app-main.is-sliding,
+.app-main.is-settling {
+  transform: translateX(var(--nav-x, 0px));
+  will-change: transform;
+}
+
+.app-main.is-settling {
+  transition: transform var(--dur-mid) var(--ease-out);
+}
+
 /* --- Swipe to dismiss ------------------------------------------------------ */
 /* A finished animation with fill-mode "both" keeps overriding transform, so
    the drag has to cancel it outright. js/dialog.js drops .is-open once the

@@ -20,12 +20,21 @@ export const PARTS_OF_SPEECH = ['Verb', 'Adj', 'Adv', 'Noun', 'Idiom', 'Expressi
  */
 export const WORD_COLORS = [
   { value: 'default', label: 'Default' },
-  { value: 'blue', label: 'Blue' },
-  { value: 'green', label: 'Green' },
-  { value: 'orange', label: 'Orange' },
   { value: 'red', label: 'Red' },
-  { value: 'grey', label: 'Grey' },
+  { value: 'orange', label: 'Orange' },
+  { value: 'amber', label: 'Amber' },
+  { value: 'yellow', label: 'Yellow' },
+  { value: 'lime', label: 'Lime' },
+  { value: 'green', label: 'Green' },
+  { value: 'teal', label: 'Teal' },
+  { value: 'cyan', label: 'Cyan' },
+  { value: 'blue', label: 'Blue' },
+  { value: 'indigo', label: 'Indigo' },
+  { value: 'violet', label: 'Violet' },
   { value: 'purple', label: 'Purple' },
+  { value: 'magenta', label: 'Magenta' },
+  { value: 'pink', label: 'Pink' },
+  { value: 'grey', label: 'Grey' },
 ];
 
 export const DEFAULT_COLOR = 'default';

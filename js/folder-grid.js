@@ -10,6 +10,7 @@
 import { getFolders, getWordsInFolder, countUnsorted } from './store.js';
 import { UNSORTED } from './view.js';
 import { UNSORTED_LABEL } from './config.js';
+import { fitAll } from './fit-text.js';
 
 const gridElement = document.getElementById('folder-grid');
 const emptyElement = document.getElementById('folders-empty');
@@ -72,6 +73,9 @@ export function renderFolders() {
 
   gridElement.replaceChildren(left, right);
   emptyElement.hidden = tiles.length !== 0;
+
+  // Measured only once the tiles are in the document and have a width.
+  fitAll(gridElement, '.folder-tile__name', 12);
 }
 
 export function initFolderGrid(handler) {

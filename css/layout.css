@@ -21,9 +21,16 @@
 }
 
 .app-header__title {
+  /* Shrinks rather than grows, so the count stays beside the name instead of
+     being pushed across to the controls. */
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-header__count {
@@ -34,6 +41,7 @@
 
 /* Right-hand cluster of header controls. */
 .app-header__tools {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -167,7 +175,13 @@
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 22px;
-  background: var(--surface-raise);
+  /* Same darker band as the photo tiles end in, so every caption sits on the
+     same ground whether there is a photo or not. */
+  background: linear-gradient(
+    to bottom,
+    var(--surface-raise) 52%,
+    var(--tile-caption) 86%
+  );
   color: var(--text);
   text-align: left;
   cursor: pointer;
@@ -208,7 +222,7 @@
   background: linear-gradient(
     to bottom,
     var(--tile-fade) 24%,
-    var(--surface-raise) 72%
+    var(--tile-caption) 72%
   );
   pointer-events: none;
 }
@@ -223,12 +237,17 @@
   color: var(--text-dim);
 }
 
+/* One line always. js/fit-text.js shrinks the type to fit; past the point
+   where it would stop being readable the tail is elided instead, because a
+   6px folder name is no more use than a clipped one. */
 .folder-tile__name {
   font-size: 17px;
   font-weight: 650;
   line-height: 1.25;
   letter-spacing: -0.01em;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .folder-tile__count {

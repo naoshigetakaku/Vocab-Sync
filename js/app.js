@@ -15,24 +15,24 @@ import {
   getMode, setMode,
 } from './view.js';
 import { initList, render as renderList, visibleWords, highlightNew } from './list.js';
-import { renderReel, shuffleReel } from './reel.js';
-import { fileToThumbnail } from './photo.js';
 import { initFolderGrid, renderFolders } from './folder-grid.js';
 import { initFolderForm, openCreateFolder, openRenameFolder } from './folder-form.js';
 import { initDetail, openDetail, syncDetail } from './detail.js';
 import { initForm, openCreateForm, openEditForm } from './form.js';
 import { initSetup, openSetup } from './setup.js';
 import { initInstallHint } from './install-hint.js';
-import { initSort } from './sort.js';
+import { initSort, openSortPicker, getSortLabel } from './sort.js';
 import { initPicker, openPicker } from './picker.js';
 import { initConfirm, askConfirm } from './confirm.js';
+import { renderReel, shuffleReel } from './reel.js';
+import { fileToThumbnail } from './photo.js';
+import { fitOneLine } from './fit-text.js';
+import { enableBackSwipe } from './nav-swipe.js';
 import { toast } from './toast.js';
 
 const addButton = document.getElementById('add-button');
 const settingsButton = document.getElementById('settings-button');
-const backButton = document.getElementById('back-button');
-const folderMenuButton = document.getElementById('folder-menu-button');
-const sortButton = document.getElementById('sort-button');
+const folderSettingsButton = document.getElementById('folder-settings-button');
 const titleElement = document.getElementById('app-title');
 const countElement = document.getElementById('word-count');
 const gridElement = document.getElementById('folder-grid');
@@ -45,9 +45,13 @@ const modeIconList = document.getElementById('mode-icon-list');
 const modeIconReel = document.getElementById('mode-icon-reel');
 const photoInput = document.getElementById('photo-input');
 
+const VIEW_ANIMATION_MS = 420;
+
 let syncing = false;
 let staleWarningShown = false;
 let photoTarget = null;
+let previousHome = true;
+let skipViewAnimation = false;
 
 /**
  * Saving Code.gs in the editor is not the same as deploying it, and a stale
@@ -96,16 +100,12 @@ function currentFolderLabel() {
 function paintHeader() {
   const home = isHome();
   const target = getCurrentFolder();
-
   const reel = !home && getMode() === 'reel';
 
-  backButton.hidden = home;
-  // Sorting has no meaning once the order is deliberately random.
-  sortButton.hidden = home || reel;
   modeButton.hidden = home;
-  // The unsorted pile is not a real folder, so it cannot be renamed or removed.
-  folderMenuButton.hidden = home || target === UNSORTED;
-  // Connection lives on the home screen; a folder's header is crowded enough.
+  folderSettingsButton.hidden = home;
+  // Connection lives on the home screen; a folder's header is the name plus
+  // exactly two controls.
   settingsButton.hidden = !home;
 
   // The button offers the mode you are not in.
@@ -121,13 +121,30 @@ function paintHeader() {
     titleElement.textContent = 'Folders';
     const tiles = getFolders().length + (countUnsorted() > 0 ? 1 : 0);
     countElement.textContent = tiles ? String(tiles) : '';
+    countElement.hidden = false;
     addButton.setAttribute('aria-label', 'New folder');
+    folderSettingsButton.setAttribute('aria-label', 'Folder settings');
   } else {
     titleElement.textContent = currentFolderLabel();
-    const shown = visibleWords().length;
-    countElement.textContent = shown ? String(shown) : '';
+    // The name gets the whole line to itself, so it can be fitted to it.
+    countElement.textContent = '';
+    countElement.hidden = true;
     addButton.setAttribute('aria-label', 'Add a word');
+    folderSettingsButton.setAttribute('aria-label', currentFolderLabel() + ' settings');
   }
+
+  fitOneLine(titleElement, 15);
+}
+
+/** Slides the arriving screen in from the side it came from. */
+function animateView(element, direction) {
+  element.classList.remove('view-in-forward', 'view-in-back');
+  // Force a reflow so the animation restarts even on a rapid back-and-forth.
+  void element.offsetWidth;
+  element.classList.add(direction === 'forward' ? 'view-in-forward' : 'view-in-back');
+  setTimeout(() => {
+    element.classList.remove('view-in-forward', 'view-in-back');
+  }, VIEW_ANIMATION_MS);
 }
 
 function renderCurrent() {
@@ -143,6 +160,9 @@ function renderCurrent() {
   const home = isHome();
   const reel = !home && getMode() === 'reel';
 
+  const direction = previousHome === home ? null : (home ? 'back' : 'forward');
+  previousHome = home;
+
   gridElement.hidden = !home;
   wordListElement.hidden = home || reel;
   reelElement.hidden = !reel;
@@ -155,28 +175,49 @@ function renderCurrent() {
   else renderList();
 
   paintHeader();
+
+  // A swipe has already carried the screen across; sliding the arriving one in
+  // on top of that reads as two movements for one gesture.
+  if (direction && !skipViewAnimation) {
+    animateView(home ? gridElement : (reel ? reelElement : wordListElement), direction);
+  }
+  skipViewAnimation = false;
 }
 
-/* --- Folder actions ------------------------------------------------------- */
+/* --- Folder settings ------------------------------------------------------ */
 
-function openFolderMenu() {
-  const name = currentFolderLabel();
-  const folder = findFolderByName(name);
-  if (!folder) return;
+function openFolderSettings() {
+  const target = getCurrentFolder();
+  if (target === null) return;
+
+  const unsorted = target === UNSORTED;
+  const folder = unsorted ? null : findFolderByName(target);
+  if (!unsorted && !folder) return;
 
   const options = [
-    { value: 'rename', label: 'Rename folder' },
-    { value: 'photo', label: folder.photo ? 'Change photo' : 'Set photo' },
+    // The header has no back arrow, so the menu carries one for anybody
+    // without a touchscreen.
+    { value: 'back', label: 'Back to folders' },
+    { value: 'sort', label: 'Sort: ' + getSortLabel() },
   ];
-  if (folder.photo) options.push({ value: 'removePhoto', label: 'Remove photo' });
-  options.push({ value: 'delete', label: 'Delete folder' });
+
+  if (folder) {
+    options.push({ value: 'rename', label: 'Rename folder' });
+    options.push({ value: 'photo', label: folder.photo ? 'Change photo' : 'Set photo' });
+    if (folder.photo) options.push({ value: 'removePhoto', label: 'Remove photo' });
+    options.push({ value: 'delete', label: 'Delete folder' });
+  }
 
   openPicker({
-    title: name,
+    title: unsorted ? UNSORTED_LABEL : folder.name,
     options,
     value: '',
     onSelect: (choice) => {
-      if (choice === 'rename') {
+      if (choice === 'back') {
+        showHome();
+      } else if (choice === 'sort') {
+        setTimeout(openSortPicker, 180);
+      } else if (choice === 'rename') {
         setTimeout(() => openRenameFolder(folder), 180);
       } else if (choice === 'photo') {
         // Opened straight from the tap: wrapping this in a timer would break
@@ -302,7 +343,7 @@ function wireUi() {
     },
   });
   initFolderForm({
-    afterSave: (saved, wasRename) => {
+    afterSave: (saved) => {
       if (!saved) return renderCurrent();
       // Renaming is only reachable from inside the folder, and the view holds
       // the folder by name — so it has to follow, or it points at nothing.
@@ -316,14 +357,15 @@ function wireUi() {
       sync(false);
     },
   });
+  initSort(renderCurrent);
   initInstallHint();
 
   addButton.addEventListener('click', () => {
     if (isHome()) openCreateFolder();
     else openCreateForm();
   });
-  backButton.addEventListener('click', showHome);
-  folderMenuButton.addEventListener('click', openFolderMenu);
+  folderSettingsButton.addEventListener('click', openFolderSettings);
+  settingsButton.addEventListener('click', () => openSetup({ manual: true }));
   photoInput.addEventListener('change', onPhotoChosen);
 
   modeButton.addEventListener('click', () => {
@@ -332,9 +374,18 @@ function wireUi() {
     if (toReel) shuffleReel();
     setMode(toReel ? 'reel' : 'list');
   });
-  settingsButton.addEventListener('click', () => openSetup({ manual: true }));
 
-  initSort(renderCurrent);
+  enableBackSwipe(mainElement, () => !isHome(), () => {
+    skipViewAnimation = true;
+    showHome();
+  });
+
+  // Folder names are fitted to the width they have, so a rotation or a resized
+  // window has to re-measure them.
+  window.addEventListener('resize', () => {
+    fitOneLine(titleElement, 15);
+    renderFolders();
+  });
 
   // iOS suspends standalone web apps aggressively; re-sync whenever the app
   // comes back to the foreground rather than polling on a timer.

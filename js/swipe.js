@@ -15,7 +15,9 @@ const START_SLOP = 6;
 
 export function enableSwipeToDismiss(dialog, onDismiss) {
   const body = dialog.querySelector('.sheet__body');
-  const grip = dialog.querySelector('.sheet__grip');
+  // Anything outside the scroller counts as a handle, so a pinned title is
+  // somewhere you can always start the gesture from.
+  const handles = dialog.querySelectorAll('.sheet__grip, .sheet__head');
 
   let tracking = false; // finger down, direction undecided
   let dragging = false; // committed to a downward drag
@@ -54,7 +56,10 @@ export function enableSwipeToDismiss(dialog, onDismiss) {
     if (dialog.classList.contains('is-closing') || dialog.classList.contains('is-settling')) return;
 
     const touch = event.touches[0];
-    const fromGrip = Boolean(grip && grip.contains(event.target));
+    let fromGrip = false;
+    handles.forEach((handle) => {
+      if (handle.contains(event.target)) fromGrip = true;
+    });
 
     // Mid-scroll content keeps scrolling; only the top edge starts a drag.
     if (!fromGrip && body && body.scrollTop > 0) return;

@@ -87,6 +87,10 @@ One row per word, in a tab called `Words`:
 | H | `color` | `default`, `blue`, `green`, `orange`, `red`, `grey`, `purple` |
 | I | `folder` | Folder name, or blank for unsorted |
 
+`color` is one of sixteen keys — `default` plus fifteen hues. The key is what
+is stored, never a hex value, so the same word picks the shade pitched for the
+device's current theme.
+
 A second tab, `Folders`, is the register of folder names — `id`, `name`,
 `createdAt`, `photo`. The photo is a JPEG data URL: the app crops it square,
 scales it to 320px and steps the quality down until it fits, because a cell
@@ -173,6 +177,8 @@ all. Filling it in trades that for one less field during setup.
 | `js/list.js` | The word list inside a folder. |
 | `js/reel.js` | One word per screen, shuffled. |
 | `js/photo.js` | Shrinks a picked image to fit a spreadsheet cell. |
+| `js/fit-text.js` | Shrinks a folder name until it fits on one line. |
+| `js/nav-swipe.js` | Swipe right to leave a folder. |
 | `js/detail.js` | Detail dialog. |
 | `js/form.js` | Add / edit form. |
 | `js/setup.js` | First-run connection sheet. |
