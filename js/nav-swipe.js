@@ -5,13 +5,16 @@
  * this gesture is the primary way out. It has to coexist with the list's
  * vertical scrolling and the reel's vertical snapping, which is why the
  * direction is decided from the first few pixels and never revisited.
+ *
+ * The gesture is listened for on the scroller but drawn on a surface that
+ * covers the header as well, so the whole screen travels as one piece.
  */
 
 const DISMISS_RATIO = 0.28;
 const DISMISS_VELOCITY = 0.5;
 const START_SLOP = 8;
 
-export function enableBackSwipe(element, canGoBack, onBack) {
+export function enableBackSwipe(element, surface, canGoBack, onBack) {
   let tracking = false;
   let sliding = false;
   let startX = 0;
@@ -23,23 +26,25 @@ export function enableBackSwipe(element, canGoBack, onBack) {
   function clear() {
     tracking = false;
     sliding = false;
-    element.classList.remove('is-sliding');
-    element.style.removeProperty('--nav-x');
+    surface.classList.remove('is-sliding');
+    surface.style.removeProperty('--nav-x');
   }
 
   function settle(target, done) {
-    element.classList.add('is-settling');
-    element.style.setProperty('--nav-x', target + 'px');
+    surface.classList.add('is-settling');
+    surface.style.setProperty('--nav-x', target + 'px');
 
     let finished = false;
     const finish = () => {
       if (finished) return;
       finished = true;
-      element.classList.remove('is-settling');
+      surface.classList.remove('is-settling');
       done();
     };
 
-    element.addEventListener('transitionend', finish, { once: true });
+    // The transition runs on the header and the scroller; the event bubbles
+    // up to the surface that carries the class.
+    surface.addEventListener('transitionend', finish, { once: true });
     setTimeout(finish, 420);
   }
 
@@ -69,7 +74,7 @@ export function enableBackSwipe(element, canGoBack, onBack) {
         return;
       }
       sliding = true;
-      element.classList.add('is-sliding');
+      surface.classList.add('is-sliding');
     }
 
     const elapsed = Math.max(1, event.timeStamp - lastTime);
@@ -78,7 +83,7 @@ export function enableBackSwipe(element, canGoBack, onBack) {
     lastTime = event.timeStamp;
 
     event.preventDefault();
-    element.style.setProperty('--nav-x', Math.max(0, dx) + 'px');
+    surface.style.setProperty('--nav-x', Math.max(0, dx) + 'px');
   }, { passive: false });
 
   const release = () => {

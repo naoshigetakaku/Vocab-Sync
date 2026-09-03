@@ -133,6 +133,8 @@ function paintHeader() {
     folderSettingsButton.setAttribute('aria-label', currentFolderLabel() + ' settings');
   }
 
+  titleElement.classList.toggle('is-tappable', !home);
+
   fitOneLine(titleElement, 15);
 }
 
@@ -195,9 +197,6 @@ function openFolderSettings() {
   if (!unsorted && !folder) return;
 
   const options = [
-    // The header has no back arrow, so the menu carries one for anybody
-    // without a touchscreen.
-    { value: 'back', label: 'Back to folders' },
     { value: 'sort', label: 'Sort: ' + getSortLabel() },
   ];
 
@@ -213,9 +212,7 @@ function openFolderSettings() {
     options,
     value: '',
     onSelect: (choice) => {
-      if (choice === 'back') {
-        showHome();
-      } else if (choice === 'sort') {
+      if (choice === 'sort') {
         setTimeout(openSortPicker, 180);
       } else if (choice === 'rename') {
         setTimeout(() => openRenameFolder(folder), 180);
@@ -375,9 +372,15 @@ function wireUi() {
     setMode(toReel ? 'reel' : 'list');
   });
 
-  enableBackSwipe(mainElement, () => !isHome(), () => {
+  enableBackSwipe(mainElement, document.body, () => !isHome(), () => {
     skipViewAnimation = true;
     showHome();
+  });
+
+  // Without a back arrow or a menu entry, the swipe is the only way out — and
+  // there is no swipe on a mouse. The folder name doubles as the way back.
+  titleElement.addEventListener('click', () => {
+    if (!isHome()) showHome();
   });
 
   // Folder names are fitted to the width they have, so a rotation or a resized

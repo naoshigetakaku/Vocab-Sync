@@ -56,6 +56,13 @@
 
 .sheet::backdrop { background: var(--scrim); }
 
+/* Focus is parked here on open (see js/dialog.js); it is a scroll container,
+   not a control, so it should never look like one. */
+.sheet:focus,
+.sheet:focus-visible,
+.alert:focus,
+.alert:focus-visible { outline: none; }
+
 /* Catches the light along the top edge where the sheet meets the scrim. */
 .sheet,
 .alert { box-shadow: var(--shadow-sheet), inset 0 1px 0 var(--gloss-edge); }

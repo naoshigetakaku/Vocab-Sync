@@ -49,6 +49,18 @@ export function openDialog(dialog) {
   dialog.style.removeProperty('--drag-y');
 
   dialog.showModal();
+
+  // showModal() focuses the first focusable child. On the word card that is
+  // now the YouGlish link — the close button used to absorb it — and it wears
+  // a focus ring the moment the card opens. Park focus on the dialog itself;
+  // views that actually want a field focused do it explicitly.
+  dialog.setAttribute('tabindex', '-1');
+  try {
+    dialog.focus({ preventScroll: true });
+  } catch (error) {
+    dialog.focus();
+  }
+
   dialog.classList.add('is-open');
 
   // Once the entrance has played, drop the class. Its fill-mode would keep

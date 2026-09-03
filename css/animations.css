@@ -102,14 +102,19 @@
 .view-in-forward { animation: view-in-forward var(--dur-slow) var(--ease-out) both; }
 .view-in-back    { animation: view-in-back    var(--dur-slow) var(--ease-out) both; }
 
-/* Dragged rightwards to leave a folder; see js/nav-swipe.js. */
-.app-main.is-sliding,
-.app-main.is-settling {
+/* Dragged rightwards to leave a folder; see js/nav-swipe.js. The header moves
+   with the list so the screen reads as one piece rather than a sliding panel
+   under a fixed bar. --nav-x is set on <body> and inherited by both. */
+body.is-sliding .app-header,
+body.is-sliding .app-main,
+body.is-settling .app-header,
+body.is-settling .app-main {
   transform: translateX(var(--nav-x, 0px));
   will-change: transform;
 }
 
-.app-main.is-settling {
+body.is-settling .app-header,
+body.is-settling .app-main {
   transition: transform var(--dur-mid) var(--ease-out);
 }
 
