@@ -14,6 +14,23 @@ const DISMISS_RATIO = 0.28;
 const DISMISS_VELOCITY = 0.5;
 const START_SLOP = 8;
 
+/**
+ * How long the screen takes to finish travelling once the finger lifts.
+ *
+ * Scaled to the distance still to cover: a swipe that already carried the
+ * screen most of the way should not then sit through a full-length animation,
+ * and a small nudge that springs back should not snap.
+ */
+const MIN_SETTLE_MS = 110;
+const MAX_SETTLE_MS = 260;
+const SETTLE_PER_SCREEN_MS = 300;
+
+function settleDuration(distance, width) {
+  const fraction = Math.min(1, Math.abs(distance) / (width || 1));
+  const scaled = SETTLE_PER_SCREEN_MS * fraction;
+  return Math.round(Math.min(MAX_SETTLE_MS, Math.max(MIN_SETTLE_MS, scaled)));
+}
+
 export function enableBackSwipe(element, surface, canGoBack, onBack) {
   let tracking = false;
   let sliding = false;
@@ -28,9 +45,11 @@ export function enableBackSwipe(element, surface, canGoBack, onBack) {
     sliding = false;
     surface.classList.remove('is-sliding');
     surface.style.removeProperty('--nav-x');
+    surface.style.removeProperty('--nav-duration');
   }
 
-  function settle(target, done) {
+  function settle(target, duration, done) {
+    surface.style.setProperty('--nav-duration', duration + 'ms');
     surface.classList.add('is-settling');
     surface.style.setProperty('--nav-x', target + 'px');
 
@@ -45,7 +64,7 @@ export function enableBackSwipe(element, surface, canGoBack, onBack) {
     // The transition runs on the header and the scroller; the event bubbles
     // up to the surface that carries the class.
     surface.addEventListener('transitionend', finish, { once: true });
-    setTimeout(finish, 420);
+    setTimeout(finish, duration + 120);
   }
 
   element.addEventListener('touchstart', (event) => {
@@ -100,18 +119,25 @@ export function enableBackSwipe(element, surface, canGoBack, onBack) {
     sliding = false;
 
     if (leave) {
-      settle(width, () => {
+      settle(width, settleDuration(width - travelled, width), () => {
+        // Order matters: the arriving screen is put in place and starts its
+        // own entrance before the drag transform is dropped, so the motion
+        // carries straight through instead of snapping back to zero.
         onBack();
         clear();
       });
     } else {
-      settle(0, clear);
+      settle(0, settleDuration(travelled, width), clear);
     }
   };
 
   element.addEventListener('touchend', release);
   element.addEventListener('touchcancel', () => {
-    if (sliding) settle(0, clear);
-    else clear();
+    if (sliding) {
+      const width = element.getBoundingClientRect().width || 1;
+      settle(0, settleDuration(lastX - startX, width), clear);
+    } else {
+      clear();
+    }
   });
 }

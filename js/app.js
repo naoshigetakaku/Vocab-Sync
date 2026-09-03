@@ -49,7 +49,6 @@ let syncing = false;
 let staleWarningShown = false;
 let photoTarget = null;
 let previousHome = true;
-let skipViewAnimation = false;
 
 /**
  * Saving Code.gs in the editor is not the same as deploying it, and a stale
@@ -172,12 +171,9 @@ function renderCurrent() {
 
   paintHeader();
 
-  // A swipe has already carried the screen across; sliding the arriving one in
-  // on top of that reads as two movements for one gesture.
-  if (direction && !skipViewAnimation) {
+  if (direction) {
     animateView(home ? gridElement : (reel ? reelElement : wordListElement), direction);
   }
-  skipViewAnimation = false;
 }
 
 /* --- Folder settings ------------------------------------------------------ */
@@ -366,10 +362,10 @@ function wireUi() {
     setMode(toReel ? 'reel' : 'list');
   });
 
-  enableBackSwipe(mainElement, document.body, () => !isHome(), () => {
-    skipViewAnimation = true;
-    showHome();
-  });
+  // The folder slides off under the finger; the grid then enters from the left
+  // as its own movement, which is what makes the hand-off read as continuous
+  // rather than ending in a jump.
+  enableBackSwipe(mainElement, document.body, () => !isHome(), showHome);
 
   // Without a back arrow or a menu entry, the swipe is the only way out — and
   // there is no swipe on a mouse. The folder name doubles as the way back.
