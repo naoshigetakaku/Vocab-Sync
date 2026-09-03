@@ -6,8 +6,7 @@ import { hasCredentials } from './auth.js';
 import { isRetryable, isBackendStale, getBackendVersion } from './api.js';
 import {
   subscribe, refresh, reset,
-  getFolders, findFolderByName, countUnsorted, getWordsInFolder, deleteFolder,
-  setFolderPhoto,
+  findFolderByName, getWordsInFolder, deleteFolder, setFolderPhoto,
 } from './store.js';
 import { UNSORTED_LABEL } from './config.js';
 import {
@@ -34,7 +33,6 @@ const addButton = document.getElementById('add-button');
 const settingsButton = document.getElementById('settings-button');
 const folderSettingsButton = document.getElementById('folder-settings-button');
 const titleElement = document.getElementById('app-title');
-const countElement = document.getElementById('word-count');
 const gridElement = document.getElementById('folder-grid');
 const foldersEmpty = document.getElementById('folders-empty');
 const wordListElement = document.getElementById('word-list');
@@ -117,18 +115,14 @@ function paintHeader() {
   modeIconReel.toggleAttribute('hidden', reel);
   modeButton.setAttribute('aria-label', reel ? 'Switch to list' : 'Switch to reel');
 
+  // The title gets the whole line to itself on both screens, so it can be
+  // fitted to it.
   if (home) {
     titleElement.textContent = 'Folders';
-    const tiles = getFolders().length + (countUnsorted() > 0 ? 1 : 0);
-    countElement.textContent = tiles ? String(tiles) : '';
-    countElement.hidden = false;
     addButton.setAttribute('aria-label', 'New folder');
     folderSettingsButton.setAttribute('aria-label', 'Folder settings');
   } else {
     titleElement.textContent = currentFolderLabel();
-    // The name gets the whole line to itself, so it can be fitted to it.
-    countElement.textContent = '';
-    countElement.hidden = true;
     addButton.setAttribute('aria-label', 'Add a word');
     folderSettingsButton.setAttribute('aria-label', currentFolderLabel() + ' settings');
   }

@@ -21,9 +21,7 @@
 }
 
 .app-header__title {
-  /* Shrinks rather than grows, so the count stays beside the name instead of
-     being pushed across to the controls. */
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 26px;
   font-weight: 700;
@@ -35,12 +33,6 @@
 
 /* Inside a folder the name is also the way back. */
 .app-header__title.is-tappable { cursor: pointer; }
-
-.app-header__count {
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-faint);
-}
 
 /* Right-hand cluster of header controls. */
 .app-header__tools {
