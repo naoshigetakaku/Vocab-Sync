@@ -10,6 +10,7 @@ import { STORAGE_KEYS } from './config.js';
 import { readJson, writeJson } from './storage.js';
 
 let words = readJson(STORAGE_KEYS.words, []);
+let folders = readJson(STORAGE_KEYS.folders, []);
 let outbox = readJson(STORAGE_KEYS.outbox, []);
 
 const listeners = new Set();
@@ -33,6 +34,36 @@ export function getWords() {
   return words.slice();
 }
 
+/** Creation order, so a folder keeps the same place on the grid for good. */
+export function getFolders() {
+  return folders.slice().sort((a, b) =>
+    String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+}
+
+export function getFolder(id) {
+  return folders.find((folder) => folder.id === id) || null;
+}
+
+export function findFolderByName(name) {
+  return folders.find((folder) => folder.name === name) || null;
+}
+
+/**
+ * Words in one folder. Passing null gathers the unsorted ones: no folder at
+ * all, or a folder that has since been deleted.
+ */
+export function getWordsInFolder(name) {
+  if (name === null) {
+    const known = new Set(folders.map((folder) => folder.name));
+    return words.filter((word) => !word.folder || !known.has(word.folder));
+  }
+  return words.filter((word) => word.folder === name);
+}
+
+export function countUnsorted() {
+  return getWordsInFolder(null).length;
+}
+
 export function getWord(id) {
   return words.find((word) => word.id === id) || null;
 }
@@ -46,6 +77,7 @@ export function isPending(id) {
 
 function persist() {
   writeJson(STORAGE_KEYS.words, words);
+  writeJson(STORAGE_KEYS.folders, folders);
   writeJson(STORAGE_KEYS.outbox, outbox);
 }
 
@@ -149,11 +181,51 @@ function mergeRemote(remote) {
 
 /* --- Public actions ------------------------------------------------------- */
 
-/** Push anything queued, then pull the authoritative list. */
+/** Push anything queued, then pull the authoritative snapshot. */
 export async function refresh() {
   await flushOutbox();
-  const remote = await api.list();
-  mergeRemote(remote);
+  const snapshot = await api.list();
+  folders = snapshot.folders;
+  mergeRemote(snapshot.words);
+  commit();
+}
+
+/* --- Folders --------------------------------------------------------------
+   No outbox here. A folder change is rare and deliberate, and replaying one
+   offline against a name another device may have taken in the meantime is a
+   conflict worth refusing rather than guessing at. */
+
+export async function createFolder(name) {
+  const saved = await api.createFolder(name);
+  folders = folders.concat([saved]);
+  commit();
+  return saved;
+}
+
+export async function renameFolder(id, name) {
+  const previous = getFolder(id);
+  const saved = await api.renameFolder(id, name);
+
+  folders = folders.map((folder) => (folder.id === id ? saved : folder));
+  // Words point at the folder by name, so they follow the rename locally too.
+  if (previous && previous.name !== saved.name) {
+    words = words.map((word) =>
+      (word.folder === previous.name ? Object.assign({}, word, { folder: saved.name }) : word));
+  }
+  commit();
+  return saved;
+}
+
+export async function deleteFolder(id) {
+  const previous = getFolder(id);
+  await api.removeFolder(id);
+
+  folders = folders.filter((folder) => folder.id !== id);
+  // The words survive as unsorted.
+  if (previous) {
+    words = words.map((word) =>
+      (word.folder === previous.name ? Object.assign({}, word, { folder: '' }) : word));
+  }
   commit();
 }
 
@@ -236,9 +308,10 @@ export async function deleteWord(id) {
   }
 }
 
-/** Drop every cached word — used when the credentials are replaced. */
+/** Drop every cached record — used when the credentials are replaced. */
 export function reset() {
   words = [];
+  folders = [];
   outbox = [];
   commit();
 }

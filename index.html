@@ -36,28 +36,54 @@
 
   <header class="app-header">
     <div class="app-header__bar">
-      <h1 class="app-header__title">Vocabulary</h1>
+      <button class="header-action header-action--back" id="back-button" type="button"
+              aria-label="Back to folders" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M15 5l-7 7 7 7" />
+        </svg>
+      </button>
+
+      <h1 class="app-header__title" id="app-title">Folders</h1>
       <span class="app-header__count" id="word-count" aria-live="polite"></span>
 
-      <button class="header-action" id="settings-button" type="button" aria-label="Connection settings">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
-          <circle cx="16" cy="7" r="2.4" />
-          <circle cx="8" cy="17" r="2.4" />
-        </svg>
-      </button>
+      <div class="app-header__tools">
+        <button class="header-action" id="folder-menu-button" type="button"
+                aria-label="Folder options" aria-haspopup="listbox" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+               fill="currentColor" stroke="none">
+            <circle cx="5" cy="12" r="1.7" />
+            <circle cx="12" cy="12" r="1.7" />
+            <circle cx="19" cy="12" r="1.7" />
+          </svg>
+        </button>
 
-      <button class="sort" id="sort-button" type="button" aria-haspopup="listbox">
-        <svg class="sort__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M4 7h13M4 12h9M4 17h5" />
-        </svg>
-        <span class="sort__label" id="sort-label"></span>
-      </button>
+        <button class="sort" id="sort-button" type="button" aria-haspopup="listbox" hidden>
+          <svg class="sort__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 7h13M4 12h9M4 17h5" />
+          </svg>
+          <span class="sort__label" id="sort-label"></span>
+        </button>
+
+        <button class="header-action" id="settings-button" type="button" aria-label="Connection settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+            <circle cx="16" cy="7" r="2.4" />
+            <circle cx="8" cy="17" r="2.4" />
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
 
   <main class="app-main">
-    <ul class="word-list" id="word-list" aria-label="Saved words"></ul>
+    <div class="folders" id="folder-grid" aria-label="Folders"></div>
+
+    <p class="empty" id="folders-empty" hidden>
+      <span class="empty__title">No folders yet</span>
+      <span class="empty__hint">Tap + to make your first one.</span>
+    </p>
+
+    <ul class="word-list" id="word-list" aria-label="Saved words" hidden></ul>
 
     <p class="empty" id="empty-state" hidden>
       <span class="empty__title">No words yet</span>
@@ -166,6 +192,17 @@
         <div class="swatches" id="field-color" role="radiogroup" aria-labelledby="color-label"></div>
       </div>
 
+      <div class="field">
+        <span class="field__label" id="word-folder-label">Folder</span>
+        <button class="field__input field__trigger" id="field-folder" type="button"
+                aria-labelledby="word-folder-label" aria-haspopup="listbox">
+          <span class="field__value" id="field-folder-value"></span>
+          <svg class="field__chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      </div>
+
       <p class="form__error" id="form-error" hidden></p>
 
       <div class="sheet__actions">
@@ -191,6 +228,36 @@
     <div class="sheet__body">
       <ul class="options" id="picker-options" role="listbox" aria-labelledby="picker-title"></ul>
     </div>
+  </dialog>
+
+  <!-- Folder name, for both creating and renaming. -->
+  <dialog class="sheet" id="folder-dialog" aria-labelledby="folder-form-title">
+    <div class="sheet__grip" aria-hidden="true"><span class="sheet__handle"></span></div>
+
+    <div class="sheet__dismiss">
+      <button class="icon-button" type="button" data-close aria-label="Cancel">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+
+    <form class="sheet__body form" id="folder-form" novalidate>
+      <h2 class="sheet__title" id="folder-form-title">New folder</h2>
+
+      <label class="field">
+        <span class="field__label">Name</span>
+        <input class="field__input" id="field-folder-name" name="name" type="text" required
+               autocomplete="off" autocapitalize="words" spellcheck="false">
+      </label>
+
+      <p class="form__error" id="folder-error" hidden></p>
+
+      <div class="sheet__actions">
+        <button class="button button--ghost" id="folder-cancel" type="button">Cancel</button>
+        <button class="button" id="folder-submit" type="submit">Create</button>
+      </div>
+    </form>
   </dialog>
 
   <!-- Centred confirmation. Tapping outside cancels. -->

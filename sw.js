@@ -25,7 +25,7 @@
  * Bump CACHE_VERSION on every release.
  */
 
-var CACHE_VERSION = 'v10';
+var CACHE_VERSION = 'v11';
 var CACHE_NAME = 'vocabsync-' + CACHE_VERSION;
 
 var SHELL = [
@@ -43,6 +43,8 @@ var SHELL = [
   './js/confirm.js',
   './js/detail.js',
   './js/dialog.js',
+  './js/folder-form.js',
+  './js/folder-grid.js',
   './js/form.js',
   './js/install-hint.js',
   './js/list.js',
@@ -54,6 +56,7 @@ var SHELL = [
   './js/store.js',
   './js/swipe.js',
   './js/toast.js',
+  './js/view.js',
   './icons/icon.svg',
   './icons/icon-180.png',
   './icons/icon-192.png',

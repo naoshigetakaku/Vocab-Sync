@@ -5,13 +5,13 @@
  * the detail dialog.
  */
 
-import { getWords } from './store.js';
+import { getWordsInFolder } from './store.js';
 import { sortWords } from './sort.js';
+import { getCurrentFolder, UNSORTED } from './view.js';
 import { DEFAULT_COLOR } from './config.js';
 
 const listElement = document.getElementById('word-list');
 const emptyElement = document.getElementById('empty-state');
-const countElement = document.getElementById('word-count');
 
 let staggerDone = false;
 let staggerTimer;
@@ -36,15 +36,21 @@ function buildRow(word) {
   return item;
 }
 
+/** Words in the folder currently open. Returns 0 rows on the folder grid. */
+export function visibleWords() {
+  const target = getCurrentFolder();
+  if (target === null) return [];
+  return sortWords(getWordsInFolder(target === UNSORTED ? null : target));
+}
+
 export function render() {
-  const words = sortWords(getWords());
+  const words = visibleWords();
 
   const fragment = document.createDocumentFragment();
   words.forEach((word) => fragment.appendChild(buildRow(word)));
   listElement.replaceChildren(fragment);
 
-  countElement.textContent = words.length ? String(words.length) : '';
-  emptyElement.hidden = words.length !== 0;
+  emptyElement.hidden = words.length !== 0 || getCurrentFolder() === null;
 
   // Stagger the entrance once per session, not on every re-render.
   if (!staggerDone && words.length) {

@@ -83,13 +83,25 @@ One row per word, in a tab called `Words`:
 | F | `createdAt` | ISO 8601 |
 | G | `updatedAt` | ISO 8601 |
 | H | `color` | `default`, `blue`, `green`, `orange`, `red`, `grey`, `purple` |
+| I | `folder` | Folder name, or blank for unsorted |
+
+A second tab, `Folders`, is the register of folder names — `id`, `name`,
+`createdAt`. It exists so a folder you make on one device shows up on another
+before it has any words in it. Words point at their folder by **name**, which
+keeps the sheet readable by eye; renaming a folder rewrites the column.
 
 New fields are always appended on the right. Inserting one in the middle would
 shift every existing row's data into the wrong column.
 
-`color` arrived after the first release. Running `setup()` again appends the
-header to an existing sheet without touching any row; words saved before the
-upgrade read back with no colour, which is the default. The colour changes the
+`color` and `folder` both arrived after the first release. Running `setup()`
+again appends the headers to an existing sheet without touching any row; words
+saved before the upgrade read back with no colour, which is the default, and
+`setup()` files every word that has no folder into **TOPS2026**. That step only
+ever fills blanks, so it is safe to run more than once.
+
+Deleting a folder does not delete its words. They lose the folder name and
+gather under **Unsorted**, which appears on the grid only when something is
+actually in it. The colour changes the
 word's own type only — never the definition, the note, or the part-of-speech
 badge — and the stored value is the key rather than a hex code, so the same
 word picks the right shade in light and dark.
@@ -150,7 +162,10 @@ all. Filling it in trades that for one less field during setup.
 | `js/confirm.js` | Centred confirmation popup. |
 | `js/toast.js` | Transient messages. |
 | `js/sort.js` | List ordering and the header control. |
-| `js/list.js` | Home screen. |
+| `js/view.js` | Which screen is showing: the grid, or one folder. |
+| `js/folder-grid.js` | The folder grid — two interlocking columns. |
+| `js/folder-form.js` | Naming a folder, for create and rename. |
+| `js/list.js` | The word list inside a folder. |
 | `js/detail.js` | Detail dialog. |
 | `js/form.js` | Add / edit form. |
 | `js/setup.js` | First-run connection sheet. |

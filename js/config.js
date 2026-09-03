@@ -40,6 +40,7 @@ export const STORAGE_KEYS = {
   outbox: 'vocabsync.outbox.v1',
   installHint: 'vocabsync.install-hint.v1',
   sort: 'vocabsync.sort.v1',
+  folders: 'vocabsync.folders.v1',
 };
 
 /**
@@ -47,7 +48,12 @@ export const STORAGE_KEYS = {
  * predates a feature the app is already using — colours, for instance, get
  * written nowhere.
  */
-export const REQUIRED_BACKEND_VERSION = 2;
+export const REQUIRED_BACKEND_VERSION = 3;
+
+/** Shown for words whose folder is blank or names a folder that is gone. */
+export const UNSORTED_LABEL = 'Unsorted';
+
+export const MAX_FOLDER_NAME_LENGTH = 60;
 
 /** Apps Script cold starts can take a couple of seconds; allow for that. */
 export const REQUEST_TIMEOUT_MS = 20000;

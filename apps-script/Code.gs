@@ -42,16 +42,25 @@ var PASSPHRASE = 'change-me-to-something-long-and-random';
  *
  *   1  original schema
  *   2  colour column
+ *   3  folder column and the Folders sheet
  */
-var BACKEND_VERSION = 2;
+var BACKEND_VERSION = 3;
 
 var SHEET_NAME = 'Words';
+var FOLDER_SHEET_NAME = 'Folders';
+
+/** Where every word already in the sheet lands when folders arrive. */
+var LEGACY_FOLDER = 'TOPS2026';
 
 /**
  * Column order. New fields go on the END of this list — inserting one in the
  * middle would shift every existing row's data into the wrong column.
  */
-var HEADERS = ['id', 'word', 'pos', 'definition', 'note', 'createdAt', 'updatedAt', 'color'];
+var HEADERS = ['id', 'word', 'pos', 'definition', 'note', 'createdAt', 'updatedAt', 'color', 'folder'];
+
+var FOLDER_HEADERS = ['id', 'name', 'createdAt'];
+
+var MAX_FOLDER_NAME_LENGTH = 60;
 
 var PARTS_OF_SPEECH = ['Verb', 'Adj', 'Adv', 'Noun', 'Idiom', 'Expression'];
 var WORD_COLORS = ['default', 'blue', 'green', 'orange', 'red', 'grey', 'purple'];
@@ -80,7 +89,18 @@ function handle_(e) {
 
     switch (request.action) {
       case 'list':
-        return json_({ ok: true, version: BACKEND_VERSION, words: listWords_() });
+        return json_({
+          ok: true,
+          version: BACKEND_VERSION,
+          words: listWords_(),
+          folders: listFolders_()
+        });
+      case 'createFolder':
+        return json_({ ok: true, version: BACKEND_VERSION, folder: createFolder_(request.name) });
+      case 'renameFolder':
+        return json_({ ok: true, version: BACKEND_VERSION, folder: renameFolder_(request.id, request.name) });
+      case 'deleteFolder':
+        return json_({ ok: true, version: BACKEND_VERSION, id: deleteFolder_(request.id) });
       case 'create':
         return json_({ ok: true, version: BACKEND_VERSION, word: createWord_(request.word) });
       case 'update':
@@ -246,6 +266,8 @@ function rowToWord_(row, map) {
     note: read('note'),
     // Rows written before the colour column existed come back blank.
     color: WORD_COLORS.indexOf(colour) === -1 ? 'default' : colour,
+    // Blank means the word is unsorted; the app shows those together.
+    folder: read('folder'),
     createdAt: read('createdAt'),
     updatedAt: read('updatedAt')
   };
@@ -276,6 +298,7 @@ function validate_(input) {
   var definition = String(input.definition || '').trim();
   var note = String(input.note || '').trim();
   var color = String(input.color || 'default').trim();
+  var folder = String(input.folder || '').trim();
 
   if (!word) fail_('BAD_REQUEST', 'Word is required.');
   if (word.length > MAX_WORD_LENGTH) fail_('BAD_REQUEST', 'Word is too long.');
@@ -283,8 +306,12 @@ function validate_(input) {
   if (definition.length > MAX_TEXT_LENGTH) fail_('BAD_REQUEST', 'Definition is too long.');
   if (note.length > MAX_TEXT_LENGTH) fail_('BAD_REQUEST', 'Note is too long.');
   if (WORD_COLORS.indexOf(color) === -1) fail_('BAD_REQUEST', 'Unknown colour.');
+  if (folder.length > MAX_FOLDER_NAME_LENGTH) fail_('BAD_REQUEST', 'Folder name is too long.');
 
-  return { word: word, pos: pos, definition: definition, note: note, color: color };
+  return {
+    word: word, pos: pos, definition: definition, note: note,
+    color: color, folder: folder
+  };
 }
 
 /* --- Operations ----------------------------------------------------------- */
@@ -334,6 +361,7 @@ function createWord_(input) {
       definition: fields.definition,
       note: fields.note,
       color: fields.color,
+      folder: fields.folder,
       createdAt: now,
       updatedAt: now
     };
@@ -365,6 +393,7 @@ function updateWord_(input) {
       definition: fields.definition,
       note: fields.note,
       color: fields.color,
+      folder: fields.folder,
       createdAt: existing.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -390,6 +419,198 @@ function deleteWord_(id) {
   });
 }
 
+/* --- Folders -------------------------------------------------------------- */
+
+function getFolderSheet_() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(FOLDER_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(FOLDER_SHEET_NAME);
+    sheet.getRange(1, 1, 1, FOLDER_HEADERS.length).setValues([FOLDER_HEADERS]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, sheet.getMaxRows(), FOLDER_HEADERS.length).setNumberFormat('@');
+  }
+
+  return sheet;
+}
+
+/** Oldest first, so the app can show folders in the order they were made. */
+function listFolders_() {
+  var sheet = getFolderSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  var values = sheet.getRange(2, 1, lastRow - 1, FOLDER_HEADERS.length).getValues();
+  var folders = [];
+
+  for (var i = 0; i < values.length; i++) {
+    if (!values[i][0]) continue;
+    folders.push({
+      id: toText_(values[i][0]),
+      name: toText_(values[i][1]),
+      createdAt: toText_(values[i][2])
+    });
+  }
+  return folders;
+}
+
+function findFolderRow_(sheet, id) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+
+  var ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === id) return i + 2;
+  }
+  return -1;
+}
+
+function validFolderName_(input) {
+  var name = String(input || '').trim();
+  if (!name) fail_('BAD_REQUEST', 'Folder name is required.');
+  if (name.length > MAX_FOLDER_NAME_LENGTH) fail_('BAD_REQUEST', 'Folder name is too long.');
+  return name;
+}
+
+/** Names are the link between a word and its folder, so they must be unique. */
+function folderNameTaken_(folders, name, exceptId) {
+  var target = name.toLowerCase();
+  for (var i = 0; i < folders.length; i++) {
+    if (folders[i].id === exceptId) continue;
+    if (folders[i].name.toLowerCase() === target) return true;
+  }
+  return false;
+}
+
+function createFolder_(input) {
+  var name = validFolderName_(input);
+
+  return withLock_(function () {
+    var sheet = getFolderSheet_();
+    if (folderNameTaken_(listFolders_(), name, null)) {
+      fail_('DUPLICATE', 'A folder with that name already exists.');
+    }
+
+    var record = { id: Utilities.getUuid(), name: name, createdAt: new Date().toISOString() };
+    sheet.appendRow([escapeCell_(record.id), escapeCell_(record.name), escapeCell_(record.createdAt)]);
+    return record;
+  });
+}
+
+function renameFolder_(id, input) {
+  if (!id) fail_('BAD_REQUEST', 'Missing folder id.');
+  var name = validFolderName_(input);
+  var target = String(id);
+
+  return withLock_(function () {
+    var sheet = getFolderSheet_();
+    var folders = listFolders_();
+
+    var current = null;
+    for (var i = 0; i < folders.length; i++) {
+      if (folders[i].id === target) current = folders[i];
+    }
+    if (!current) fail_('NOT_FOUND', 'No folder with that id.');
+
+    if (folderNameTaken_(folders, name, target)) {
+      fail_('DUPLICATE', 'A folder with that name already exists.');
+    }
+
+    var row = findFolderRow_(sheet, target);
+    sheet.getRange(row, 2).setValue(escapeCell_(name));
+
+    // Words point at the folder by name, so they all have to follow.
+    if (current.name !== name) relabelWords_(current.name, name);
+
+    return { id: target, name: name, createdAt: current.createdAt };
+  });
+}
+
+function deleteFolder_(id) {
+  if (!id) fail_('BAD_REQUEST', 'Missing folder id.');
+  var target = String(id);
+
+  return withLock_(function () {
+    var sheet = getFolderSheet_();
+    var folders = listFolders_();
+
+    var current = null;
+    for (var i = 0; i < folders.length; i++) {
+      if (folders[i].id === target) current = folders[i];
+    }
+    if (!current) fail_('NOT_FOUND', 'No folder with that id.');
+
+    // The words survive; they just stop belonging anywhere.
+    relabelWords_(current.name, '');
+
+    sheet.deleteRow(findFolderRow_(sheet, target));
+    return target;
+  });
+}
+
+/** Rewrites the folder column for every word currently in `from`. */
+function relabelWords_(from, to) {
+  var sheet = getSheet_();
+  var schema = ensureHeaders_(sheet);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  var column = schema.map.folder + 1;
+  var range = sheet.getRange(2, column, lastRow - 1, 1);
+  var values = range.getValues();
+
+  var touched = 0;
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0]) === from) {
+      values[i][0] = to;
+      touched += 1;
+    }
+  }
+
+  if (touched) range.setValues(values);
+  return touched;
+}
+
+/**
+ * Puts every word that has no folder into LEGACY_FOLDER, and makes sure that
+ * folder exists. Safe to run repeatedly: it only ever fills blanks.
+ */
+function adoptUnfiledWords_() {
+  var sheet = getSheet_();
+  var schema = ensureHeaders_(sheet);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  var idColumn = schema.map.id + 1;
+  var folderColumn = schema.map.folder + 1;
+
+  var ids = sheet.getRange(2, idColumn, lastRow - 1, 1).getValues();
+  var range = sheet.getRange(2, folderColumn, lastRow - 1, 1);
+  var values = range.getValues();
+
+  var touched = 0;
+  for (var i = 0; i < values.length; i++) {
+    if (!ids[i][0]) continue;
+    if (String(values[i][0]).trim() === '') {
+      values[i][0] = LEGACY_FOLDER;
+      touched += 1;
+    }
+  }
+
+  if (!touched) return 0;
+
+  range.setValues(values);
+
+  if (!folderNameTaken_(listFolders_(), LEGACY_FOLDER, null)) {
+    getFolderSheet_().appendRow([
+      Utilities.getUuid(), LEGACY_FOLDER, new Date().toISOString()
+    ]);
+  }
+
+  return touched;
+}
+
 /* --- One-time setup ------------------------------------------------------- */
 
 /**
@@ -412,8 +633,17 @@ function setup() {
   if (after > before) {
     Logger.log('Added %s new column(s). Existing rows were not modified.', after - before);
   } else {
-    Logger.log('No migration needed.');
+    Logger.log('No new columns needed.');
   }
+
+  getFolderSheet_();
+  var adopted = adoptUnfiledWords_();
+  if (adopted) {
+    Logger.log('Moved %s word(s) with no folder into "%s".', adopted, LEGACY_FOLDER);
+  } else {
+    Logger.log('Every word already belongs to a folder.');
+  }
+  Logger.log('Folders: %s', listFolders_().map(function (f) { return f.name; }).join(', ') || '(none)');
 
   if (PASSPHRASE === 'change-me-to-something-long-and-random') {
     Logger.log('WARNING: PASSPHRASE is still the default. Change it before deploying.');
