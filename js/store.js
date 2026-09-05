@@ -6,7 +6,7 @@
  */
 
 import { api, ApiError, isRetryable } from './api.js';
-import { STORAGE_KEYS } from './config.js';
+import { STORAGE_KEYS, ARCHIVE_FOLDER } from './config.js';
 import { readJson, writeJson } from './storage.js';
 
 let words = readJson(STORAGE_KEYS.words, []);
@@ -214,6 +214,30 @@ export async function renameFolder(id, name) {
   }
   commit();
   return saved;
+}
+
+/**
+ * Move a word into the archive, creating that folder the first time.
+ *
+ * Nothing is deleted: the word keeps every field and simply changes folder,
+ * so it can be moved back from the edit sheet like any other.
+ */
+export async function archiveWord(id) {
+  const word = getWord(id);
+  if (!word) return null;
+  if (word.folder === ARCHIVE_FOLDER) return word;
+
+  if (!findFolderByName(ARCHIVE_FOLDER)) await createFolder(ARCHIVE_FOLDER);
+
+  return updateWord({
+    id: word.id,
+    word: word.word,
+    pos: word.pos,
+    definition: word.definition,
+    note: word.note,
+    color: word.color,
+    folder: ARCHIVE_FOLDER,
+  });
 }
 
 /** Pass an empty string to clear the photo. */

@@ -19,6 +19,27 @@ let newestId = null;
 
 function buildRow(word) {
   const item = document.createElement('li');
+  item.className = 'word-item';
+
+  // Sits behind the row and is uncovered as it slides; see js/swipe-row.js.
+  const action = document.createElement('span');
+  action.className = 'word-item__action';
+  action.setAttribute('aria-hidden', 'true');
+
+  const actionIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  actionIcon.setAttribute('viewBox', '0 0 24 24');
+  actionIcon.setAttribute('class', 'word-item__icon');
+  actionIcon.setAttribute('focusable', 'false');
+  const box = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  box.setAttribute('d', 'M3 7h18v3H3zM5 10v9h14v-9M10 14h4');
+  actionIcon.appendChild(box);
+
+  const actionLabel = document.createElement('span');
+  actionLabel.textContent = 'Archive';
+
+  action.appendChild(actionLabel);
+  action.appendChild(actionIcon);
+  item.appendChild(action);
 
   const button = document.createElement('button');
   button.type = 'button';

@@ -108,6 +108,12 @@ saved before the upgrade read back with no colour, which is the default, and
 `setup()` files every word that has no folder into **TOPS2026**. That step only
 ever fills blanks, so it is safe to run more than once.
 
+Dragging a word leftwards in a list moves it to a folder called **Archive**,
+made on first use. It is an ordinary folder — it shows up on the grid and a
+word comes back out of it the same way anything else is moved — so nothing is
+ever destroyed by the gesture. Leftwards only: a rightward drag anywhere in a
+folder already means "back to the grid".
+
 Deleting a folder does not delete its words. They lose the folder name and
 gather under **Unsorted**, which appears on the grid only when something is
 actually in it. The colour changes the
@@ -176,6 +182,7 @@ all. Filling it in trades that for one less field during setup.
 | `js/folder-form.js` | Naming a folder, for create and rename. |
 | `js/list.js` | The word list inside a folder. |
 | `js/reel.js` | One word per screen, shuffled. |
+| `js/swipe-row.js` | Drag a word leftwards to archive it. |
 | `js/photo.js` | Shrinks a picked image to fit a spreadsheet cell. |
 | `js/fit-text.js` | Shrinks a folder name until it fits on one line. |
 | `js/nav-swipe.js` | Swipe right to leave a folder. |

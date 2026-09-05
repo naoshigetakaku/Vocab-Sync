@@ -6,9 +6,9 @@ import { hasCredentials } from './auth.js';
 import { isRetryable, isBackendStale, getBackendVersion } from './api.js';
 import {
   subscribe, refresh, reset,
-  findFolderByName, getWordsInFolder, deleteFolder, setFolderPhoto,
+  findFolderByName, getWordsInFolder, deleteFolder, setFolderPhoto, archiveWord,
 } from './store.js';
-import { UNSORTED_LABEL } from './config.js';
+import { UNSORTED_LABEL, ARCHIVE_FOLDER } from './config.js';
 import {
   subscribeView, getCurrentFolder, isHome, showHome, openFolder, UNSORTED,
   getMode, setMode,
@@ -24,6 +24,7 @@ import { initSort, openSortPicker, getSortLabel } from './sort.js';
 import { initPicker, openPicker } from './picker.js';
 import { initConfirm, askConfirm } from './confirm.js';
 import { renderReel, shuffleReel } from './reel.js';
+import { enableRowSwipe } from './swipe-row.js';
 import { fileToThumbnail } from './photo.js';
 import { fitOneLine } from './fit-text.js';
 import { enableBackSwipe } from './nav-swipe.js';
@@ -221,6 +222,15 @@ function openFolderSettings() {
   });
 }
 
+async function archiveRow(id) {
+  try {
+    await archiveWord(id);
+    toast('Archived.');
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
 async function clearFolderPhoto(folder) {
   try {
     await setFolderPhoto(folder.id, '');
@@ -366,6 +376,14 @@ function wireUi() {
   // as its own movement, which is what makes the hand-off read as continuous
   // rather than ending in a jump.
   enableBackSwipe(mainElement, document.body, () => !isHome(), showHome);
+
+  // Leftwards on a row archives it. Pointless inside the archive itself, and
+  // the reel is not a list.
+  enableRowSwipe(
+    wordListElement,
+    () => !isHome() && getMode() !== 'reel' && getCurrentFolder() !== ARCHIVE_FOLDER,
+    archiveRow
+  );
 
   // Without a back arrow or a menu entry, the swipe is the only way out — and
   // there is no swipe on a mouse. The folder name doubles as the way back.

@@ -258,6 +258,68 @@
 
 .word-list li { border-bottom: 1px solid var(--line); }
 
+/* --- Swipe to archive ------------------------------------------------------
+   The row is opaque and slides over a label that is already in place, so the
+   action is uncovered rather than drawn — which is why nothing has to be
+   inserted or measured mid-gesture. */
+
+.word-item {
+  position: relative;
+  /* Kept off the compositor until a finger is actually on it. */
+  overflow: hidden;
+}
+
+.word-item__action {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-right: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+  opacity: var(--row-progress, 0);
+  pointer-events: none;
+}
+
+.word-item__icon {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.8;
+}
+
+/* Opaque, and positioned so it paints above the absolutely placed label
+   rather than under it. */
+.word-item .word-row {
+  position: relative;
+  background: var(--bg);
+}
+
+.word-item.is-swiping .word-row {
+  transform: translateX(var(--row-x, 0px));
+  /* The row carries a 140ms transform transition for its press feedback,
+     which would leave it trailing the finger. */
+  transition: none;
+}
+
+.word-item.is-settling .word-row {
+  transform: translateX(var(--row-x, 0px));
+  transition: transform 180ms var(--ease-out);
+}
+
+.word-item.is-settling .word-item__action {
+  transition: opacity 180ms var(--ease-out);
+}
+
+/* The gap closes after the row has left, so the list does not jump. */
+.word-item.is-collapsing {
+  transition: height 200ms var(--ease-out), opacity 200ms var(--ease-out);
+  opacity: 0;
+}
+
 /* 11px padding with 17px type gives a ~48px row against the previous ~63px,
    which is the ~1.3x more words per screen this was asked to hit. */
 .word-row {

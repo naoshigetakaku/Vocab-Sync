@@ -62,6 +62,12 @@ export const REQUIRED_BACKEND_VERSION = 4;
 /** Shown for words whose folder is blank or names a folder that is gone. */
 export const UNSORTED_LABEL = 'Unsorted';
 
+/**
+ * Where a swiped word goes. An ordinary folder, so it shows up on the grid and
+ * a word can be pulled back out of it the same way anything else is moved.
+ */
+export const ARCHIVE_FOLDER = 'Archive';
+
 export const MAX_FOLDER_NAME_LENGTH = 60;
 
 /** Apps Script cold starts can take a couple of seconds; allow for that. */
