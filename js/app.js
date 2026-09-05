@@ -7,7 +7,7 @@ import { isRetryable, isBackendStale, getBackendVersion } from './api.js';
 import {
   subscribe, refresh, reset,
   findFolderByName, getWordsInFolder, deleteFolder, setFolderPhoto,
-  archiveWord, unarchiveWord, getWord,
+  archiveWord, unarchiveWord, unarchiveDestination, getWord,
 } from './store.js';
 import { UNSORTED_LABEL, ARCHIVE_FOLDER } from './config.js';
 import {
@@ -248,10 +248,13 @@ function confirmSwipe(id) {
 
 async function performSwipe(id) {
   const archived = inArchive();
+  // Read the destination before the move; afterwards the origin is cleared.
+  const destination = archived ? unarchiveDestination(id) : '';
+
   try {
     if (archived) {
       await unarchiveWord(id);
-      toast('Moved to ' + UNSORTED_LABEL + '.');
+      toast('Moved to ' + (destination || UNSORTED_LABEL) + '.');
     } else {
       await archiveWord(id);
       toast('Archived.');

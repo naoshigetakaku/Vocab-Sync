@@ -237,15 +237,31 @@ export async function archiveWord(id) {
     note: word.note,
     color: word.color,
     folder: ARCHIVE_FOLDER,
+    // Remembered so unarchiving can put it back rather than guess.
+    archivedFrom: word.folder || '',
   });
 }
 
 /**
- * Take a word back out of the archive.
+ * Where a word would land if it were taken out of the archive right now.
  *
- * It lands in Unsorted rather than wherever it came from: the sheet does not
- * record an origin, and inventing one would be a guess. Unsorted is visible on
- * the grid, so the word is easy to file again.
+ * The folder it came from may have been renamed or deleted while it sat
+ * there, in which case there is nowhere to return it to and it falls to
+ * Unsorted. Exported so the interface can say which before it happens.
+ */
+export function unarchiveDestination(id) {
+  const word = getWord(id);
+  if (!word) return '';
+  const origin = word.archivedFrom || '';
+  return origin && findFolderByName(origin) ? origin : '';
+}
+
+/**
+ * Take a word back out of the archive, into the folder it was archived from.
+ *
+ * If that folder is gone — renamed, or deleted — the word lands in Unsorted,
+ * which is visible on the grid and easy to file again. Either way the
+ * remembered origin is cleared, so it does not linger and mislead later.
  */
 export async function unarchiveWord(id) {
   const word = getWord(id);
@@ -258,7 +274,8 @@ export async function unarchiveWord(id) {
     definition: word.definition,
     note: word.note,
     color: word.color,
-    folder: '',
+    folder: unarchiveDestination(id),
+    archivedFrom: '',
   });
 }
 
@@ -316,6 +333,10 @@ export async function createWord(fields) {
 export async function updateWord(fields) {
   const previous = getWord(fields.id);
   if (!previous) throw new ApiError('NOT_FOUND', 'That word no longer exists.');
+
+  // The edit sheet knows nothing about archivedFrom, and the backend rewrites
+  // the whole row — so carry it forward unless the caller means to change it.
+  fields = Object.assign({ archivedFrom: previous.archivedFrom || '' }, fields);
 
   const optimistic = Object.assign({}, previous, fields, {
     updatedAt: new Date().toISOString(),

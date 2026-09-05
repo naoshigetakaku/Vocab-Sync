@@ -86,6 +86,7 @@ One row per word, in a tab called `Words`:
 | G | `updatedAt` | ISO 8601 |
 | H | `color` | `default`, `blue`, `green`, `orange`, `red`, `grey`, `purple` |
 | I | `folder` | Folder name, or blank for unsorted |
+| J | `archivedFrom` | Folder a word was archived out of; blank otherwise |
 
 `color` is one of sixteen keys — `default` plus fifteen hues. The key is what
 is stored, never a hex value, so the same word picks the shade pitched for the
@@ -110,9 +111,11 @@ ever fills blanks, so it is safe to run more than once.
 
 Dragging a word leftwards in a list moves it to a folder called **Archive**,
 made on first use. The row holds open while a centred confirmation asks; a tap
-outside it cancels. Inside the archive the same gesture takes a word back out —
-to Unsorted, and without asking, because putting something back where you can
-see it is not worth a question. It is an ordinary folder — it shows up on the grid and a
+outside it cancels. Inside the archive the same gesture takes a word back out,
+without asking — putting something back where you can see it is not worth a
+question. It returns to the folder it was archived from, which is what
+`archivedFrom` is for; if that folder has since been renamed or deleted there
+is nowhere to return it to, and it lands in Unsorted instead. It is an ordinary folder — it shows up on the grid and a
 word comes back out of it the same way anything else is moved — so nothing is
 ever destroyed by the gesture. Leftwards only: a rightward drag anywhere in a
 folder already means "back to the grid".

@@ -44,8 +44,9 @@ var PASSPHRASE = 'change-me-to-something-long-and-random';
  *   2  colour column
  *   3  folder column and the Folders sheet
  *   4  folder photos
+ *   5  archivedFrom, so unarchiving can put a word back where it was
  */
-var BACKEND_VERSION = 4;
+var BACKEND_VERSION = 5;
 
 var SHEET_NAME = 'Words';
 var FOLDER_SHEET_NAME = 'Folders';
@@ -57,7 +58,10 @@ var LEGACY_FOLDER = 'TOPS2026';
  * Column order. New fields go on the END of this list — inserting one in the
  * middle would shift every existing row's data into the wrong column.
  */
-var HEADERS = ['id', 'word', 'pos', 'definition', 'note', 'createdAt', 'updatedAt', 'color', 'folder'];
+var HEADERS = [
+  'id', 'word', 'pos', 'definition', 'note',
+  'createdAt', 'updatedAt', 'color', 'folder', 'archivedFrom'
+];
 
 var FOLDER_HEADERS = ['id', 'name', 'createdAt', 'photo'];
 
@@ -281,6 +285,8 @@ function rowToWord_(row, map) {
     color: WORD_COLORS.indexOf(colour) === -1 ? 'default' : colour,
     // Blank means the word is unsorted; the app shows those together.
     folder: read('folder'),
+    // The folder this word was archived out of, so it can go back there.
+    archivedFrom: read('archivedFrom'),
     createdAt: read('createdAt'),
     updatedAt: read('updatedAt')
   };
@@ -312,6 +318,7 @@ function validate_(input) {
   var note = String(input.note || '').trim();
   var color = String(input.color || 'default').trim();
   var folder = String(input.folder || '').trim();
+  var archivedFrom = String(input.archivedFrom || '').trim();
 
   if (!word) fail_('BAD_REQUEST', 'Word is required.');
   if (word.length > MAX_WORD_LENGTH) fail_('BAD_REQUEST', 'Word is too long.');
@@ -320,10 +327,11 @@ function validate_(input) {
   if (note.length > MAX_TEXT_LENGTH) fail_('BAD_REQUEST', 'Note is too long.');
   if (WORD_COLORS.indexOf(color) === -1) fail_('BAD_REQUEST', 'Unknown colour.');
   if (folder.length > MAX_FOLDER_NAME_LENGTH) fail_('BAD_REQUEST', 'Folder name is too long.');
+  if (archivedFrom.length > MAX_FOLDER_NAME_LENGTH) fail_('BAD_REQUEST', 'Folder name is too long.');
 
   return {
     word: word, pos: pos, definition: definition, note: note,
-    color: color, folder: folder
+    color: color, folder: folder, archivedFrom: archivedFrom
   };
 }
 
@@ -375,6 +383,7 @@ function createWord_(input) {
       note: fields.note,
       color: fields.color,
       folder: fields.folder,
+      archivedFrom: fields.archivedFrom,
       createdAt: now,
       updatedAt: now
     };
@@ -407,6 +416,7 @@ function updateWord_(input) {
       note: fields.note,
       color: fields.color,
       folder: fields.folder,
+      archivedFrom: fields.archivedFrom,
       createdAt: existing.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
