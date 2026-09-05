@@ -30,6 +30,9 @@ const ENTER_TIMEOUT_MS = 420;
  */
 const holdsLock = new WeakSet();
 
+/** In-flight close per dialog, so a second caller can wait on the same one. */
+const closingPromises = new WeakMap();
+
 function acquireLock(dialog) {
   if (holdsLock.has(dialog)) return;
   holdsLock.add(dialog);
@@ -93,31 +96,48 @@ export function finishClose(dialog) {
   releaseLock(dialog);
 }
 
+/**
+ * @returns {Promise<void>} resolves once the dialog has actually closed.
+ *
+ * Worth waiting for: a dialog cannot be reopened while it is still on its way
+ * out, because showModal() does nothing to an open dialog. Anything that
+ * reuses the same element has to wait rather than guess at a delay.
+ */
 export function closeDialog(dialog) {
-  if (!dialog.open || dialog.classList.contains('is-closing')) return;
+  if (!dialog.open) return Promise.resolve();
+  if (dialog.classList.contains('is-closing')) {
+    return closingPromises.get(dialog) || Promise.resolve();
+  }
 
   dialog.classList.remove('is-open');
 
   if (reducedMotion.matches) {
     dialog.close();
     releaseLock(dialog);
-    return;
+    return Promise.resolve();
   }
 
   dialog.classList.add('is-closing');
 
-  let settled = false;
-  const finish = () => {
-    if (settled) return;
-    settled = true;
-    dialog.classList.remove('is-closing');
-    if (dialog.open) dialog.close();
-    releaseLock(dialog);
-  };
+  const promise = new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      dialog.classList.remove('is-closing');
+      if (dialog.open) dialog.close();
+      releaseLock(dialog);
+      closingPromises.delete(dialog);
+      resolve();
+    };
 
-  dialog.addEventListener('animationend', finish, { once: true });
-  // Safety net: if the animation never runs the dialog must still close.
-  setTimeout(finish, EXIT_TIMEOUT_MS);
+    dialog.addEventListener('animationend', finish, { once: true });
+    // Safety net: if the animation never runs the dialog must still close.
+    setTimeout(finish, EXIT_TIMEOUT_MS);
+  });
+
+  closingPromises.set(dialog, promise);
+  return promise;
 }
 
 /**

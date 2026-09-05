@@ -205,7 +205,8 @@ function openFolderSettings() {
     value: '',
     onSelect: (choice) => {
       if (choice === 'sort') {
-        setTimeout(openSortPicker, 180);
+        // openPicker queues itself behind the close; no delay to guess at.
+        openSortPicker();
       } else if (choice === 'rename') {
         setTimeout(() => openRenameFolder(folder), 180);
       } else if (choice === 'photo') {

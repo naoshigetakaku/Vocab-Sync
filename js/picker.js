@@ -13,6 +13,8 @@ const titleElement = document.getElementById('picker-title');
 const listElement = document.getElementById('picker-options');
 
 let pending = null;
+/** The picker's own close, when one is in flight. */
+let closing = null;
 
 function checkIcon() {
   const ns = 'http://www.w3.org/2000/svg';
@@ -40,7 +42,9 @@ export function initPicker() {
 
     const callback = pending;
     pending = null;
-    closeDialog(dialog);
+    closing = closeDialog(dialog);
+    // Called synchronously, on purpose: one of these choices opens the file
+    // picker, and Safari only allows that inside the gesture that asked for it.
     if (callback) callback(option.dataset.value);
   });
 }
@@ -50,6 +54,15 @@ export function initPicker() {
  *          value: string, onSelect: (value: string) => void}} config
  */
 export function openPicker(config) {
+  // Re-entrant: an option in this very list opens another list — the folder
+  // settings offering the sort order. The sheet has to finish leaving first,
+  // because showModal() does nothing while it is still open. Guessing at a
+  // delay is what stopped the sort menu from ever appearing.
+  if (dialog.open) {
+    (closing || Promise.resolve()).then(() => openPicker(config));
+    return;
+  }
+
   titleElement.textContent = config.title;
 
   const fragment = document.createDocumentFragment();
