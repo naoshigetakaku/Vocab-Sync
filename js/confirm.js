@@ -38,7 +38,8 @@ export function initConfirm() {
 }
 
 /**
- * @param {{title: string, text?: string, accept?: string}} config
+ * @param {{title: string, text?: string, accept?: string,
+ *          tone?: 'danger'|'normal'}} config
  * @returns {Promise<boolean>}
  */
 export function askConfirm(config) {
@@ -47,6 +48,8 @@ export function askConfirm(config) {
     textElement.textContent = config.text || '';
     textElement.hidden = !config.text;
     acceptButton.textContent = config.accept || 'Confirm';
+    // Red is for the actions that lose something. Archiving does not.
+    acceptButton.classList.toggle('button--danger', config.tone !== 'normal');
 
     pending = settle;
     openDialog(dialog);

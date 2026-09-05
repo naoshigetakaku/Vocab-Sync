@@ -109,7 +109,10 @@ saved before the upgrade read back with no colour, which is the default, and
 ever fills blanks, so it is safe to run more than once.
 
 Dragging a word leftwards in a list moves it to a folder called **Archive**,
-made on first use. It is an ordinary folder — it shows up on the grid and a
+made on first use. The row holds open while a centred confirmation asks; a tap
+outside it cancels. Inside the archive the same gesture takes a word back out —
+to Unsorted, and without asking, because putting something back where you can
+see it is not worth a question. It is an ordinary folder — it shows up on the grid and a
 word comes back out of it the same way anything else is moved — so nothing is
 ever destroyed by the gesture. Leftwards only: a rightward drag anywhere in a
 folder already means "back to the grid".

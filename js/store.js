@@ -240,6 +240,28 @@ export async function archiveWord(id) {
   });
 }
 
+/**
+ * Take a word back out of the archive.
+ *
+ * It lands in Unsorted rather than wherever it came from: the sheet does not
+ * record an origin, and inventing one would be a guess. Unsorted is visible on
+ * the grid, so the word is easy to file again.
+ */
+export async function unarchiveWord(id) {
+  const word = getWord(id);
+  if (!word) return null;
+
+  return updateWord({
+    id: word.id,
+    word: word.word,
+    pos: word.pos,
+    definition: word.definition,
+    note: word.note,
+    color: word.color,
+    folder: '',
+  });
+}
+
 /** Pass an empty string to clear the photo. */
 export async function setFolderPhoto(id, photo) {
   const saved = await api.setFolderPhoto(id, photo);

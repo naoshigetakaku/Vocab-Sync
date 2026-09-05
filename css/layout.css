@@ -298,20 +298,36 @@
   background: var(--bg);
 }
 
+/* Under the finger: no transition at all, or the row trails behind it. The
+   row already carries a 140ms transform transition for its press feedback. */
 .word-item.is-swiping .word-row {
   transform: translateX(var(--row-x, 0px));
-  /* The row carries a 140ms transform transition for its press feedback,
-     which would leave it trailing the finger. */
   transition: none;
 }
 
-.word-item.is-settling .word-row {
+/* Held open while the confirmation is on screen. */
+.word-item.is-parked .word-row {
   transform: translateX(var(--row-x, 0px));
-  transition: transform 180ms var(--ease-out);
+  transition: transform 190ms var(--ease-out);
 }
 
-.word-item.is-settling .word-item__action {
-  transition: opacity 180ms var(--ease-out);
+/* Springing back, or leaving for good — the same movement either way, only
+   the destination differs. */
+.word-item.is-exiting .word-row {
+  transform: translateX(var(--row-x, 0px));
+  transition: transform 190ms var(--ease-out);
+}
+
+.word-item.is-parked .word-item__action,
+.word-item.is-exiting .word-item__action {
+  transition: opacity 190ms var(--ease-out);
+}
+
+/* Applied for a single frame while the gesture state is cleared, so the row
+   snaps back to rest instead of transitioning there. */
+.word-item.is-reset .word-row {
+  transform: none !important;
+  transition: none !important;
 }
 
 /* The gap closes after the row has left, so the list does not jump. */

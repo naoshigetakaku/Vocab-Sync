@@ -8,7 +8,7 @@
 import { getWordsInFolder } from './store.js';
 import { sortWords } from './sort.js';
 import { getCurrentFolder, UNSORTED } from './view.js';
-import { DEFAULT_COLOR } from './config.js';
+import { DEFAULT_COLOR, ARCHIVE_FOLDER } from './config.js';
 
 const listElement = document.getElementById('word-list');
 const emptyElement = document.getElementById('empty-state');
@@ -35,7 +35,8 @@ function buildRow(word) {
   actionIcon.appendChild(box);
 
   const actionLabel = document.createElement('span');
-  actionLabel.textContent = 'Archive';
+  actionLabel.textContent =
+    getCurrentFolder() === ARCHIVE_FOLDER ? 'Unarchive' : 'Archive';
 
   action.appendChild(actionLabel);
   action.appendChild(actionIcon);

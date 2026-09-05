@@ -6,7 +6,8 @@ import { hasCredentials } from './auth.js';
 import { isRetryable, isBackendStale, getBackendVersion } from './api.js';
 import {
   subscribe, refresh, reset,
-  findFolderByName, getWordsInFolder, deleteFolder, setFolderPhoto, archiveWord,
+  findFolderByName, getWordsInFolder, deleteFolder, setFolderPhoto,
+  archiveWord, unarchiveWord, getWord,
 } from './store.js';
 import { UNSORTED_LABEL, ARCHIVE_FOLDER } from './config.js';
 import {
@@ -222,10 +223,39 @@ function openFolderSettings() {
   });
 }
 
-async function archiveRow(id) {
+function inArchive() {
+  return getCurrentFolder() === ARCHIVE_FOLDER;
+}
+
+/**
+ * Archiving asks first; taking something back out does not.
+ *
+ * The asymmetry is deliberate. Archiving makes a word disappear from the list
+ * you are reading, which is worth a beat of hesitation. Unarchiving puts one
+ * back where you can see it, and undoing that is another swipe away.
+ */
+function confirmSwipe(id) {
+  if (inArchive()) return Promise.resolve(true);
+
+  const word = getWord(id);
+  return askConfirm({
+    title: 'Archive this word?',
+    text: word ? '“' + word.word + '” moves to ' + ARCHIVE_FOLDER + '. Nothing is deleted.' : '',
+    accept: 'Archive',
+    tone: 'normal',
+  });
+}
+
+async function performSwipe(id) {
+  const archived = inArchive();
   try {
-    await archiveWord(id);
-    toast('Archived.');
+    if (archived) {
+      await unarchiveWord(id);
+      toast('Moved to ' + UNSORTED_LABEL + '.');
+    } else {
+      await archiveWord(id);
+      toast('Archived.');
+    }
   } catch (error) {
     toast(error.message);
   }
@@ -377,13 +407,13 @@ function wireUi() {
   // rather than ending in a jump.
   enableBackSwipe(mainElement, document.body, () => !isHome(), showHome);
 
-  // Leftwards on a row archives it. Pointless inside the archive itself, and
-  // the reel is not a list.
-  enableRowSwipe(
-    wordListElement,
-    () => !isHome() && getMode() !== 'reel' && getCurrentFolder() !== ARCHIVE_FOLDER,
-    archiveRow
-  );
+  // Leftwards on a row files it away — into the archive, or back out of it.
+  // The reel is not a list, so there is nothing to swipe there.
+  enableRowSwipe(wordListElement, {
+    canSwipe: () => !isHome() && getMode() !== 'reel',
+    confirm: confirmSwipe,
+    perform: performSwipe,
+  });
 
   // Without a back arrow or a menu entry, the swipe is the only way out — and
   // there is no swipe on a mouse. The folder name doubles as the way back.
