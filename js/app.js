@@ -60,7 +60,7 @@ let previousHome = true;
 function warnIfBackendStale() {
   if (staleWarningShown || !isBackendStale()) return;
   staleWarningShown = true;
-  toast('Apps Script is out of date (v' + getBackendVersion() + '). Folders, photos and colours will not save — see Connection.');
+  toast('Apps Script is out of date (v' + getBackendVersion() + '). Some fields will not save — see Connection.');
 }
 
 /**

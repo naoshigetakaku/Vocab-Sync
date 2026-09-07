@@ -45,8 +45,9 @@ var PASSPHRASE = 'change-me-to-something-long-and-random';
  *   3  folder column and the Folders sheet
  *   4  folder photos
  *   5  archivedFrom, so unarchiving can put a word back where it was
+ *   6  Acronym joins the parts of speech
  */
-var BACKEND_VERSION = 5;
+var BACKEND_VERSION = 6;
 
 var SHEET_NAME = 'Words';
 var FOLDER_SHEET_NAME = 'Folders';
@@ -73,7 +74,7 @@ var MAX_FOLDER_NAME_LENGTH = 60;
  */
 var MAX_PHOTO_LENGTH = 46000;
 
-var PARTS_OF_SPEECH = ['Verb', 'Adj', 'Adv', 'Noun', 'Idiom', 'Expression'];
+var PARTS_OF_SPEECH = ['Verb', 'Adj', 'Adv', 'Noun', 'Idiom', 'Expression', 'Acronym'];
 var WORD_COLORS = ['default', 'blue', 'green', 'orange', 'red', 'grey', 'purple'];
 
 var MAX_WORD_LENGTH = 200;

@@ -79,7 +79,7 @@ One row per word, in a tab called `Words`:
 |---|---|---|
 | A | `id` | UUID, generated server-side |
 | B | `word` | |
-| C | `pos` | Verb / Adj / Adv / Noun / Idiom / Expression |
+| C | `pos` | Verb / Adj / Adv / Noun / Idiom / Expression / Acronym |
 | D | `definition` | |
 | E | `note` | |
 | F | `createdAt` | ISO 8601 |

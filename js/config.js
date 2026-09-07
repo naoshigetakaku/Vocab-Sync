@@ -12,7 +12,7 @@
 export const DEFAULT_API_URL = '';
 
 /** Fixed vocabulary of the part-of-speech selector. */
-export const PARTS_OF_SPEECH = ['Verb', 'Adj', 'Adv', 'Noun', 'Idiom', 'Expression'];
+export const PARTS_OF_SPEECH = ['Verb', 'Adj', 'Adv', 'Noun', 'Idiom', 'Expression', 'Acronym'];
 
 /**
  * Word colours. The key is what gets stored, never the hex, so the same word
@@ -57,7 +57,7 @@ export const STORAGE_KEYS = {
  * predates a feature the app is already using — colours, for instance, get
  * written nowhere.
  */
-export const REQUIRED_BACKEND_VERSION = 5;
+export const REQUIRED_BACKEND_VERSION = 6;
 
 /** Shown for words whose folder is blank or names a folder that is gone. */
 export const UNSORTED_LABEL = 'Unsorted';
