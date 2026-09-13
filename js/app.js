@@ -14,7 +14,9 @@ import {
   subscribeView, getCurrentFolder, isHome, showHome, openFolder, UNSORTED,
   getMode, setMode,
 } from './view.js';
-import { initList, render as renderList, visibleWords, highlightNew } from './list.js';
+import {
+  initList, render as renderList, visibleWords, highlightNew, animateNextReflow,
+} from './list.js';
 import { initFolderGrid, renderFolders } from './folder-grid.js';
 import { initFolderForm, openCreateFolder, openRenameFolder } from './folder-form.js';
 import { initDetail, openDetail, syncDetail } from './detail.js';
@@ -252,6 +254,7 @@ async function performSwipe(id) {
   // Read the destination before the move; afterwards the origin is cleared.
   const destination = archived ? unarchiveDestination(id) : '';
 
+  animateNextReflow();
   try {
     if (archived) {
       await unarchiveWord(id);

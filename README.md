@@ -71,6 +71,11 @@ full screen with no browser chrome, and gets its own icon.
 Deleting the icon deletes the local cache with it. Nothing is lost — the words
 are in the spreadsheet — but the app has to be connected again.
 
+The installed app always keeps the fixed, phone-shaped layout. In a browser
+window 700px or wider (iPad or Mac) the layout spreads out instead: up to five
+folder columns and a multi-column word list. The switch is the
+`display-mode: browser` media query in `css/layout.css`.
+
 ## What is in the sheet
 
 One row per word, in a tab called `Words`:

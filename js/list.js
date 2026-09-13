@@ -16,6 +16,12 @@ const emptyElement = document.getElementById('empty-state');
 let staggerDone = false;
 let staggerTimer;
 let newestId = null;
+let reflowNext = false;
+let reflowUntil = 0;
+let lastSignature = '';
+
+/** Must match .word-item.is-reflowing in layout.css. */
+const REFLOW_MS = 260;
 
 function buildRow(word) {
   const item = document.createElement('li');
@@ -65,12 +71,95 @@ export function visibleWords() {
   return sortWords(getWordsInFolder(target === UNSORTED ? null : target));
 }
 
+/** True in the wide browser layout, where the list is a grid of cells. */
+function isMultiColumn() {
+  return getComputedStyle(listElement).gridTemplateColumns.split(' ').length > 1;
+}
+
+/** Where each row sits now, keyed by word id. */
+function measureRows() {
+  const boxes = new Map();
+  listElement.querySelectorAll('.word-row').forEach((row) => {
+    boxes.set(row.dataset.id, row.closest('.word-item').getBoundingClientRect());
+  });
+  return boxes;
+}
+
+/**
+ * Slides each row from where it was to where it now is.
+ *
+ * In a single column a row that leaves takes its gap with it, and nothing
+ * else moves sideways. In a grid every row after it shifts back one cell —
+ * some of them up a line and across the page — which reads as a jump unless
+ * the move is shown.
+ */
+function playReflow(before) {
+  const moved = [];
+
+  listElement.querySelectorAll('.word-row').forEach((row) => {
+    const was = before.get(row.dataset.id);
+    if (!was) return;
+    const item = row.closest('.word-item');
+    const now = item.getBoundingClientRect();
+    const dx = was.left - now.left;
+    const dy = was.top - now.top;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    item.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+    moved.push(item);
+  });
+
+  if (!moved.length) return;
+  reflowUntil = performance.now() + REFLOW_MS;
+
+  // Commit the starting offsets before they are released, or the browser
+  // folds both steps into one style change and nothing animates.
+  void listElement.offsetWidth;
+
+  moved.forEach((item) => {
+    item.classList.add('is-reflowing');
+    item.style.removeProperty('transform');
+  });
+
+  setTimeout(() => {
+    moved.forEach((item) => item.classList.remove('is-reflowing'));
+  }, REFLOW_MS + 60);
+}
+
+/** Everything a row shows, so an identical render can be recognised. */
+function signatureOf(words) {
+  return getCurrentFolder() + '\n' + words
+    .map((word) => [word.id, word.word, word.color, word.pending ? 1 : 0].join('\t'))
+    .join('\n');
+}
+
 export function render() {
   const words = visibleWords();
+
+  // The store notifies on every change anywhere — the server confirming a
+  // word that has just left this folder, a background sync that found nothing
+  // new. Rebuilding for those would restart whatever the rows are doing: a
+  // slide into a new cell, a swipe under the finger.
+  const signature = signatureOf(words);
+  if (signature === lastSignature && newestId === null && listElement.childElementCount) {
+    emptyElement.hidden = words.length !== 0 || getCurrentFolder() === null;
+    reflowNext = false;
+    return;
+  }
+  lastSignature = signature;
+
+  // A real change landing mid-slide — a sync bringing in an edit from another
+  // device — would otherwise swap in fresh rows at their final spots and cut
+  // the slide off. Measured boxes include the transform in flight, so the new
+  // rows carry on from wherever the old ones had got to.
+  const sliding = performance.now() < reflowUntil;
+  const before = (reflowNext || sliding) && isMultiColumn() ? measureRows() : null;
+  reflowNext = false;
 
   const fragment = document.createDocumentFragment();
   words.forEach((word) => fragment.appendChild(buildRow(word)));
   listElement.replaceChildren(fragment);
+
+  if (before) playReflow(before);
 
   emptyElement.hidden = words.length !== 0 || getCurrentFolder() === null;
 
@@ -83,6 +172,11 @@ export function render() {
   }
 
   newestId = null;
+}
+
+/** Called before a row is moved out, so the rest glide into its place. */
+export function animateNextReflow() {
+  reflowNext = true;
 }
 
 /** Called after a create so the new row animates in on its own. */

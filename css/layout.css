@@ -141,6 +141,8 @@
    open a gap under the last row. */
 
 .folders {
+  /* Read by js/folder-grid.js, which builds this many columns. */
+  --folder-columns: 2;
   display: flex;
   gap: 14px;
   padding: 8px 0 4px;
@@ -154,7 +156,8 @@
   gap: 14px;
 }
 
-.folders__column:nth-child(2) {
+/* Every other column drops, so any number of them still interlocks. */
+.folders__column:nth-child(even) {
   padding-top: 38px;
 }
 
@@ -397,6 +400,61 @@
   }
   .app-header__title { font-size: 30px; }
 
-  /* Three across once there is room, still interlocked. */
-  .folders__column:nth-child(2) { padding-top: 46px; }
+  .folders__column:nth-child(even) { padding-top: 46px; }
+}
+
+/* --- Browser on a wide screen ----------------------------------------------
+   iPad and Mac browsers get a layout that spreads out with the window. The
+   installed app is left exactly as it is: it reports display-mode standalone,
+   so none of this applies there, and an engine that does not understand the
+   query at all falls back to the fixed layout rather than the wide one. */
+
+@media (display-mode: browser) and (min-width: 700px) {
+  :root {
+    --page-pad: 28px;
+    --content-max: 1180px;
+  }
+
+  .app-header__bar,
+  .word-list,
+  .folders,
+  .empty {
+    max-width: var(--content-max);
+  }
+
+  .folders {
+    --folder-columns: 3;
+    gap: 18px;
+  }
+  .folders__column { gap: 18px; }
+  .folders__column:nth-child(even) { padding-top: 56px; }
+
+  .folder-tile { border-radius: 24px; }
+  .folder-tile__name { font-size: 18px; }
+
+  /* Row-major cells rather than newspaper columns: in a list that scrolls, a
+     reader should never have to go back up to find where the next column
+     starts. Cells in a row stretch to the same height, so the rules under
+     them line up across the page. */
+  .word-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    column-gap: 36px;
+  }
+
+  .word-row { overflow-wrap: anywhere; }
+}
+
+@media (display-mode: browser) and (min-width: 960px) {
+  .folders { --folder-columns: 4; }
+}
+
+@media (display-mode: browser) and (min-width: 1280px) {
+  .folders { --folder-columns: 5; }
+}
+
+/* Rows sliding into the cells they move to after one leaves; see
+   js/list.js. Only ever set in the multi-column layout above. */
+.word-item.is-reflowing {
+  transition: transform 260ms var(--ease-out);
 }

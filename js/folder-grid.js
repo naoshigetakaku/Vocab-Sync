@@ -1,10 +1,14 @@
 /**
  * folder-grid.js — the home screen.
  *
- * Two columns of square tiles with the right-hand one dropped half a tile, so
- * the rows interlock like brickwork. The offset is a padding on the column
- * rather than a transform on every other tile: a transform would leave the
- * shorter column hanging and open a gap at the bottom.
+ * Columns of square tiles with every other one dropped half a tile, so the
+ * rows interlock like brickwork. The offset is a padding on the column rather
+ * than a transform on every other tile: a transform would leave the shorter
+ * column hanging and open a gap at the bottom.
+ *
+ * Two columns on a phone and in the installed app; a wide browser window asks
+ * for more through --folder-columns (see css/layout.css). The count lives in
+ * the stylesheet so the breakpoints are defined in one place.
  */
 
 import { getFolders, getWordsInFolder, countUnsorted } from './store.js';
@@ -54,6 +58,11 @@ function buildTile(label, count, target, photo) {
   return button;
 }
 
+function columnCount() {
+  const value = parseInt(getComputedStyle(gridElement).getPropertyValue('--folder-columns'), 10);
+  return value > 0 ? value : 2;
+}
+
 export function renderFolders() {
   const folders = getFolders();
 
@@ -64,14 +73,17 @@ export function renderFolders() {
   const stray = countUnsorted();
   if (stray > 0) tiles.push(buildTile(UNSORTED_LABEL, stray, UNSORTED));
 
-  const left = document.createElement('div');
-  left.className = 'folders__column';
-  const right = document.createElement('div');
-  right.className = 'folders__column';
+  const count = columnCount();
+  const columns = Array.from({ length: count }, () => {
+    const column = document.createElement('div');
+    column.className = 'folders__column';
+    return column;
+  });
 
-  tiles.forEach((tile, index) => (index % 2 === 0 ? left : right).appendChild(tile));
+  // Dealt across in reading order, left to right and then down.
+  tiles.forEach((tile, index) => columns[index % count].appendChild(tile));
 
-  gridElement.replaceChildren(left, right);
+  gridElement.replaceChildren(...columns);
   emptyElement.hidden = tiles.length !== 0;
 
   // Measured only once the tiles are in the document and have a width.

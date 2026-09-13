@@ -187,6 +187,11 @@
   .sheet--tall { height: auto; max-height: 80dvh; }
 }
 
+@media (display-mode: browser) and (min-width: 960px) {
+  .sheet--tall { max-width: 600px; }
+  .sheet--tall .detail__word { font-size: 40px; }
+}
+
 /* --- Detail view ---------------------------------------------------------- */
 
 .detail__pos {
@@ -306,6 +311,13 @@
     max-width: 640px;
     margin-inline: auto;
   }
+}
+
+/* A browser window has the room for larger type; see the note on wide
+   screens in layout.css. */
+@media (display-mode: browser) and (min-width: 700px) {
+  .reel-card__inner { max-width: 760px; }
+  .reel-card__word { font-size: 52px; }
 }
 
 /* --- Option picker -------------------------------------------------------- */
