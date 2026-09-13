@@ -1,16 +1,23 @@
 /**
- * view.js — which screen is showing.
+ * view.js — what the home screen is showing.
  *
- * Two states only: the folder grid, or one folder's word list. Kept in memory,
- * so relaunching the app always lands on the grid.
+ * Two independent choices: which words (the All / Known / Unknown tab) and how
+ * (a list, or cards). The tab is remembered across launches like the sort
+ * order; the mode is not, so the app always opens on the list.
  */
+
+import { FILTERS, STORAGE_KEYS } from './config.js';
+import { readJson, writeJson } from './storage.js';
 
 const listeners = new Set();
 
-/** null means the folder grid. UNSORTED means the bucket for filed-nowhere. */
-export const UNSORTED = Symbol('unsorted');
+function isFilter(value) {
+  return FILTERS.some((entry) => entry.value === value);
+}
 
-let current = null;
+let filter = readJson(STORAGE_KEYS.filter, 'all');
+if (!isFilter(filter)) filter = 'all';
+
 let mode = 'list';
 
 export function subscribeView(listener) {
@@ -19,24 +26,31 @@ export function subscribeView(listener) {
 }
 
 function emit() {
-  listeners.forEach((listener) => listener(current));
+  listeners.forEach((listener) => listener());
 }
 
-/** null on the grid; a folder name, or UNSORTED, inside one. */
-export function getCurrentFolder() {
-  return current;
+/** 'all', 'known' or 'unknown'. */
+export function getFilter() {
+  return filter;
 }
 
-export function isHome() {
-  return current === null;
+export function setFilter(next) {
+  if (!isFilter(next) || next === filter) return;
+  filter = next;
+  writeJson(STORAGE_KEYS.filter, filter);
+  emit();
 }
 
-/** The name to store on a word created here; unsorted words carry none. */
-export function folderNameForNewWord() {
-  return typeof current === 'string' ? current : '';
+/**
+ * The status a word added right now should start with. Adding one under
+ * Known or Unknown files it there, so it does not vanish from the screen it
+ * was added on.
+ */
+export function statusForNewWord() {
+  return filter === 'all' ? '' : filter;
 }
 
-/** 'list' or 'reel'; only meaningful inside a folder. */
+/** 'list' or 'cards'. */
 export function getMode() {
   return mode;
 }
@@ -44,18 +58,5 @@ export function getMode() {
 export function setMode(next) {
   if (next === mode) return;
   mode = next;
-  emit();
-}
-
-export function showHome() {
-  if (current === null) return;
-  current = null;
-  emit();
-}
-
-export function openFolder(nameOrUnsorted) {
-  current = nameOrUnsorted;
-  // Always arrive at the list; the reel is something you opt into.
-  mode = 'list';
   emit();
 }

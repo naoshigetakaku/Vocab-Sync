@@ -100,25 +100,9 @@ async function call(action, payload) {
   return data;
 }
 
-const MESSAGES_EXTRA = {
-  DUPLICATE: 'A folder with that name already exists.',
-  TOO_LARGE: 'That image is too large to store.',
-};
-Object.assign(MESSAGES, MESSAGES_EXTRA);
-
 export const api = {
-  /** Returns the whole snapshot: words and the folders they live in. */
-  list: () => call('list', {}).then((data) => ({
-    words: data.words || [],
-    folders: data.folders || [],
-  })),
+  list: () => call('list', {}).then((data) => data.words || []),
   create: (fields) => call('create', { word: fields }).then((data) => data.word),
   update: (fields) => call('update', { word: fields }).then((data) => data.word),
   remove: (id) => call('delete', { id }).then(() => true),
-
-  createFolder: (name) => call('createFolder', { name }).then((data) => data.folder),
-  renameFolder: (id, name) => call('renameFolder', { id, name }).then((data) => data.folder),
-  removeFolder: (id) => call('deleteFolder', { id }).then(() => true),
-  setFolderPhoto: (id, photo) =>
-    call('setFolderPhoto', { id, photo }).then((data) => data.folder),
 };

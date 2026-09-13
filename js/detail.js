@@ -3,13 +3,16 @@
  */
 
 import { getWord, deleteWord, isPending } from './store.js';
-import { DEFAULT_COLOR, YOUGLISH_BASE, YOUGLISH_LANGUAGE } from './config.js';
+import {
+  DEFAULT_COLOR, YOUGLISH_BASE, YOUGLISH_LANGUAGE, STATUS_KNOWN, STATUS_UNKNOWN,
+} from './config.js';
 import { openDialog, closeDialog, wireDismiss } from './dialog.js';
 import { askConfirm } from './confirm.js';
 import { toast } from './toast.js';
 
 const dialog = document.getElementById('detail-dialog');
 const posElement = document.getElementById('detail-pos');
+const statusElement = document.getElementById('detail-status');
 const wordElement = document.getElementById('detail-word');
 const definitionBlock = document.getElementById('detail-definition-block');
 const definitionElement = document.getElementById('detail-definition');
@@ -25,6 +28,11 @@ let onEdit = () => {};
 function fill(word) {
   posElement.textContent = word.pos || '';
   posElement.hidden = !word.pos;
+
+  const status = word.status || '';
+  statusElement.dataset.status = status;
+  statusElement.textContent = status === STATUS_KNOWN ? 'Known' : status === STATUS_UNKNOWN ? 'Unknown' : '';
+  statusElement.hidden = !status;
 
   wordElement.textContent = word.word;
   wordElement.dataset.color = word.color || DEFAULT_COLOR;

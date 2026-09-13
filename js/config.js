@@ -49,26 +49,29 @@ export const STORAGE_KEYS = {
   outbox: 'vocabsync.outbox.v1',
   installHint: 'vocabsync.install-hint.v1',
   sort: 'vocabsync.sort.v1',
-  folders: 'vocabsync.folders.v1',
+  filter: 'vocabsync.filter.v1',
 };
+
+/**
+ * Where a word stands. Stored as written here; blank is a word that has not
+ * been swiped either way yet, and shows only under All.
+ */
+export const STATUS_KNOWN = 'known';
+export const STATUS_UNKNOWN = 'unknown';
+
+/** The tabs on the home screen. 'all' is a view, never a stored status. */
+export const FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: STATUS_KNOWN, label: 'Known' },
+  { value: STATUS_UNKNOWN, label: 'Unknown' },
+];
 
 /**
  * The Code.gs version this build needs. Anything lower means the deployment
  * predates a feature the app is already using — colours, for instance, get
  * written nowhere.
  */
-export const REQUIRED_BACKEND_VERSION = 6;
-
-/** Shown for words whose folder is blank or names a folder that is gone. */
-export const UNSORTED_LABEL = 'Unsorted';
-
-/**
- * Where a swiped word goes. An ordinary folder, so it shows up on the grid and
- * a word can be pulled back out of it the same way anything else is moved.
- */
-export const ARCHIVE_FOLDER = 'Archive';
-
-export const MAX_FOLDER_NAME_LENGTH = 60;
+export const REQUIRED_BACKEND_VERSION = 7;
 
 /** Apps Script cold starts can take a couple of seconds; allow for that. */
 export const REQUEST_TIMEOUT_MS = 20000;

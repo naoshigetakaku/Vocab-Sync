@@ -1,5 +1,5 @@
 /* ==========================================================================
-   layout.css — app shell, header, word list.
+   layout.css — app shell, header, tabs, word list.
    ========================================================================== */
 
 /* Outside the scroller, so it cannot move with the list. */
@@ -17,7 +17,7 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 14px 0 12px;
+  padding: 14px 0 10px;
 }
 
 .app-header__title {
@@ -30,9 +30,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* Inside a folder the name is also the way back. */
-.app-header__title.is-tappable { cursor: pointer; }
 
 /* Right-hand cluster of header controls. */
 .app-header__tools {
@@ -64,57 +61,68 @@
 
 .header-action:active { transform: scale(0.9); }
 
-/* Sits before the title rather than in the right-hand cluster. */
-.header-action--back {
-  margin-left: -6px;
-  color: var(--text-dim);
-}
-
-.header-action--back svg { stroke-width: 2.2; }
-
 .header-action svg {
   width: 19px;
   height: 19px;
   stroke-width: 1.9;
 }
 
-/* Sort control, pinned to the right of the title row. */
-.sort {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  align-self: center;
-  min-height: 34px;
-  padding: 0 11px 0 9px;
-  border: 1px solid var(--line);
+/* --- Tabs: All / Known / Unknown -------------------------------------------
+   One pill slides behind the selected tab and takes that tab's colour. It is
+   moved with a transform, not by changing its position, so the slide stays on
+   the compositor. */
+
+.filter {
+  --filter-index: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 11px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--segment-bg);
+  box-shadow: inset 0 1px 0 var(--gloss-edge);
+}
+
+.filter__indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 3);
+  border-radius: 999px;
+  background: var(--segment-all);
+  box-shadow: var(--shadow-segment);
+  transform: translateX(calc(var(--filter-index) * 100%));
+  transition: transform 300ms var(--ease-out),
+              background-color 300ms var(--ease-out);
+}
+
+.filter[data-active="known"]   .filter__indicator { background: var(--known-tint); box-shadow: none; }
+.filter[data-active="unknown"] .filter__indicator { background: var(--unknown-tint); box-shadow: none; }
+
+.filter__tab {
+  position: relative;
+  min-height: 32px;
+  padding: 0 6px;
+  border: 0;
   border-radius: 999px;
   background: transparent;
   color: var(--text-dim);
-  cursor: pointer;
-  transition: border-color var(--dur-fast) var(--ease-out),
-              transform var(--dur-fast) var(--ease-spring);
-}
-
-.sort:active { transform: scale(0.94); }
-
-.sort { box-shadow: inset 0 1px 0 var(--gloss-edge); }
-
-.sort__icon {
-  width: 15px;
-  height: 15px;
-  stroke-width: 2;
-  flex: none;
-}
-
-.sort__label {
-  display: inline-block;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  /* Fixed width keeps the button from resizing as the label cycles. */
-  min-width: 3.6em;
-  text-align: left;
+  cursor: pointer;
+  transition: color 300ms var(--ease-out);
 }
+
+.filter__tab[aria-selected="true"] { color: var(--text); }
+
+/* Known is green and Unknown red wherever they appear, selected or not. */
+.filter__tab--known   { color: var(--known); }
+.filter__tab--unknown { color: var(--unknown); }
+.filter__tab--known[aria-selected="true"]   { color: var(--known); }
+.filter__tab--unknown[aria-selected="true"] { color: var(--unknown); }
 
 /* The only scrolling region on the home screen. */
 .app-main {
@@ -134,126 +142,6 @@
 /* Held still while a dialog is open; see js/scroll-lock.js. */
 .app-main.is-locked { overflow: hidden; }
 
-/* --- Folder grid --------------------------------------------------------- */
-/* Two columns with the right one dropped half a tile, so the rows interlock
-   like brickwork. The offset is padding on the column rather than a transform
-   on alternate tiles: a transform would leave the shorter column hanging and
-   open a gap under the last row. */
-
-.folders {
-  /* Read by js/folder-grid.js, which builds this many columns. */
-  --folder-columns: 2;
-  display: flex;
-  gap: 14px;
-  padding: 8px 0 4px;
-}
-
-.folders__column {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* Every other column drops, so any number of them still interlocks. */
-.folders__column:nth-child(even) {
-  padding-top: 38px;
-}
-
-.folder-tile {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 3px;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  /* Same darker band as the photo tiles end in, so every caption sits on the
-     same ground whether there is a photo or not. */
-  background: linear-gradient(
-    to bottom,
-    var(--surface-raise) 52%,
-    var(--tile-caption) 86%
-  );
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-  box-shadow: inset 0 1px 0 var(--gloss-edge);
-  transition: transform var(--dur-fast) var(--ease-spring),
-              border-color var(--dur-fast) var(--ease-out);
-}
-
-.folder-tile:active { transform: scale(0.96); }
-
-/* A soft sheen off the top-left. Skipped where a photo already fills the
-   tile, since it would only muddy the image. */
-.folder-tile:not(.folder-tile--photo)::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(158deg, var(--gloss-sheen) 0%, transparent 46%);
-  pointer-events: none;
-}
-
-.folder-tile__photo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* The border is drawn on the tile; the photo must not paint over it. */
-  border-radius: inherit;
-}
-
-/* Carries the photo into the flat background the caption sits on, so the text
-   never lands on busy pixels. */
-.folder-tile__veil {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    to bottom,
-    var(--tile-fade) 24%,
-    var(--tile-caption) 72%
-  );
-  pointer-events: none;
-}
-
-.folder-tile__name,
-.folder-tile__count {
-  position: relative;
-}
-
-.folder-tile--unsorted {
-  border-style: dashed;
-  color: var(--text-dim);
-}
-
-/* One line always. js/fit-text.js shrinks the type to fit; past the point
-   where it would stop being readable the tail is elided instead, because a
-   6px folder name is no more use than a clipped one. */
-.folder-tile__name {
-  font-size: 17px;
-  font-weight: 650;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.folder-tile__count {
-  font-size: 13px;
-  color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
-}
-
 /* --- Word list ----------------------------------------------------------- */
 /* The home screen shows the word and nothing else. */
 
@@ -261,10 +149,11 @@
 
 .word-list li { border-bottom: 1px solid var(--line); }
 
-/* --- Swipe to archive ------------------------------------------------------
-   The row is opaque and slides over a label that is already in place, so the
+/* --- Swipe to file ---------------------------------------------------------
+   The row is opaque and slides over labels that are already in place, so the
    action is uncovered rather than drawn — which is why nothing has to be
-   inserted or measured mid-gesture. */
+   inserted or measured mid-gesture. Right uncovers Known on the left edge;
+   left uncovers Unknown on the right edge. */
 
 .word-item {
   position: relative;
@@ -277,25 +166,41 @@
   inset: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-right: 6px;
+  gap: 7px;
+  padding: 0 8px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: 0.02em;
-  color: var(--text-dim);
-  opacity: var(--row-progress, 0);
+  opacity: 0;
   pointer-events: none;
+}
+
+.word-item__action--known {
+  justify-content: flex-start;
+  color: var(--known);
+  background: var(--known-tint);
+}
+
+.word-item__action--unknown {
+  justify-content: flex-end;
+  color: var(--unknown);
+  background: var(--unknown-tint);
+}
+
+/* Only the label for the direction of travel ever shows. */
+.word-item.is-right .word-item__action--known,
+.word-item.is-left  .word-item__action--unknown {
+  opacity: var(--row-progress, 0);
 }
 
 .word-item__icon {
   width: 17px;
   height: 17px;
-  stroke-width: 1.8;
+  stroke-width: 2.2;
 }
 
-/* Opaque, and positioned so it paints above the absolutely placed label
-   rather than under it. */
+/* Opaque, and positioned so it paints above the absolutely placed labels
+   rather than under them. */
 .word-item .word-row {
   position: relative;
   background: var(--bg);
@@ -308,12 +213,6 @@
   transition: none;
 }
 
-/* Held open while the confirmation is on screen. */
-.word-item.is-parked .word-row {
-  transform: translateX(var(--row-x, 0px));
-  transition: transform 190ms var(--ease-out);
-}
-
 /* Springing back, or leaving for good — the same movement either way, only
    the destination differs. */
 .word-item.is-exiting .word-row {
@@ -321,7 +220,6 @@
   transition: transform 190ms var(--ease-out);
 }
 
-.word-item.is-parked .word-item__action,
 .word-item.is-exiting .word-item__action {
   transition: opacity 190ms var(--ease-out);
 }
@@ -339,10 +237,12 @@
   opacity: 0;
 }
 
-/* 11px padding with 17px type gives a ~48px row against the previous ~63px,
-   which is the ~1.3x more words per screen this was asked to hit. */
+/* 11px padding with 17px type gives a ~48px row, which fits roughly 1.3x as
+   many words on a screen as the original ~63px row. */
 .word-row {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   padding: 11px 4px;
   border: 0;
@@ -360,10 +260,37 @@
 
 .word-row:active { transform: scale(0.985); }
 
+.word-row__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Which pile a word is in. Only under All — on the other tabs every row
+   would carry the same mark, which says nothing. */
+.word-row__mark {
+  display: none;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  margin-right: 4px;
+  border-radius: 50%;
+}
+
+.word-list[data-filter="all"] .word-row[data-status="known"] .word-row__mark {
+  display: block;
+  background: var(--known);
+}
+
+.word-list[data-filter="all"] .word-row[data-status="unknown"] .word-row__mark {
+  display: block;
+  background: var(--unknown);
+}
+
 /* A word queued for upload is dimmed until the server confirms it. */
 .word-row--pending { color: var(--text-dim); }
 
-.word-row--pending::after {
+.word-row--pending .word-row__text::after {
   content: "";
   display: inline-block;
   width: 6px;
@@ -391,16 +318,14 @@
 /* --- Wider screens ------------------------------------------------------- */
 
 @media (min-width: 700px) {
-  .app-header__bar,
+  .app-header__inner,
   .word-list,
-  .folders,
   .empty {
     max-width: 640px;
     margin-inline: auto;
   }
   .app-header__title { font-size: 30px; }
-
-  .folders__column:nth-child(even) { padding-top: 46px; }
+  .filter { max-width: 380px; }
 }
 
 /* --- Browser on a wide screen ----------------------------------------------
@@ -415,22 +340,11 @@
     --content-max: 1180px;
   }
 
-  .app-header__bar,
+  .app-header__inner,
   .word-list,
-  .folders,
   .empty {
     max-width: var(--content-max);
   }
-
-  .folders {
-    --folder-columns: 3;
-    gap: 18px;
-  }
-  .folders__column { gap: 18px; }
-  .folders__column:nth-child(even) { padding-top: 56px; }
-
-  .folder-tile { border-radius: 24px; }
-  .folder-tile__name { font-size: 18px; }
 
   /* Row-major cells rather than newspaper columns: in a list that scrolls, a
      reader should never have to go back up to find where the next column
@@ -441,16 +355,6 @@
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     column-gap: 36px;
   }
-
-  .word-row { overflow-wrap: anywhere; }
-}
-
-@media (display-mode: browser) and (min-width: 960px) {
-  .folders { --folder-columns: 4; }
-}
-
-@media (display-mode: browser) and (min-width: 1280px) {
-  .folders { --folder-columns: 5; }
 }
 
 /* Rows sliding into the cells they move to after one leaves; see

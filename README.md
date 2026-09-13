@@ -3,10 +3,12 @@
 A minimal vocabulary notebook. Words live in a Google Spreadsheet, so the same
 list appears on every device. No server of your own, no build step, no fees.
 
-The home screen is a grid of folders, each of which can carry a photo. Inside a
-folder the words are listed by themselves; tap one for its part of speech,
-definition and note, or switch to **reel** and meet them one screen at a time
-in random order.
+The home screen lists the words by themselves; tap one for its part of speech,
+definition and note. Swipe a word **right** to mark it known and **left** to
+mark it unknown, and use the **All / Known / Unknown** tabs to see one pile at a
+time — green is always known, red always unknown. Switch to **cards** to meet
+the words one screen at a time in random order: the front shows only the word,
+and a tap turns the card over to everything else.
 
 ## How it fits together
 
@@ -55,7 +57,8 @@ entirely. Disconnecting clears both values from that device; the words stay in
 the spreadsheet.
 
 If the app reports that Apps Script is out of date, the deployment predates a
-column the app is already using — colours, for instance, get written nowhere.
+column the app is already using — a word's known/unknown status, for
+instance, gets written nowhere.
 Paste the current `Code.gs`, run `setup()`, and deploy a **new version** of the
 existing deployment.
 
@@ -72,8 +75,8 @@ Deleting the icon deletes the local cache with it. Nothing is lost — the words
 are in the spreadsheet — but the app has to be connected again.
 
 The installed app always keeps the fixed, phone-shaped layout. In a browser
-window 700px or wider (iPad or Mac) the layout spreads out instead: up to five
-folder columns and a multi-column word list. The switch is the
+window 700px or wider (iPad or Mac) the layout spreads out instead: a
+multi-column word list and larger cards. The switch is the
 `display-mode: browser` media query in `css/layout.css`.
 
 ## What is in the sheet
@@ -89,48 +92,38 @@ One row per word, in a tab called `Words`:
 | E | `note` | |
 | F | `createdAt` | ISO 8601 |
 | G | `updatedAt` | ISO 8601 |
-| H | `color` | `default`, `blue`, `green`, `orange`, `red`, `grey`, `purple` |
-| I | `folder` | Folder name, or blank for unsorted |
-| J | `archivedFrom` | Folder a word was archived out of; blank otherwise |
+| H | `color` | `default` or one of fifteen hues; see below |
+| I | `folder` | Retired — kept, never shown |
+| J | `archivedFrom` | Retired — kept, never shown |
+| K | `status` | `known`, `unknown`, or blank for not yet sorted |
 
 `color` is one of sixteen keys — `default` plus fifteen hues. The key is what
 is stored, never a hex value, so the same word picks the shade pitched for the
 device's current theme.
 
-A second tab, `Folders`, is the register of folder names — `id`, `name`,
-`createdAt`, `photo`. The photo is a JPEG data URL: the app crops it square,
-scales it to 320px and steps the quality down until it fits, because a cell
-holds at most 50,000 characters. It is a thumbnail by design, not an archive
-of the original. It exists so a folder you make on one device shows up on another
-before it has any words in it. Words point at their folder by **name**, which
-keeps the sheet readable by eye; renaming a folder rewrites the column.
-
 New fields are always appended on the right. Inserting one in the middle would
 shift every existing row's data into the wrong column.
 
-`color` and `folder` both arrived after the first release. Running `setup()`
-again appends the headers to an existing sheet without touching any row; words
-saved before the upgrade read back with no colour, which is the default, and
-`setup()` files every word that has no folder into **TOPS2026**. That step only
-ever fills blanks, so it is safe to run more than once.
+Running `setup()` again after an update appends any missing header to an
+existing sheet without touching a row; words saved before a column existed read
+back with its default — no colour, no status.
 
-Dragging a word leftwards in a list moves it to a folder called **Archive**,
-made on first use. The row holds open while a centred confirmation asks; a tap
-outside it cancels. Inside the archive the same gesture takes a word back out,
-without asking — putting something back where you can see it is not worth a
-question. It returns to the folder it was archived from, which is what
-`archivedFrom` is for; if that folder has since been renamed or deleted there
-is nowhere to return it to, and it lands in Unsorted instead. It is an ordinary folder — it shows up on the grid and a
-word comes back out of it the same way anything else is moved — so nothing is
-ever destroyed by the gesture. Leftwards only: a rightward drag anywhere in a
-folder already means "back to the grid".
+Folders and the archive have been retired. Their columns stay in the sheet and
+are carried through every save untouched, so nothing in them is lost; the
+`Folders` tab is simply no longer read, and can be deleted by hand if you no
+longer want it.
 
-Deleting a folder does not delete its words. They lose the folder name and
-gather under **Unsorted**, which appears on the grid only when something is
-actually in it. The colour changes the
-word's own type only — never the definition, the note, or the part-of-speech
-badge — and the stored value is the key rather than a hex code, so the same
-word picks the right shade in light and dark.
+**Known and unknown.** A new word starts in neither pile and shows only under
+All — unless it is added from the Known or Unknown tab, in which case it starts
+in that one. Only a swipe that would change something is available: a known
+word can only go left, an unknown one only right. Under a Known or Unknown tab
+the row slides out and the gap closes, exactly as the archive gesture used to;
+under All it springs back and takes its new colour. There is no confirmation,
+because the change is one swipe from being undone.
+
+The colour changes the word's own type only — never the definition, the note,
+or the part-of-speech badge — and the stored value is the key rather than a hex
+code, so the same word picks the right shade in light and dark.
 
 ## Updating the code
 
@@ -187,16 +180,11 @@ all. Filling it in trades that for one less field during setup.
 | `js/picker.js` | The app's own option list, replacing `<select>`. |
 | `js/confirm.js` | Centred confirmation popup. |
 | `js/toast.js` | Transient messages. |
-| `js/sort.js` | List ordering and the header control. |
-| `js/view.js` | Which screen is showing: the grid, or one folder. |
-| `js/folder-grid.js` | The folder grid — two interlocking columns. |
-| `js/folder-form.js` | Naming a folder, for create and rename. |
-| `js/list.js` | The word list inside a folder. |
-| `js/reel.js` | One word per screen, shuffled. |
-| `js/swipe-row.js` | Drag a word leftwards to archive it. |
-| `js/photo.js` | Shrinks a picked image to fit a spreadsheet cell. |
-| `js/fit-text.js` | Shrinks a folder name until it fits on one line. |
-| `js/nav-swipe.js` | Swipe right to leave a folder. |
+| `js/sort.js` | List ordering and its picker. |
+| `js/view.js` | The All / Known / Unknown tab, and list or cards. |
+| `js/list.js` | The word list. |
+| `js/cards.js` | Flash cards, shuffled; tap to turn one over. |
+| `js/swipe-row.js` | Drag a word right for known, left for unknown. |
 | `js/detail.js` | Detail dialog. |
 | `js/form.js` | Add / edit form. |
 | `js/setup.js` | First-run connection sheet. |

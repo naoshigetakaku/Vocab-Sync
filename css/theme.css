@@ -1,7 +1,8 @@
 /* ==========================================================================
    theme.css — design tokens, light/dark palette, base element resets.
-   The palette is greyscale only; the accent is pure black in light mode and
-   pure white in dark mode, so the UI stays monochrome in both.
+   The chrome is greyscale; the accent is near-black in light mode and
+   near-white in dark mode. The only colours with meaning are green for known
+   and red for unknown, plus whatever colour a word has been given.
    ========================================================================== */
 
 :root {
@@ -54,11 +55,18 @@
   --gloss-edge:  rgba(255, 255, 255, 0.7);
   --gloss-sheen: rgba(255, 255, 255, 0.55);
 
-  /* The band a folder's caption sits on: a touch darker than the tile, so the
-     name reads as sitting on something. --tile-fade is the same colour fully
-     transparent, so a photo can fade into it without passing through grey. */
-  --tile-caption: #F0F0F0;
-  --tile-fade:    rgba(240, 240, 240, 0);
+  /* Known and unknown. The solid colour is for text and marks; the tint is
+     for the ground behind them — a tab, a swipe, a badge. */
+  --known:        #0E8A45;
+  --known-tint:   rgba(14, 138, 69, 0.13);
+  --unknown:      #D42A2A;
+  --unknown-tint: rgba(212, 42, 42, 0.11);
+
+  /* The All / Known / Unknown control. */
+  --segment-bg:     #F0F0F0;
+  --segment-all:    #FFFFFF;
+  --shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-card:    0 10px 32px rgba(0, 0, 0, 0.08);
 
   /* Elevation */
   --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.14);
@@ -127,8 +135,16 @@
 
     --gloss-edge:  rgba(255, 255, 255, 0.065);
     --gloss-sheen: rgba(255, 255, 255, 0.04);
-    --tile-caption: #252525;
-    --tile-fade:    rgba(37, 37, 37, 0);
+
+    --known:        #4FD98B;
+    --known-tint:   rgba(79, 217, 139, 0.16);
+    --unknown:      #FF8080;
+    --unknown-tint: rgba(255, 128, 128, 0.15);
+
+    --segment-bg:     #2A2A2A;
+    --segment-all:    #3D3D3D;
+    --shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-card:    0 10px 32px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -197,6 +213,7 @@ code {
 button,
 a,
 .word-row,
+.flashcard,
 .option,
 .swatch,
 .sheet__grip,
@@ -226,34 +243,21 @@ a,
 
 /* Word colours apply to the word itself and nowhere else: labels, the part of
    speech badge and body text all keep the normal ink. */
-.word-row[data-color="red"], .detail__word[data-color="red"], .reel-card__word[data-color="red"] { color: var(--word-red); }
-.word-row[data-color="orange"], .detail__word[data-color="orange"], .reel-card__word[data-color="orange"] { color: var(--word-orange); }
-.word-row[data-color="amber"], .detail__word[data-color="amber"], .reel-card__word[data-color="amber"] { color: var(--word-amber); }
-.word-row[data-color="yellow"], .detail__word[data-color="yellow"], .reel-card__word[data-color="yellow"] { color: var(--word-yellow); }
-.word-row[data-color="lime"], .detail__word[data-color="lime"], .reel-card__word[data-color="lime"] { color: var(--word-lime); }
-.word-row[data-color="green"], .detail__word[data-color="green"], .reel-card__word[data-color="green"] { color: var(--word-green); }
-.word-row[data-color="teal"], .detail__word[data-color="teal"], .reel-card__word[data-color="teal"] { color: var(--word-teal); }
-.word-row[data-color="cyan"], .detail__word[data-color="cyan"], .reel-card__word[data-color="cyan"] { color: var(--word-cyan); }
-.word-row[data-color="blue"], .detail__word[data-color="blue"], .reel-card__word[data-color="blue"] { color: var(--word-blue); }
-.word-row[data-color="indigo"], .detail__word[data-color="indigo"], .reel-card__word[data-color="indigo"] { color: var(--word-indigo); }
-.word-row[data-color="violet"], .detail__word[data-color="violet"], .reel-card__word[data-color="violet"] { color: var(--word-violet); }
-.word-row[data-color="purple"], .detail__word[data-color="purple"], .reel-card__word[data-color="purple"] { color: var(--word-purple); }
-.word-row[data-color="magenta"], .detail__word[data-color="magenta"], .reel-card__word[data-color="magenta"] { color: var(--word-magenta); }
-.word-row[data-color="pink"], .detail__word[data-color="pink"], .reel-card__word[data-color="pink"] { color: var(--word-pink); }
-.word-row[data-color="grey"], .detail__word[data-color="grey"], .reel-card__word[data-color="grey"] { color: var(--word-grey); }
-
-/* Present for the file picker, never seen. */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
+.word-row[data-color="red"], .detail__word[data-color="red"], .flashcard__word[data-color="red"], .flashcard__title[data-color="red"] { color: var(--word-red); }
+.word-row[data-color="orange"], .detail__word[data-color="orange"], .flashcard__word[data-color="orange"], .flashcard__title[data-color="orange"] { color: var(--word-orange); }
+.word-row[data-color="amber"], .detail__word[data-color="amber"], .flashcard__word[data-color="amber"], .flashcard__title[data-color="amber"] { color: var(--word-amber); }
+.word-row[data-color="yellow"], .detail__word[data-color="yellow"], .flashcard__word[data-color="yellow"], .flashcard__title[data-color="yellow"] { color: var(--word-yellow); }
+.word-row[data-color="lime"], .detail__word[data-color="lime"], .flashcard__word[data-color="lime"], .flashcard__title[data-color="lime"] { color: var(--word-lime); }
+.word-row[data-color="green"], .detail__word[data-color="green"], .flashcard__word[data-color="green"], .flashcard__title[data-color="green"] { color: var(--word-green); }
+.word-row[data-color="teal"], .detail__word[data-color="teal"], .flashcard__word[data-color="teal"], .flashcard__title[data-color="teal"] { color: var(--word-teal); }
+.word-row[data-color="cyan"], .detail__word[data-color="cyan"], .flashcard__word[data-color="cyan"], .flashcard__title[data-color="cyan"] { color: var(--word-cyan); }
+.word-row[data-color="blue"], .detail__word[data-color="blue"], .flashcard__word[data-color="blue"], .flashcard__title[data-color="blue"] { color: var(--word-blue); }
+.word-row[data-color="indigo"], .detail__word[data-color="indigo"], .flashcard__word[data-color="indigo"], .flashcard__title[data-color="indigo"] { color: var(--word-indigo); }
+.word-row[data-color="violet"], .detail__word[data-color="violet"], .flashcard__word[data-color="violet"], .flashcard__title[data-color="violet"] { color: var(--word-violet); }
+.word-row[data-color="purple"], .detail__word[data-color="purple"], .flashcard__word[data-color="purple"], .flashcard__title[data-color="purple"] { color: var(--word-purple); }
+.word-row[data-color="magenta"], .detail__word[data-color="magenta"], .flashcard__word[data-color="magenta"], .flashcard__title[data-color="magenta"] { color: var(--word-magenta); }
+.word-row[data-color="pink"], .detail__word[data-color="pink"], .flashcard__word[data-color="pink"], .flashcard__title[data-color="pink"] { color: var(--word-pink); }
+.word-row[data-color="grey"], .detail__word[data-color="grey"], .flashcard__word[data-color="grey"], .flashcard__title[data-color="grey"] { color: var(--word-grey); }
 
 /* Inline SVG icons are drawn as strokes so they inherit the text colour. */
 svg {

@@ -194,7 +194,14 @@
 
 /* --- Detail view ---------------------------------------------------------- */
 
-.detail__pos {
+.detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.detail__pos,
+.detail__status {
   display: inline-block;
   padding: 3px 9px;
   border: 1px solid var(--line-strong);
@@ -205,6 +212,10 @@
   text-transform: uppercase;
   color: var(--text-dim);
 }
+
+.detail__status { border-color: transparent; }
+.detail__status[data-status="known"]   { color: var(--known);   background: var(--known-tint); }
+.detail__status[data-status="unknown"] { color: var(--unknown); background: var(--unknown-tint); }
 
 .detail__headline {
   display: flex;
@@ -265,16 +276,16 @@
   overflow-wrap: anywhere;
 }
 
-/* --- Reel ----------------------------------------------------------------- */
-/* One word per screen, snapped. The reel is its own scroller, so the page
-   behind it has to stop scrolling while it is up. */
+/* --- Cards ---------------------------------------------------------------- */
+/* One flash card per screen, snapped. The deck is its own scroller, so the
+   page behind it has to stop scrolling while it is up. */
 
-.app-main.is-reel {
+.app-main.is-cards {
   overflow: hidden;
   padding-bottom: 0;
 }
 
-.reel {
+.cards {
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -283,41 +294,136 @@
   scrollbar-width: none;
 }
 
-.reel::-webkit-scrollbar { display: none; }
+.cards::-webkit-scrollbar { display: none; }
 
-.reel-card {
+/* A screen per card. min-height rather than height, so a card whose back is
+   long can grow past the screen and still be read to the end. */
+.card-slot {
   display: flex;
   align-items: center;
-  height: 100%;
-  padding-bottom: calc(96px + var(--safe-bottom));
+  justify-content: center;
+  min-height: 100%;
+  padding: 18px 0 calc(92px + var(--safe-bottom));
   scroll-snap-align: center;
   /* Stops a hard flick from skimming past several words at once. */
   scroll-snap-stop: always;
+  /* Depth for the turn. Set here rather than inside the card's transform so
+     the card itself keeps a plain rotateY that the compositor can run. */
+  perspective: 1600px;
 }
 
-.reel-card__inner { width: 100%; }
+/* Both faces share one grid cell, so the card is exactly as tall as its
+   taller face and neither face ever has to scroll on its own — a scrolling
+   element inside a 3D turn is where iOS starts showing the wrong side. */
+.flashcard {
+  position: relative;
+  display: grid;
+  width: 100%;
+  max-width: 520px;
+  min-height: min(58vh, 460px);
+  min-height: min(58dvh, 460px);
+  transform-style: preserve-3d;
+  transition: transform 520ms var(--ease-out);
+  cursor: pointer;
+  outline: none;
+}
 
-.reel-card__word {
-  margin: 12px 0 26px;
-  font-size: 38px;
+.flashcard.is-flipped { transform: rotateY(180deg); }
+
+/* Promoted only around a turn; see js/cards.js. */
+.flashcard.is-primed { will-change: transform; }
+
+.flashcard:focus-visible .flashcard__face { border-color: var(--accent); }
+
+.flashcard__face {
+  grid-area: 1 / 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 30px 24px 16px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface-raise);
+  box-shadow: var(--shadow-card), inset 0 1px 0 var(--gloss-edge);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* An explicit rotation on the front as well: Safari only honours
+   backface-visibility on an element that has a 3D transform of its own. */
+.flashcard__face--front {
+  transform: rotateY(0deg);
+  align-items: center;
+  text-align: center;
+}
+
+.flashcard__face--back {
+  transform: rotateY(180deg);
+}
+
+.flashcard__word {
+  margin: auto 0;
+  padding: 12px 0;
+  font-size: 40px;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.12;
   letter-spacing: -0.03em;
   overflow-wrap: anywhere;
 }
 
-@media (min-width: 700px) {
-  .reel-card__inner {
-    max-width: 640px;
-    margin-inline: auto;
-  }
+.flashcard__body {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.flashcard__title {
+  margin: 10px 0 18px;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.flashcard__empty {
+  font-size: 15px;
+  color: var(--text-faint);
+}
+
+.flashcard__youglish {
+  align-self: center;
+  margin-top: 14px;
+}
+
+.flashcard__face--back .flashcard__youglish { align-self: flex-end; }
+
+/* Which pile the word is in — only under All, as in the list. */
+.flashcard__mark {
+  display: none;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.cards[data-filter="all"] .flashcard[data-status="known"] .flashcard__mark {
+  display: block;
+  background: var(--known);
+}
+
+.cards[data-filter="all"] .flashcard[data-status="unknown"] .flashcard__mark {
+  display: block;
+  background: var(--unknown);
 }
 
 /* A browser window has the room for larger type; see the note on wide
    screens in layout.css. */
 @media (display-mode: browser) and (min-width: 700px) {
-  .reel-card__inner { max-width: 760px; }
-  .reel-card__word { font-size: 52px; }
+  .flashcard { max-width: 640px; }
+  .flashcard__word { font-size: 52px; }
 }
 
 /* --- Option picker -------------------------------------------------------- */

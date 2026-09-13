@@ -61,11 +61,6 @@
   to   { transform: scale(0.96); opacity: 0; }
 }
 
-@keyframes label-swap {
-  from { transform: translateY(-5px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   25%      { transform: translateX(-5px); }
@@ -95,29 +90,20 @@
 }
 
 @keyframes view-in-back {
-  from { transform: translateX(-24%); opacity: 0; }
+  from { transform: translateX(-16%); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
 }
 
-.view-in-forward { animation: view-in-forward var(--dur-slow) var(--ease-out) both; }
-.view-in-back    { animation: view-in-back    var(--dur-mid)  var(--ease-out) both; }
-
-/* Dragged rightwards to leave a folder; see js/nav-swipe.js. The header moves
-   with the list so the screen reads as one piece rather than a sliding panel
-   under a fixed bar. --nav-x is set on <body> and inherited by both. */
-body.is-sliding .app-header,
-body.is-sliding .app-main,
-body.is-settling .app-header,
-body.is-settling .app-main {
-  transform: translateX(var(--nav-x, 0px));
-  will-change: transform;
+@keyframes view-in-fade {
+  from { transform: scale(0.985); opacity: 0; }
+  to   { transform: scale(1);     opacity: 1; }
 }
 
-body.is-settling .app-header,
-body.is-settling .app-main {
-  /* js/nav-swipe.js sets --nav-duration from how far there is left to go. */
-  transition: transform var(--nav-duration, var(--dur-mid)) var(--ease-out);
-}
+/* A tab further right enters from the right, one further left from the
+   left; switching between list and cards simply fades. */
+.view-in-forward { animation: view-in-forward var(--dur-mid) var(--ease-out) both; }
+.view-in-back    { animation: view-in-back    var(--dur-mid) var(--ease-out) both; }
+.view-in-fade    { animation: view-in-fade    var(--dur-mid) var(--ease-out) both; }
 
 /* --- Swipe to dismiss ------------------------------------------------------ */
 /* A finished animation with fill-mode "both" keeps overriding transform, so
@@ -166,6 +152,21 @@ body.is-settling .app-main {
 /* A row that has just been created slides in on its own. */
 .word-row.is-new { animation: row-in var(--dur-mid) var(--ease-spring) both; }
 
+/* A word swiped into a pile under All stays where it is, washed for a moment
+   in the colour of the pile it went to. */
+@keyframes flash-known {
+  from { background-color: var(--known-tint); }
+  to   { background-color: var(--bg); }
+}
+
+@keyframes flash-unknown {
+  from { background-color: var(--unknown-tint); }
+  to   { background-color: var(--bg); }
+}
+
+.word-item .word-row.is-flash-known   { animation: flash-known   700ms var(--ease-out) both; }
+.word-item .word-row.is-flash-unknown { animation: flash-unknown 700ms var(--ease-out) both; }
+
 /* --- Chrome --------------------------------------------------------------- */
 
 .fab { animation: fab-in var(--dur-slow) var(--ease-spring) both; }
@@ -178,9 +179,6 @@ body.is-settling .app-main {
 .banner:not([hidden]) { animation: banner-in var(--dur-slow) var(--ease-spring) both; }
 
 .form.is-invalid { animation: shake var(--dur-slow) var(--ease-out) both; }
-
-/* The new sort label drops in, so the tap reads as a change of state. */
-.sort__label.is-changed { animation: label-swap var(--dur-mid) var(--ease-spring) both; }
 
 /* --- Reduced motion ------------------------------------------------------- */
 

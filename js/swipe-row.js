@@ -1,19 +1,22 @@
 /**
- * swipe-row.js — drag a word leftwards to file it somewhere else.
+ * swipe-row.js — drag a word sideways to file it: right for known, left for
+ * unknown.
  *
- * Leftwards only, deliberately: a rightward drag anywhere in a folder already
- * means "back to the grid" (js/nav-swipe.js), and the two would fight over the
- * same pixels. The direction is settled from the first few pixels and never
- * revisited, so the list can still be scrolled vertically without the rows
- * twitching sideways.
+ * Only the direction that would change something is available. A word that is
+ * already known has nothing to gain from another rightward drag, so that drag
+ * is left to scrolling instead of pulling the row for no result. The direction
+ * is settled from the first few pixels and never revisited, so the list can
+ * still be scrolled vertically without the rows twitching sideways.
  *
- * The sequence after the threshold is: park the row, ask (if the caller wants
- * a confirmation), then either play the exit and commit, or spring back.
+ * There is no confirmation: the change is one swipe from being undone. What
+ * happens after the threshold depends on whether the word is still meant to be
+ * on screen afterwards — under a tab it no longer belongs to, the row slides
+ * out and the gap closes; under All it springs back and takes its new colour.
  *
  * Nothing here holds on to a DOM node across an await. The list re-renders on
- * every store change — a background sync is enough — so a node captured before
- * the confirmation is very often not the node on screen after it. Each step
- * looks the row up again by word id, and simply does nothing if it has gone.
+ * store changes, so a node captured before a step is often not the node on
+ * screen after it. Each step looks the row up again by word id, and simply
+ * does nothing if it has gone.
  */
 
 /** Fraction of the row's width that counts as a commit. */
@@ -22,23 +25,25 @@ const COMMIT_RATIO = 0.38;
 const COMMIT_VELOCITY = 0.65;
 const START_SLOP = 8;
 
-/** How far the row sits open while a confirmation is up. */
-const PARK_RATIO = 0.34;
-
 /** Must match the transitions in layout.css. */
 const SLIDE_MS = 190;
 const COLLAPSE_MS = 200;
 const SPRING_MS = 190;
 
+export const RIGHT = 'right';
+export const LEFT = 'left';
+
 export function enableRowSwipe(listElement, handlers) {
   const canSwipe = handlers.canSwipe || (() => true);
-  const confirm = handlers.confirm || (() => Promise.resolve(true));
+  const allows = handlers.allows || (() => true);
+  const stays = handlers.stays || (() => false);
   const perform = handlers.perform;
 
   let tracking = false;
   let swiping = false;
   let busy = false;
   let activeId = null;
+  let direction = null;
   let width = 1;
   let startX = 0;
   let startY = 0;
@@ -56,15 +61,14 @@ export function enableRowSwipe(listElement, handlers) {
   function strip(item) {
     if (!item) return;
 
-    item.classList.remove('is-swiping', 'is-parked', 'is-exiting', 'is-collapsing');
+    item.classList.remove('is-swiping', 'is-exiting', 'is-collapsing', 'is-right', 'is-left');
     item.style.removeProperty('--row-x');
     item.style.removeProperty('--row-progress');
     item.style.removeProperty('height');
 
     // Land at rest in this frame. The row carries a transform transition of
     // its own for press feedback, and leaving that to unwind the offset
-    // strands the row part-way across whenever the frame budget slips —
-    // which is precisely the jitter this gesture used to show.
+    // strands the row part-way across whenever the frame budget slips.
     const row = item.querySelector('.word-row');
     if (!row) return;
     item.classList.add('is-reset');
@@ -89,6 +93,7 @@ export function enableRowSwipe(listElement, handlers) {
     if (!item) return;
 
     activeId = row.dataset.id;
+    direction = null;
     width = item.getBoundingClientRect().width || 1;
     tracking = true;
     startX = event.touches[0].clientX;
@@ -113,13 +118,15 @@ export function enableRowSwipe(listElement, handlers) {
 
     if (!swiping) {
       if (Math.abs(dx) < START_SLOP && Math.abs(dy) < START_SLOP) return;
-      // Vertical, or rightward: not ours. Scrolling and the back gesture win.
-      if (Math.abs(dy) >= Math.abs(dx) || dx >= 0) {
+      // Vertical is scrolling. Sideways, only if it would change something.
+      const wanted = dx > 0 ? RIGHT : LEFT;
+      if (Math.abs(dy) >= Math.abs(dx) || !allows(activeId, wanted)) {
         resetGesture();
         return;
       }
+      direction = wanted;
       swiping = true;
-      item.classList.add('is-swiping');
+      item.classList.add('is-swiping', direction === RIGHT ? 'is-right' : 'is-left');
     }
 
     const elapsed = Math.max(1, event.timeStamp - lastTime);
@@ -129,7 +136,9 @@ export function enableRowSwipe(listElement, handlers) {
 
     event.preventDefault();
 
-    const travelled = Math.min(0, dx);
+    // Held to the side it started on; crossing back over the middle does not
+    // turn it into the other gesture.
+    const travelled = direction === RIGHT ? Math.max(0, dx) : Math.min(0, dx);
     item.style.setProperty('--row-x', travelled + 'px');
     // The label behind fades up as the commit point approaches, so the
     // gesture says what it is going to do before it does it.
@@ -141,12 +150,8 @@ export function enableRowSwipe(listElement, handlers) {
 
   /**
    * Resolves when the transition really ends, or when the fallback fires —
-   * whichever comes first.
-   *
-   * Timers alone were the source of the jitter: a throttled or busy frame
-   * stretches them, and the next step then starts on top of a transition that
-   * has not finished. The event is the truth; the timer only guarantees the
-   * sequence can never stall.
+   * whichever comes first. The event is the truth; the timer only guarantees
+   * the sequence can never stall when a busy frame swallows it.
    */
   function afterTransition(element, property, fallbackMs) {
     return new Promise((resolve) => {
@@ -168,22 +173,12 @@ export function enableRowSwipe(listElement, handlers) {
     });
   }
 
-  /** Holds the row open at a fixed offset while the question is on screen. */
-  function park(id) {
-    const item = itemFor(id);
-    if (!item) return;
-    item.classList.remove('is-swiping');
-    item.classList.add('is-parked');
-    item.style.setProperty('--row-x', -Math.round(width * PARK_RATIO) + 'px');
-    item.style.setProperty('--row-progress', '1');
-  }
-
   async function springBack(id) {
     const item = itemFor(id);
     if (!item) return;
 
     const row = item.querySelector('.word-row');
-    item.classList.remove('is-swiping', 'is-parked');
+    item.classList.remove('is-swiping');
     item.classList.add('is-exiting');
     item.style.setProperty('--row-x', '0px');
     item.style.setProperty('--row-progress', '0');
@@ -193,16 +188,17 @@ export function enableRowSwipe(listElement, handlers) {
   }
 
   /** Slides the row the rest of the way out, then closes the gap it leaves. */
-  async function playExit(id) {
+  async function playExit(id, towards) {
     const item = itemFor(id);
     if (!item) return;
 
     const box = item.getBoundingClientRect();
     const row = item.querySelector('.word-row');
+    const distance = Math.ceil(box.width);
 
-    item.classList.remove('is-swiping', 'is-parked');
+    item.classList.remove('is-swiping');
     item.classList.add('is-exiting');
-    item.style.setProperty('--row-x', -Math.ceil(box.width) + 'px');
+    item.style.setProperty('--row-x', (towards === RIGHT ? distance : -distance) + 'px');
     item.style.setProperty('--row-progress', '1');
 
     await afterTransition(row, 'transform', SLIDE_MS + 150);
@@ -221,19 +217,19 @@ export function enableRowSwipe(listElement, handlers) {
     await afterTransition(still, 'height', COLLAPSE_MS + 150);
   }
 
-  async function run(id) {
+  async function run(id, towards) {
     busy = true;
     try {
-      park(id);
-      const proceed = await confirm(id);
-      if (!proceed) {
+      // Decided before anything changes: afterwards the word is in its new
+      // pile, and the answer would be about the wrong state.
+      if (stays(id, towards)) {
         await springBack(id);
-        return;
+      } else {
+        await playExit(id, towards);
       }
-      await playExit(id);
       // The list re-renders here, which is exactly why the node was never
       // held on to.
-      await perform(id);
+      await perform(id, towards);
     } finally {
       strip(itemFor(id));
       busy = false;
@@ -249,11 +245,14 @@ export function enableRowSwipe(listElement, handlers) {
       return;
     }
 
-    const travelled = startX - lastX;
     const id = activeId;
+    const towards = direction;
+    const travelled = towards === RIGHT ? lastX - startX : startX - lastX;
+    // A flick only counts in the direction the row is travelling.
+    const flicked = (towards === RIGHT ? velocity : -velocity) > COMMIT_VELOCITY;
     resetGesture();
 
-    if (travelled > width * COMMIT_RATIO || -velocity > COMMIT_VELOCITY) run(id);
+    if (travelled > 0 && (travelled > width * COMMIT_RATIO || flicked)) run(id, towards);
     else springBack(id).then(() => { activeId = null; });
   }
 

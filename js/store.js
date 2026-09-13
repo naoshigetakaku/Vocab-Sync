@@ -6,12 +6,24 @@
  */
 
 import { api, ApiError, isRetryable } from './api.js';
-import { STORAGE_KEYS, ARCHIVE_FOLDER } from './config.js';
-import { readJson, writeJson } from './storage.js';
+import { STORAGE_KEYS } from './config.js';
+import { readJson, writeJson, remove } from './storage.js';
 
 let words = readJson(STORAGE_KEYS.words, []);
-let folders = readJson(STORAGE_KEYS.folders, []);
 let outbox = readJson(STORAGE_KEYS.outbox, []);
+
+// Left behind by the folder feature; nothing reads it any more.
+remove('vocabsync.folders.v1');
+
+/**
+ * Every field the sheet stores for a word. An update rewrites the whole row,
+ * so anything a caller leaves out has to be filled from what is already
+ * known — including folder and archivedFrom, which no screen shows any more
+ * but which still hold the user's data.
+ */
+const STORED_FIELDS = [
+  'word', 'pos', 'definition', 'note', 'color', 'folder', 'archivedFrom', 'status',
+];
 
 const listeners = new Set();
 
@@ -34,34 +46,10 @@ export function getWords() {
   return words.slice();
 }
 
-/** Creation order, so a folder keeps the same place on the grid for good. */
-export function getFolders() {
-  return folders.slice().sort((a, b) =>
-    String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
-}
-
-export function getFolder(id) {
-  return folders.find((folder) => folder.id === id) || null;
-}
-
-export function findFolderByName(name) {
-  return folders.find((folder) => folder.name === name) || null;
-}
-
-/**
- * Words in one folder. Passing null gathers the unsorted ones: no folder at
- * all, or a folder that has since been deleted.
- */
-export function getWordsInFolder(name) {
-  if (name === null) {
-    const known = new Set(folders.map((folder) => folder.name));
-    return words.filter((word) => !word.folder || !known.has(word.folder));
-  }
-  return words.filter((word) => word.folder === name);
-}
-
-export function countUnsorted() {
-  return getWordsInFolder(null).length;
+/** Words with this status; 'all' returns every word. */
+export function getWordsByStatus(filter) {
+  if (filter === 'all') return getWords();
+  return words.filter((word) => (word.status || '') === filter);
 }
 
 export function getWord(id) {
@@ -77,7 +65,6 @@ export function isPending(id) {
 
 function persist() {
   writeJson(STORAGE_KEYS.words, words);
-  writeJson(STORAGE_KEYS.folders, folders);
   writeJson(STORAGE_KEYS.outbox, outbox);
 }
 
@@ -184,119 +171,7 @@ function mergeRemote(remote) {
 /** Push anything queued, then pull the authoritative snapshot. */
 export async function refresh() {
   await flushOutbox();
-  const snapshot = await api.list();
-  folders = snapshot.folders;
-  mergeRemote(snapshot.words);
-  commit();
-}
-
-/* --- Folders --------------------------------------------------------------
-   No outbox here. A folder change is rare and deliberate, and replaying one
-   offline against a name another device may have taken in the meantime is a
-   conflict worth refusing rather than guessing at. */
-
-export async function createFolder(name) {
-  const saved = await api.createFolder(name);
-  folders = folders.concat([saved]);
-  commit();
-  return saved;
-}
-
-export async function renameFolder(id, name) {
-  const previous = getFolder(id);
-  const saved = await api.renameFolder(id, name);
-
-  folders = folders.map((folder) => (folder.id === id ? saved : folder));
-  // Words point at the folder by name, so they follow the rename locally too.
-  if (previous && previous.name !== saved.name) {
-    words = words.map((word) =>
-      (word.folder === previous.name ? Object.assign({}, word, { folder: saved.name }) : word));
-  }
-  commit();
-  return saved;
-}
-
-/**
- * Move a word into the archive, creating that folder the first time.
- *
- * Nothing is deleted: the word keeps every field and simply changes folder,
- * so it can be moved back from the edit sheet like any other.
- */
-export async function archiveWord(id) {
-  const word = getWord(id);
-  if (!word) return null;
-  if (word.folder === ARCHIVE_FOLDER) return word;
-
-  if (!findFolderByName(ARCHIVE_FOLDER)) await createFolder(ARCHIVE_FOLDER);
-
-  return updateWord({
-    id: word.id,
-    word: word.word,
-    pos: word.pos,
-    definition: word.definition,
-    note: word.note,
-    color: word.color,
-    folder: ARCHIVE_FOLDER,
-    // Remembered so unarchiving can put it back rather than guess.
-    archivedFrom: word.folder || '',
-  });
-}
-
-/**
- * Where a word would land if it were taken out of the archive right now.
- *
- * The folder it came from may have been renamed or deleted while it sat
- * there, in which case there is nowhere to return it to and it falls to
- * Unsorted. Exported so the interface can say which before it happens.
- */
-export function unarchiveDestination(id) {
-  const word = getWord(id);
-  if (!word) return '';
-  const origin = word.archivedFrom || '';
-  return origin && findFolderByName(origin) ? origin : '';
-}
-
-/**
- * Take a word back out of the archive, into the folder it was archived from.
- *
- * If that folder is gone — renamed, or deleted — the word lands in Unsorted,
- * which is visible on the grid and easy to file again. Either way the
- * remembered origin is cleared, so it does not linger and mislead later.
- */
-export async function unarchiveWord(id) {
-  const word = getWord(id);
-  if (!word) return null;
-
-  return updateWord({
-    id: word.id,
-    word: word.word,
-    pos: word.pos,
-    definition: word.definition,
-    note: word.note,
-    color: word.color,
-    folder: unarchiveDestination(id),
-    archivedFrom: '',
-  });
-}
-
-/** Pass an empty string to clear the photo. */
-export async function setFolderPhoto(id, photo) {
-  const saved = await api.setFolderPhoto(id, photo);
-  folders = folders.map((folder) => (folder.id === id ? saved : folder));
-  commit();
-  return saved;
-}
-
-export async function deleteFolder(id) {
-  const previous = getFolder(id);
-  await api.removeFolder(id);
-
-  folders = folders.filter((folder) => folder.id !== id);
-  // The words survive as unsorted.
-  if (previous) {
-    words = words.map((word) =>
-      (word.folder === previous.name ? Object.assign({}, word, { folder: '' }) : word));
-  }
+  mergeRemote(await api.list());
   commit();
 }
 
@@ -334,9 +209,13 @@ export async function updateWord(fields) {
   const previous = getWord(fields.id);
   if (!previous) throw new ApiError('NOT_FOUND', 'That word no longer exists.');
 
-  // The edit sheet knows nothing about archivedFrom, and the backend rewrites
-  // the whole row — so carry it forward unless the caller means to change it.
-  fields = Object.assign({ archivedFrom: previous.archivedFrom || '' }, fields);
+  // Carry every stored field forward unless the caller means to change it.
+  // See STORED_FIELDS.
+  const carried = {};
+  STORED_FIELDS.forEach((field) => {
+    carried[field] = previous[field] === undefined ? '' : previous[field];
+  });
+  fields = Object.assign(carried, fields);
 
   const optimistic = Object.assign({}, previous, fields, {
     updatedAt: new Date().toISOString(),
@@ -360,6 +239,14 @@ export async function updateWord(fields) {
     commit();
     throw error;
   }
+}
+
+/** Files a word as known or unknown. */
+export function setStatus(id, status) {
+  const word = getWord(id);
+  if (!word) return Promise.resolve(null);
+  if ((word.status || '') === status) return Promise.resolve(word);
+  return updateWord({ id, status });
 }
 
 export async function deleteWord(id) {
@@ -386,7 +273,6 @@ export async function deleteWord(id) {
 /** Drop every cached record — used when the credentials are replaced. */
 export function reset() {
   words = [];
-  folders = [];
   outbox = [];
   commit();
 }

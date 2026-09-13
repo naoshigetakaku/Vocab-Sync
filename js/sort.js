@@ -1,8 +1,8 @@
 /**
  * sort.js — ordering of the word list.
  *
- * The control lives inside the folder settings menu now, so this module owns
- * the mode and the picker, not a button.
+ * The header's sort button opens the picker; this module owns the mode and
+ * the picker, not the button.
  */
 
 import { STORAGE_KEYS } from './config.js';
@@ -46,12 +46,6 @@ let onChange = () => {};
 
 export function getSortMode() {
   return current;
-}
-
-/** Wording for the settings menu, which shows the mode in place. */
-export function getSortLabel() {
-  const mode = MODES.find((entry) => entry.value === current);
-  return mode ? mode.label : '';
 }
 
 export function sortWords(words) {

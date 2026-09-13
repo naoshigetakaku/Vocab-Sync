@@ -22,10 +22,10 @@
  * every request has to stay inside the "simple request" set. The body is JSON
  * regardless and is parsed by hand below.
  *
- * Upgrading an existing sheet: the "color" column was added after the first
- * release. Running setup() appends the missing header without touching any
- * existing row; words saved before the upgrade simply read back with no
- * colour, which is the default.
+ * Upgrading an existing sheet: columns are only ever added, at the end.
+ * Running setup() appends any header this version expects without touching an
+ * existing row; words saved before a column existed read back with its
+ * default (no colour, no status).
  */
 
 /**
@@ -46,36 +46,37 @@ var PASSPHRASE = 'change-me-to-something-long-and-random';
  *   4  folder photos
  *   5  archivedFrom, so unarchiving can put a word back where it was
  *   6  Acronym joins the parts of speech
+ *   7  status (known / unknown); all sixteen colours; folders retired
  */
-var BACKEND_VERSION = 6;
+var BACKEND_VERSION = 7;
 
 var SHEET_NAME = 'Words';
-var FOLDER_SHEET_NAME = 'Folders';
-
-/** Where every word already in the sheet lands when folders arrive. */
-var LEGACY_FOLDER = 'TOPS2026';
 
 /**
  * Column order. New fields go on the END of this list — inserting one in the
  * middle would shift every existing row's data into the wrong column.
+ *
+ * folder and archivedFrom belong to the retired folder feature. They stay in
+ * the list so that rewriting a row carries their values through untouched:
+ * a column missing from here would be blanked on every update.
  */
 var HEADERS = [
   'id', 'word', 'pos', 'definition', 'note',
-  'createdAt', 'updatedAt', 'color', 'folder', 'archivedFrom'
+  'createdAt', 'updatedAt', 'color', 'folder', 'archivedFrom', 'status'
 ];
-
-var FOLDER_HEADERS = ['id', 'name', 'createdAt', 'photo'];
 
 var MAX_FOLDER_NAME_LENGTH = 60;
 
-/**
- * A cell holds at most 50,000 characters, and the photo is a base64 data URL.
- * The app downscales to stay well under this; the check is the backstop.
- */
-var MAX_PHOTO_LENGTH = 46000;
-
 var PARTS_OF_SPEECH = ['Verb', 'Adj', 'Adv', 'Noun', 'Idiom', 'Expression', 'Acronym'];
-var WORD_COLORS = ['default', 'blue', 'green', 'orange', 'red', 'grey', 'purple'];
+
+/** Must match WORD_COLORS in js/config.js. */
+var WORD_COLORS = [
+  'default', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'teal',
+  'cyan', 'blue', 'indigo', 'violet', 'purple', 'magenta', 'pink', 'grey'
+];
+
+/** Blank means the word has not been sorted into either pile yet. */
+var STATUSES = ['', 'known', 'unknown'];
 
 var MAX_WORD_LENGTH = 200;
 var MAX_TEXT_LENGTH = 2000;
@@ -101,24 +102,7 @@ function handle_(e) {
 
     switch (request.action) {
       case 'list':
-        return json_({
-          ok: true,
-          version: BACKEND_VERSION,
-          words: listWords_(),
-          folders: listFolders_()
-        });
-      case 'createFolder':
-        return json_({ ok: true, version: BACKEND_VERSION, folder: createFolder_(request.name) });
-      case 'renameFolder':
-        return json_({ ok: true, version: BACKEND_VERSION, folder: renameFolder_(request.id, request.name) });
-      case 'deleteFolder':
-        return json_({ ok: true, version: BACKEND_VERSION, id: deleteFolder_(request.id) });
-      case 'setFolderPhoto':
-        return json_({
-          ok: true,
-          version: BACKEND_VERSION,
-          folder: setFolderPhoto_(request.id, request.photo)
-        });
+        return json_({ ok: true, version: BACKEND_VERSION, words: listWords_() });
       case 'create':
         return json_({ ok: true, version: BACKEND_VERSION, word: createWord_(request.word) });
       case 'update':
@@ -275,6 +259,7 @@ function rowToWord_(row, map) {
   };
 
   var colour = read('color');
+  var status = read('status');
 
   return {
     id: read('id'),
@@ -284,10 +269,10 @@ function rowToWord_(row, map) {
     note: read('note'),
     // Rows written before the colour column existed come back blank.
     color: WORD_COLORS.indexOf(colour) === -1 ? 'default' : colour,
-    // Blank means the word is unsorted; the app shows those together.
+    // Retired folder fields, carried through so a rewrite does not lose them.
     folder: read('folder'),
-    // The folder this word was archived out of, so it can go back there.
     archivedFrom: read('archivedFrom'),
+    status: STATUSES.indexOf(status) === -1 ? '' : status,
     createdAt: read('createdAt'),
     updatedAt: read('updatedAt')
   };
@@ -320,6 +305,7 @@ function validate_(input) {
   var color = String(input.color || 'default').trim();
   var folder = String(input.folder || '').trim();
   var archivedFrom = String(input.archivedFrom || '').trim();
+  var status = String(input.status || '').trim();
 
   if (!word) fail_('BAD_REQUEST', 'Word is required.');
   if (word.length > MAX_WORD_LENGTH) fail_('BAD_REQUEST', 'Word is too long.');
@@ -329,10 +315,11 @@ function validate_(input) {
   if (WORD_COLORS.indexOf(color) === -1) fail_('BAD_REQUEST', 'Unknown colour.');
   if (folder.length > MAX_FOLDER_NAME_LENGTH) fail_('BAD_REQUEST', 'Folder name is too long.');
   if (archivedFrom.length > MAX_FOLDER_NAME_LENGTH) fail_('BAD_REQUEST', 'Folder name is too long.');
+  if (STATUSES.indexOf(status) === -1) fail_('BAD_REQUEST', 'Unknown status.');
 
   return {
     word: word, pos: pos, definition: definition, note: note,
-    color: color, folder: folder, archivedFrom: archivedFrom
+    color: color, folder: folder, archivedFrom: archivedFrom, status: status
   };
 }
 
@@ -385,6 +372,7 @@ function createWord_(input) {
       color: fields.color,
       folder: fields.folder,
       archivedFrom: fields.archivedFrom,
+      status: fields.status,
       createdAt: now,
       updatedAt: now
     };
@@ -418,6 +406,7 @@ function updateWord_(input) {
       color: fields.color,
       folder: fields.folder,
       archivedFrom: fields.archivedFrom,
+      status: fields.status,
       createdAt: existing.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -441,283 +430,6 @@ function deleteWord_(id) {
     sheet.deleteRow(row);
     return target;
   });
-}
-
-/* --- Folders -------------------------------------------------------------- */
-
-function getFolderSheet_() {
-  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = spreadsheet.getSheetByName(FOLDER_SHEET_NAME);
-
-  if (!sheet) {
-    sheet = spreadsheet.insertSheet(FOLDER_SHEET_NAME);
-    sheet.getRange(1, 1, 1, FOLDER_HEADERS.length).setValues([FOLDER_HEADERS]);
-    sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, sheet.getMaxRows(), FOLDER_HEADERS.length).setNumberFormat('@');
-  }
-
-  return sheet;
-}
-
-/** Same additive migration as the Words sheet; see ensureHeaders_. */
-function ensureFolderHeaders_(sheet) {
-  var read = Math.max(sheet.getLastColumn(), 1);
-  var header = sheet.getRange(1, 1, 1, read).getValues()[0];
-
-  var map = {};
-  for (var i = 0; i < header.length; i++) {
-    var name = String(header[i]).trim();
-    if (name) map[name] = i;
-  }
-
-  var missing = [];
-  for (var h = 0; h < FOLDER_HEADERS.length; h++) {
-    if (!(FOLDER_HEADERS[h] in map)) missing.push(FOLDER_HEADERS[h]);
-  }
-
-  if (missing.length) {
-    var start = header.length + 1;
-    var needed = start + missing.length - 1;
-    if (needed > sheet.getMaxColumns()) {
-      sheet.insertColumnsAfter(sheet.getMaxColumns(), needed - sheet.getMaxColumns());
-    }
-    sheet.getRange(1, start, 1, missing.length).setValues([missing]);
-    sheet.getRange(1, start, sheet.getMaxRows(), missing.length).setNumberFormat('@');
-    for (var m = 0; m < missing.length; m++) map[missing[m]] = header.length + m;
-    SpreadsheetApp.flush();
-  }
-
-  var width = 0;
-  for (var key in map) {
-    if (map[key] + 1 > width) width = map[key] + 1;
-  }
-
-  return { map: map, width: width };
-}
-
-/** Oldest first, so the app can show folders in the order they were made. */
-function listFolders_() {
-  var sheet = getFolderSheet_();
-  var schema = ensureFolderHeaders_(sheet);
-
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return [];
-
-  var values = sheet.getRange(2, 1, lastRow - 1, schema.width).getValues();
-  var folders = [];
-
-  for (var i = 0; i < values.length; i++) {
-    var row = values[i];
-    var read = function (field) {
-      var index = schema.map[field];
-      return index === undefined ? '' : toText_(row[index]);
-    };
-    if (!read('id')) continue;
-    folders.push({
-      id: read('id'),
-      name: read('name'),
-      createdAt: read('createdAt'),
-      photo: read('photo')
-    });
-  }
-  return folders;
-}
-
-function setFolderPhoto_(id, photo) {
-  if (!id) fail_('BAD_REQUEST', 'Missing folder id.');
-
-  var value = String(photo || '');
-  if (value && value.slice(0, 11) !== 'data:image/') {
-    fail_('BAD_REQUEST', 'Photo must be an image data URL.');
-  }
-  if (value.length > MAX_PHOTO_LENGTH) {
-    fail_('TOO_LARGE', 'That image is too large for a spreadsheet cell.');
-  }
-
-  var target = String(id);
-
-  return withLock_(function () {
-    var sheet = getFolderSheet_();
-    var schema = ensureFolderHeaders_(sheet);
-
-    var row = findFolderRow_(sheet, target);
-    if (row === -1) fail_('NOT_FOUND', 'No folder with that id.');
-
-    sheet.getRange(row, schema.map.photo + 1).setValue(value);
-
-    var folders = listFolders_();
-    for (var i = 0; i < folders.length; i++) {
-      if (folders[i].id === target) return folders[i];
-    }
-    fail_('NOT_FOUND', 'No folder with that id.');
-  });
-}
-
-function findFolderRow_(sheet, id) {
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return -1;
-
-  var ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-  for (var i = 0; i < ids.length; i++) {
-    if (String(ids[i][0]) === id) return i + 2;
-  }
-  return -1;
-}
-
-function validFolderName_(input) {
-  var name = String(input || '').trim();
-  if (!name) fail_('BAD_REQUEST', 'Folder name is required.');
-  if (name.length > MAX_FOLDER_NAME_LENGTH) fail_('BAD_REQUEST', 'Folder name is too long.');
-  return name;
-}
-
-/** Names are the link between a word and its folder, so they must be unique. */
-function folderNameTaken_(folders, name, exceptId) {
-  var target = name.toLowerCase();
-  for (var i = 0; i < folders.length; i++) {
-    if (folders[i].id === exceptId) continue;
-    if (folders[i].name.toLowerCase() === target) return true;
-  }
-  return false;
-}
-
-function createFolder_(input) {
-  var name = validFolderName_(input);
-
-  return withLock_(function () {
-    var sheet = getFolderSheet_();
-    if (folderNameTaken_(listFolders_(), name, null)) {
-      fail_('DUPLICATE', 'A folder with that name already exists.');
-    }
-
-    var schema = ensureFolderHeaders_(sheet);
-    var record = {
-      id: Utilities.getUuid(), name: name,
-      createdAt: new Date().toISOString(), photo: ''
-    };
-
-    var row = [];
-    for (var i = 0; i < schema.width; i++) row.push('');
-    for (var h = 0; h < FOLDER_HEADERS.length; h++) {
-      var index = schema.map[FOLDER_HEADERS[h]];
-      if (index !== undefined) row[index] = escapeCell_(record[FOLDER_HEADERS[h]]);
-    }
-
-    sheet.appendRow(row);
-    return record;
-  });
-}
-
-function renameFolder_(id, input) {
-  if (!id) fail_('BAD_REQUEST', 'Missing folder id.');
-  var name = validFolderName_(input);
-  var target = String(id);
-
-  return withLock_(function () {
-    var sheet = getFolderSheet_();
-    var folders = listFolders_();
-
-    var current = null;
-    for (var i = 0; i < folders.length; i++) {
-      if (folders[i].id === target) current = folders[i];
-    }
-    if (!current) fail_('NOT_FOUND', 'No folder with that id.');
-
-    if (folderNameTaken_(folders, name, target)) {
-      fail_('DUPLICATE', 'A folder with that name already exists.');
-    }
-
-    var schema = ensureFolderHeaders_(sheet);
-    var row = findFolderRow_(sheet, target);
-    sheet.getRange(row, schema.map.name + 1).setValue(escapeCell_(name));
-
-    // Words point at the folder by name, so they all have to follow.
-    if (current.name !== name) relabelWords_(current.name, name);
-
-    return { id: target, name: name, createdAt: current.createdAt, photo: current.photo };
-  });
-}
-
-function deleteFolder_(id) {
-  if (!id) fail_('BAD_REQUEST', 'Missing folder id.');
-  var target = String(id);
-
-  return withLock_(function () {
-    var sheet = getFolderSheet_();
-    var folders = listFolders_();
-
-    var current = null;
-    for (var i = 0; i < folders.length; i++) {
-      if (folders[i].id === target) current = folders[i];
-    }
-    if (!current) fail_('NOT_FOUND', 'No folder with that id.');
-
-    // The words survive; they just stop belonging anywhere.
-    relabelWords_(current.name, '');
-
-    sheet.deleteRow(findFolderRow_(sheet, target));
-    return target;
-  });
-}
-
-/** Rewrites the folder column for every word currently in `from`. */
-function relabelWords_(from, to) {
-  var sheet = getSheet_();
-  var schema = ensureHeaders_(sheet);
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 0;
-
-  var column = schema.map.folder + 1;
-  var range = sheet.getRange(2, column, lastRow - 1, 1);
-  var values = range.getValues();
-
-  var touched = 0;
-  for (var i = 0; i < values.length; i++) {
-    if (String(values[i][0]) === from) {
-      values[i][0] = to;
-      touched += 1;
-    }
-  }
-
-  if (touched) range.setValues(values);
-  return touched;
-}
-
-/**
- * Puts every word that has no folder into LEGACY_FOLDER, and makes sure that
- * folder exists. Safe to run repeatedly: it only ever fills blanks.
- */
-function adoptUnfiledWords_() {
-  var sheet = getSheet_();
-  var schema = ensureHeaders_(sheet);
-  var lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 0;
-
-  var idColumn = schema.map.id + 1;
-  var folderColumn = schema.map.folder + 1;
-
-  var ids = sheet.getRange(2, idColumn, lastRow - 1, 1).getValues();
-  var range = sheet.getRange(2, folderColumn, lastRow - 1, 1);
-  var values = range.getValues();
-
-  var touched = 0;
-  for (var i = 0; i < values.length; i++) {
-    if (!ids[i][0]) continue;
-    if (String(values[i][0]).trim() === '') {
-      values[i][0] = LEGACY_FOLDER;
-      touched += 1;
-    }
-  }
-
-  if (!touched) return 0;
-
-  range.setValues(values);
-
-  if (!folderNameTaken_(listFolders_(), LEGACY_FOLDER, null)) {
-    createFolder_(LEGACY_FOLDER);
-  }
-
-  return touched;
 }
 
 /* --- One-time setup ------------------------------------------------------- */
@@ -744,15 +456,6 @@ function setup() {
   } else {
     Logger.log('No new columns needed.');
   }
-
-  getFolderSheet_();
-  var adopted = adoptUnfiledWords_();
-  if (adopted) {
-    Logger.log('Moved %s word(s) with no folder into "%s".', adopted, LEGACY_FOLDER);
-  } else {
-    Logger.log('Every word already belongs to a folder.');
-  }
-  Logger.log('Folders: %s', listFolders_().map(function (f) { return f.name; }).join(', ') || '(none)');
 
   if (PASSPHRASE === 'change-me-to-something-long-and-random') {
     Logger.log('WARNING: PASSPHRASE is still the default. Change it before deploying.');
