@@ -3,12 +3,16 @@
 A minimal vocabulary notebook. Words live in a Google Spreadsheet, so the same
 list appears on every device. No server of your own, no build step, no fees.
 
-The home screen lists the words by themselves; tap one for its part of speech,
-definition and note. Swipe a word **right** to mark it known and **left** to
-mark it unknown, and use the **All / Known / Unknown** tabs to see one pile at a
-time — green is always known, red always unknown. Switch to **cards** to meet
-the words one screen at a time in random order: the front shows only the word,
-and a tap turns the card over to everything else.
+The home screen is the open folder's words, by themselves; tap one for its
+part of speech, definition and note, or tap the folder name at the top to
+switch folders and make new ones. Swipe a word **left** to label it *don't know
+this* and **right** to take the label off; the **All / Unknown** tabs show
+everything or only the labelled words.
+
+Along the bottom: **List**, **Cards** — the same words one screen at a time,
+shuffled, a tap turning each card over — and **Quiz**, which asks about them on
+a spacing that widens each time you get one right. A labelled word comes round
+several times as often, and three right answers in a row take its label off.
 
 ## How it fits together
 
@@ -93,9 +97,15 @@ One row per word, in a tab called `Words`:
 | F | `createdAt` | ISO 8601 |
 | G | `updatedAt` | ISO 8601 |
 | H | `color` | `default` or one of fifteen hues; see below |
-| I | `folder` | Retired — kept, never shown |
-| J | `archivedFrom` | Retired — kept, never shown |
-| K | `status` | `known`, `unknown`, or blank for not yet sorted |
+| I | `folder` | Folder name, or blank for unsorted |
+| J | `archivedFrom` | Retired with the archive — kept, never shown |
+| K | `status` | `unknown` for a labelled word, else blank |
+| L | `reviews` | Answers given about this word, ever |
+| M | `streak` | Right answers in a row |
+| N | `labelStreak` | Right answers in a row since the label went on |
+| O | `gap` | Answers to wait before asking again |
+| P | `ease` | How fast the gap grows for this word |
+| Q | `dueTick` | The answer count at which it is due again |
 
 `color` is one of sixteen keys — `default` plus fifteen hues. The key is what
 is stored, never a hex value, so the same word picks the shade pitched for the
@@ -104,22 +114,36 @@ device's current theme.
 New fields are always appended on the right. Inserting one in the middle would
 shift every existing row's data into the wrong column.
 
+A second tab, `Folders`, is the register of folder names — `id`, `name`,
+`createdAt` and a `photo` column left over from an earlier version that nothing
+reads. Words point at their folder by **name**, which keeps the sheet readable
+by eye; renaming a folder rewrites the column, and deleting one blanks it, so
+the words survive as **Unsorted**.
+
 Running `setup()` again after an update appends any missing header to an
 existing sheet without touching a row; words saved before a column existed read
-back with its default — no colour, no status.
+back with its default — no colour, no label, nothing asked yet. It also clears
+the `known` status a previous version wrote, which no longer means anything.
 
-Folders and the archive have been retired. Their columns stay in the sheet and
-are carried through every save untouched, so nothing in them is lost; the
-`Folders` tab is simply no longer read, and can be deleted by hand if you no
-longer want it.
+**The label.** Swiping a word left marks it *don't know this*; so does missing
+it in the quiz, and so does the chip on its detail card. It comes off by
+swiping right, by tapping that chip, or by answering it correctly three times
+in a row in the quiz. Only the swipe that would change something is available.
+Under Unknown the row slides out and the gap closes; under All it springs back
+and washes red or green. There is no confirmation, because the change is one
+swipe from being undone.
 
-**Known and unknown.** A new word starts in neither pile and shows only under
-All — unless it is added from the Known or Unknown tab, in which case it starts
-in that one. Only a swipe that would change something is available: a known
-word can only go left, an unknown one only right. Under a Known or Unknown tab
-the row slides out and the gap closes, exactly as the archive gesture used to;
-under All it springs back and takes its new colour. There is no confirmation,
-because the change is one swipe from being undone.
+**The quiz.** Spacing is counted in answers, not days: the clock is the total
+number of answers ever given (`reviews` summed over every word), and each word
+records the count at which it is due again. Right answers push that out —
+5, 15, 38, 95, 238 — a miss pulls it back to 3, and a labelled word comes round
+at 0.4× its gap and never more than 10 answers away, ahead of anything else
+due. Nothing is due yet? A word never asked is let in, at most one in every
+four questions while a backlog is waiting. Counting answers rather than days
+means a week away leaves no pile of overdue cards, and a long sitting never
+runs out. Answers are applied locally at once and sent to the sheet five at a
+time through `updateMany`, so no card ever waits on the network — and nothing
+is lost if the app is closed mid-session.
 
 The colour changes the word's own type only — never the definition, the note,
 or the part-of-speech badge — and the stored value is the key rather than a hex
@@ -181,10 +205,14 @@ all. Filling it in trades that for one less field during setup.
 | `js/confirm.js` | Centred confirmation popup. |
 | `js/toast.js` | Transient messages. |
 | `js/sort.js` | List ordering and its picker. |
-| `js/view.js` | The All / Known / Unknown tab, and list or cards. |
+| `js/view.js` | Open folder, All / Unknown tab, and which tab bar section. |
 | `js/list.js` | The word list. |
-| `js/cards.js` | Flash cards, shuffled; tap to turn one over. |
-| `js/swipe-row.js` | Drag a word right for known, left for unknown. |
+| `js/folder-menu.js` | The panel under the header: pick, make, rename, delete. |
+| `js/folder-form.js` | Renaming a folder. |
+| `js/cards.js` | Cards, shuffled; tap to turn one over. |
+| `js/quiz.js` | The quiz: what is waiting, and the session. |
+| `js/scheduler.js` | When a word comes back, counted in answers. |
+| `js/swipe-row.js` | Drag a word left to label it, right to clear it. |
 | `js/detail.js` | Detail dialog. |
 | `js/form.js` | Add / edit form. |
 | `js/setup.js` | First-run connection sheet. |

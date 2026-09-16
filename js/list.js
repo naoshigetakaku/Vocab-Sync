@@ -1,30 +1,28 @@
 /**
- * list.js — the home screen.
+ * list.js — the home screen: the words in the open folder.
  *
  * Deliberately shows the word and nothing else; every other field lives behind
- * the detail dialog. Under All, a small mark says which pile a word is in.
+ * the detail dialog. Under All, a small red mark picks out the words labelled
+ * "don't know this".
  */
 
-import { getWordsByStatus } from './store.js';
 import { sortWords } from './sort.js';
-import { getFilter } from './view.js';
-import { DEFAULT_COLOR, STATUS_KNOWN, STATUS_UNKNOWN } from './config.js';
+import { getFilter, wordsInScope, selectionLabel } from './view.js';
+import { DEFAULT_COLOR, STATUS_UNKNOWN } from './config.js';
 
 const listElement = document.getElementById('word-list');
 const emptyElement = document.getElementById('empty-state');
 const emptyTitle = document.getElementById('empty-title');
 const emptyHint = document.getElementById('empty-hint');
 
-const EMPTY_TEXT = {
-  all: ['No words yet', 'Tap + to add your first one.'],
-  [STATUS_KNOWN]: ['No known words yet', 'Swipe a word right to mark it known.'],
-  [STATUS_UNKNOWN]: ['No unknown words yet', 'Swipe a word left to mark it unknown.'],
-};
+/** The two labels a swipe uncovers; see action(). */
+const CLEAR = 'clear';
+const LABEL = 'label';
 
 let staggerDone = false;
 let staggerTimer;
 let newestId = null;
-/** { id, start } while a row is washing into its new colour; see flashRow. */
+/** { id, kind, start } while a row is washing in colour; see flashRow. */
 let flash = null;
 let reflowNext = false;
 let reflowUntil = 0;
@@ -49,20 +47,20 @@ function icon(path) {
 }
 
 /**
- * The label a swipe uncovers. Known sits on the left, under a row dragged
- * right; Unknown on the right, under a row dragged left.
+ * The label a swipe uncovers. "Clear" sits on the left, under a row dragged
+ * right; "Don't know" on the right, under a row dragged left.
  */
-function action(status) {
-  const known = status === STATUS_KNOWN;
+function action(kind) {
+  const clear = kind === CLEAR;
   const element = document.createElement('span');
-  element.className = 'word-item__action word-item__action--' + status;
+  element.className = 'word-item__action word-item__action--' + kind;
   element.setAttribute('aria-hidden', 'true');
 
   const label = document.createElement('span');
-  label.textContent = known ? 'Known' : 'Unknown';
-  const glyph = icon(known ? 'M5 12.5l4.5 4.5L19 7.5' : 'M7 7l10 10M17 7L7 17');
+  label.textContent = clear ? 'Clear label' : 'Don\u2019t know';
+  const glyph = icon(clear ? 'M5 12.5l4.5 4.5L19 7.5' : 'M9.2 9a3 3 0 1 1 4.3 2.7c-.9.5-1.5 1.2-1.5 2.3M12 17.5h.01');
 
-  if (known) {
+  if (clear) {
     element.appendChild(glyph);
     element.appendChild(label);
   } else {
@@ -80,18 +78,18 @@ function buildRow(word) {
 
   // Both sit behind the row and are uncovered as it slides; see
   // js/swipe-row.js. Only the one for the direction of travel is shown.
-  item.appendChild(action(STATUS_KNOWN));
-  item.appendChild(action(STATUS_UNKNOWN));
+  item.appendChild(action(CLEAR));
+  item.appendChild(action(LABEL));
 
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'word-row';
   if (word.pending) button.classList.add('word-row--pending');
   if (word.id === newestId) button.classList.add('is-new');
-  if (flash && word.id === flash.id && status) {
+  if (flash && word.id === flash.id) {
     const elapsed = performance.now() - flash.start;
     if (elapsed < FLASH_MS) {
-      button.classList.add('is-flash-' + status);
+      button.classList.add('is-flash-' + flash.kind);
       // A rebuild part-way through — the server confirming the change is
       // enough — picks the wash up where it was instead of starting it again.
       if (elapsed > 16) button.style.animationDelay = -Math.round(elapsed) + 'ms';
@@ -114,15 +112,19 @@ function buildRow(word) {
   mark.setAttribute('aria-hidden', 'true');
   button.appendChild(mark);
 
-  if (status) button.setAttribute('aria-label', word.word + ', ' + status);
+  if (status === STATUS_UNKNOWN) button.setAttribute('aria-label', word.word + ', marked don\u2019t know');
 
   item.appendChild(button);
   return item;
 }
 
-/** Words under the current tab, in the current sort order. */
+/** The open folder's words under the current tab, in the current sort order. */
 export function visibleWords() {
-  return sortWords(getWordsByStatus(getFilter()));
+  const filter = getFilter();
+  const words = wordsInScope();
+  return sortWords(filter === STATUS_UNKNOWN
+    ? words.filter((word) => word.status === STATUS_UNKNOWN)
+    : words);
 }
 
 /** True in the wide browser layout, where the list is a grid of cells. */
@@ -181,18 +183,26 @@ function playReflow(before) {
 
 /** Everything a row shows, so an identical render can be recognised. */
 function signatureOf(words) {
-  return getFilter() + '\n' + words
+  return selectionLabel() + '\n' + getFilter() + '\n' + words
     .map((word) => [word.id, word.word, word.color, word.status || '', word.pending ? 1 : 0].join('\t'))
     .join('\n');
 }
 
 /** Shared with the card deck, which shows the same message. */
 export function paintEmpty(count) {
-  const filter = getFilter();
-  const [title, hint] = EMPTY_TEXT[filter] || EMPTY_TEXT.all;
-  emptyTitle.textContent = title;
-  emptyHint.textContent = hint;
+  if (getFilter() === STATUS_UNKNOWN) {
+    emptyTitle.textContent = 'Nothing marked \u201cdon\u2019t know\u201d';
+    emptyHint.textContent = 'Swipe a word left to mark it.';
+  } else {
+    emptyTitle.textContent = 'No words in ' + selectionLabel();
+    emptyHint.textContent = 'Tap + to add one.';
+  }
   emptyElement.hidden = count !== 0;
+}
+
+/** Hides the list's empty message while another screen is up. */
+export function hideEmpty() {
+  emptyElement.hidden = true;
 }
 
 export function render() {
@@ -254,11 +264,11 @@ export function highlightNew(id) {
 }
 
 /**
- * Called before a word changes pile on a tab where it stays in view, so the
- * row briefly takes the colour of where it went.
+ * Called before a word gains or loses its label on a tab where it stays in
+ * view, so the row washes briefly red (labelled) or green (cleared).
  */
-export function flashRow(id) {
-  flash = { id, start: null };
+export function flashRow(id, labelled) {
+  flash = { id, kind: labelled ? LABEL : CLEAR, start: null };
 }
 
 export function initList(onSelect) {

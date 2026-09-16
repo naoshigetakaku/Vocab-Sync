@@ -1,29 +1,37 @@
 /**
- * store.js — word state, offline cache and the outbox.
+ * store.js — word and folder state, offline cache and the outbox.
  *
  * The spreadsheet is the source of truth. Everything here is a cache in front
  * of it, plus a queue of changes that have not reached it yet.
  */
 
-import { api, ApiError, isRetryable } from './api.js';
-import { STORAGE_KEYS } from './config.js';
+import { api, ApiError, isRetryable, getKnownBackendVersion } from './api.js';
+import { STORAGE_KEYS, STATUS_UNKNOWN } from './config.js';
 import { readJson, writeJson, remove } from './storage.js';
 
 let words = readJson(STORAGE_KEYS.words, []);
+let folders = readJson(STORAGE_KEYS.folders, []);
 let outbox = readJson(STORAGE_KEYS.outbox, []);
 
-// Left behind by the folder feature; nothing reads it any more.
+// The first folder cache carried photo data URLs, tens of kilobytes each.
 remove('vocabsync.folders.v1');
 
 /**
  * Every field the sheet stores for a word. An update rewrites the whole row,
  * so anything a caller leaves out has to be filled from what is already
- * known — including folder and archivedFrom, which no screen shows any more
- * but which still hold the user's data.
+ * known — including archivedFrom, which no screen shows any more but which
+ * still holds the user's data, and the quiz schedule, which no form edits.
  */
 const STORED_FIELDS = [
   'word', 'pos', 'definition', 'note', 'color', 'folder', 'archivedFrom', 'status',
+  'reviews', 'streak', 'labelStreak', 'gap', 'ease', 'dueTick',
 ];
+
+/** Must not exceed MAX_BATCH in Code.gs. */
+const BATCH_LIMIT = 25;
+
+/** The first Code.gs version that understands updateMany. */
+const BATCH_VERSION = 8;
 
 const listeners = new Set();
 
@@ -46,12 +54,6 @@ export function getWords() {
   return words.slice();
 }
 
-/** Words with this status; 'all' returns every word. */
-export function getWordsByStatus(filter) {
-  if (filter === 'all') return getWords();
-  return words.filter((word) => (word.status || '') === filter);
-}
-
 export function getWord(id) {
   return words.find((word) => word.id === id) || null;
 }
@@ -61,10 +63,41 @@ export function isPending(id) {
   return Boolean(word && word.pending);
 }
 
+/** Creation order, so a folder keeps the same place in the menu for good. */
+export function getFolders() {
+  return folders.slice().sort((a, b) =>
+    String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+}
+
+export function getFolder(id) {
+  return folders.find((folder) => folder.id === id) || null;
+}
+
+export function findFolderByName(name) {
+  return folders.find((folder) => folder.name === name) || null;
+}
+
+/**
+ * Words in one folder. Passing null gathers the unsorted ones: no folder at
+ * all, or a folder that has since been deleted.
+ */
+export function getWordsInFolder(name) {
+  if (name === null) {
+    const names = new Set(folders.map((folder) => folder.name));
+    return words.filter((word) => !word.folder || !names.has(word.folder));
+  }
+  return words.filter((word) => word.folder === name);
+}
+
+export function countUnsorted() {
+  return getWordsInFolder(null).length;
+}
+
 /* --- Persistence ---------------------------------------------------------- */
 
 function persist() {
   writeJson(STORAGE_KEYS.words, words);
+  writeJson(STORAGE_KEYS.folders, folders);
   writeJson(STORAGE_KEYS.outbox, outbox);
 }
 
@@ -75,6 +108,11 @@ function commit() {
 
 function localId() {
   return 'local-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+/** True for a word created offline that the sheet has not given an id yet. */
+export function isLocalOnly(word) {
+  return String(word.id || '').startsWith('local-');
 }
 
 /* --- Outbox --------------------------------------------------------------- */
@@ -88,37 +126,101 @@ function dequeue(entry) {
 }
 
 /**
+ * Queued rewrites of this word are superseded by any newer one: each carries
+ * the whole row, so sending the older one afterwards could only undo the
+ * newer. Dropping them keeps the queue short and makes that impossible.
+ */
+function dropQueuedUpdates(id) {
+  outbox = outbox.filter((entry) => !(entry.op === 'update' && entry.fields.id === id));
+}
+
+function hasQueuedUpdate(id) {
+  return outbox.some((entry) => entry.op === 'update' && entry.fields.id === id);
+}
+
+/**
+ * Takes the server's copy of a word — unless something newer for it is still
+ * queued, in which case the local copy is already ahead and stays.
+ */
+function acceptSaved(saved) {
+  if (hasQueuedUpdate(saved.id)) return;
+  replaceLocal(saved.id, Object.assign({}, saved, { pending: false }));
+}
+
+/** The run of consecutive updates at the head of the queue, up to the limit. */
+function leadingUpdates() {
+  const batch = [];
+  for (const entry of outbox) {
+    if (entry.op !== 'update' || batch.length >= BATCH_LIMIT) break;
+    batch.push(entry);
+  }
+  return batch;
+}
+
+/**
  * Replay queued changes in order. Stops at the first retryable failure so the
  * queue keeps its ordering; entries the server rejects outright are dropped,
  * because retrying them forever would wedge the queue.
+ *
+ * Consecutive updates — a run of quiz answers, usually — go in one request
+ * when the deployment is new enough to take them that way.
  */
-async function flushOutbox() {
+async function runFlush() {
   const failures = [];
 
-  for (const entry of outbox.slice()) {
+  while (outbox.length) {
+    const entry = outbox[0];
+    const batched = entry.op === 'update' && getKnownBackendVersion() >= BATCH_VERSION;
+    const batch = batched ? leadingUpdates() : [entry];
+
     try {
-      if (entry.op === 'create') {
+      if (batched) {
+        const result = await api.updateMany(batch.map((item) => item.fields));
+        batch.forEach(dequeue);
+        result.words.forEach(acceptSaved);
+        // Deleted on another device while the answers were waiting.
+        result.missing.forEach(removeLocal);
+      } else if (entry.op === 'create') {
         const saved = await api.create(entry.fields);
+        dequeue(entry);
         replaceLocal(entry.localId, Object.assign({}, saved, { pending: false }));
       } else if (entry.op === 'update') {
         const saved = await api.update(entry.fields);
-        replaceLocal(saved.id, Object.assign({}, saved, { pending: false }));
+        dequeue(entry);
+        acceptSaved(saved);
       } else if (entry.op === 'delete') {
         await api.remove(entry.id);
+        dequeue(entry);
+      } else {
+        dequeue(entry);
       }
-      dequeue(entry);
     } catch (error) {
       if (isRetryable(error)) {
         persist();
         throw error;
       }
-      dequeue(entry);
+      batch.forEach(dequeue);
       failures.push(error);
     }
   }
 
   persist();
   if (failures.length) throw failures[0];
+}
+
+let flushing = null;
+
+/**
+ * One flush at a time. A second caller shares the one in flight, which picks
+ * up anything queued meanwhile because it reads the queue afresh each round.
+ */
+function flushOutbox() {
+  if (!flushing) {
+    flushing = runFlush().finally(() => {
+      flushing = null;
+    });
+  }
+  return flushing;
 }
 
 export function pendingCount() {
@@ -139,6 +241,15 @@ function replaceLocal(id, next) {
 
 function removeLocal(id) {
   words = words.filter((word) => word.id !== id);
+}
+
+/** Every stored field of this word, ready to be overlaid with changes. */
+function storedFieldsOf(word) {
+  const fields = { id: word.id };
+  STORED_FIELDS.forEach((field) => {
+    if (word[field] !== undefined) fields[field] = word[field];
+  });
+  return fields;
 }
 
 /**
@@ -171,9 +282,62 @@ function mergeRemote(remote) {
 /** Push anything queued, then pull the authoritative snapshot. */
 export async function refresh() {
   await flushOutbox();
-  mergeRemote(await api.list());
+  const snapshot = await api.list();
+  folders = snapshot.folders;
+  mergeRemote(snapshot.words);
   commit();
 }
+
+/** Push anything queued, without pulling. Used as the quiz goes along. */
+export async function flush() {
+  if (!outbox.length) return;
+  try {
+    await flushOutbox();
+  } finally {
+    commit();
+  }
+}
+
+/* --- Folders --------------------------------------------------------------
+   No outbox here. A folder change is rare and deliberate, and replaying one
+   offline against a name another device may have taken in the meantime is a
+   conflict worth refusing rather than guessing at. */
+
+export async function createFolder(name) {
+  const saved = await api.createFolder(name);
+  folders = folders.concat([saved]);
+  commit();
+  return saved;
+}
+
+export async function renameFolder(id, name) {
+  const previous = getFolder(id);
+  const saved = await api.renameFolder(id, name);
+
+  folders = folders.map((folder) => (folder.id === id ? saved : folder));
+  // Words point at the folder by name, so they follow the rename locally too.
+  if (previous && previous.name !== saved.name) {
+    words = words.map((word) =>
+      (word.folder === previous.name ? Object.assign({}, word, { folder: saved.name }) : word));
+  }
+  commit();
+  return saved;
+}
+
+export async function deleteFolder(id) {
+  const previous = getFolder(id);
+  await api.removeFolder(id);
+
+  folders = folders.filter((folder) => folder.id !== id);
+  // The words survive as unsorted.
+  if (previous) {
+    words = words.map((word) =>
+      (word.folder === previous.name ? Object.assign({}, word, { folder: '' }) : word));
+  }
+  commit();
+}
+
+/* --- Words ---------------------------------------------------------------- */
 
 export async function createWord(fields) {
   const now = new Date().toISOString();
@@ -205,28 +369,27 @@ export async function createWord(fields) {
   }
 }
 
-export async function updateWord(fields) {
-  const previous = getWord(fields.id);
+export async function updateWord(changes) {
+  const previous = getWord(changes.id);
   if (!previous) throw new ApiError('NOT_FOUND', 'That word no longer exists.');
 
   // Carry every stored field forward unless the caller means to change it.
   // See STORED_FIELDS.
-  const carried = {};
-  STORED_FIELDS.forEach((field) => {
-    carried[field] = previous[field] === undefined ? '' : previous[field];
-  });
-  fields = Object.assign(carried, fields);
+  const fields = Object.assign(storedFieldsOf(previous), changes);
 
   const optimistic = Object.assign({}, previous, fields, {
     updatedAt: new Date().toISOString(),
     pending: true,
   });
   replaceLocal(fields.id, optimistic);
+  // This rewrite carries the latest of everything, quiz progress included,
+  // so anything older still waiting for this word is obsolete.
+  dropQueuedUpdates(fields.id);
   commit();
 
   try {
     const saved = await api.update(fields);
-    replaceLocal(fields.id, Object.assign({}, saved, { pending: false }));
+    acceptSaved(saved);
     commit();
     return saved;
   } catch (error) {
@@ -241,12 +404,37 @@ export async function updateWord(fields) {
   }
 }
 
-/** Files a word as known or unknown. */
-export function setStatus(id, status) {
+/**
+ * Puts the "don't know this" label on, or takes it off, by hand. Either way
+ * the count towards clearing it starts again.
+ */
+export function setLabel(id, on) {
   const word = getWord(id);
   if (!word) return Promise.resolve(null);
+  const status = on ? STATUS_UNKNOWN : '';
   if ((word.status || '') === status) return Promise.resolve(word);
-  return updateWord({ id, status });
+  return updateWord({ id, status, labelStreak: 0 });
+}
+
+/**
+ * Records one quiz answer: the new schedule, and the label if it changed.
+ *
+ * Applied locally at once and queued rather than sent, so the next card never
+ * waits on the network. The quiz calls flush() every few answers and when it
+ * ends; anything still queued goes with the next sync regardless.
+ */
+export function recordAnswer(id, changes) {
+  const previous = getWord(id);
+  if (!previous) return null;
+
+  const fields = Object.assign(storedFieldsOf(previous), changes);
+  const next = Object.assign({}, previous, fields, { pending: true });
+
+  replaceLocal(id, next);
+  dropQueuedUpdates(id);
+  enqueue({ op: 'update', fields });
+  commit();
+  return next;
 }
 
 export async function deleteWord(id) {
@@ -254,6 +442,7 @@ export async function deleteWord(id) {
   if (!previous) return;
 
   removeLocal(id);
+  dropQueuedUpdates(id);
   commit();
 
   try {
@@ -273,6 +462,7 @@ export async function deleteWord(id) {
 /** Drop every cached record — used when the credentials are replaced. */
 export function reset() {
   words = [];
+  folders = [];
   outbox = [];
   commit();
 }

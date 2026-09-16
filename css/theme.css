@@ -55,14 +55,17 @@
   --gloss-edge:  rgba(255, 255, 255, 0.7);
   --gloss-sheen: rgba(255, 255, 255, 0.55);
 
-  /* Known and unknown. The solid colour is for text and marks; the tint is
-     for the ground behind them — a tab, a swipe, a badge. */
+  /* The "don't know this" label is red throughout; green is the colour of
+     clearing it. The solid colour is for text and marks, the tint for the
+     ground behind them — a tab, a swipe, a chip. */
   --known:        #0E8A45;
   --known-tint:   rgba(14, 138, 69, 0.13);
   --unknown:      #D42A2A;
   --unknown-tint: rgba(212, 42, 42, 0.11);
 
   /* The All / Known / Unknown control. */
+  --on-badge:       #FFFFFF;
+
   --segment-bg:     #F0F0F0;
   --segment-all:    #FFFFFF;
   --shadow-segment: 0 1px 3px rgba(0, 0, 0, 0.12);
@@ -78,6 +81,9 @@
   --radius-lg: 20px;
   --gap:       16px;
   --page-pad:  20px;
+  /* Height of the tab bar without its safe-area padding. Everything that
+     floats above the bar is positioned from this. */
+  --tabbar-h:  53px;
 
   /* Motion */
   --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
@@ -140,6 +146,8 @@
     --known-tint:   rgba(79, 217, 139, 0.16);
     --unknown:      #FF8080;
     --unknown-tint: rgba(255, 128, 128, 0.15);
+
+    --on-badge:       #202020;
 
     --segment-bg:     #2A2A2A;
     --segment-all:    #3D3D3D;

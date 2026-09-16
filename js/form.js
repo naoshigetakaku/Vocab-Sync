@@ -4,9 +4,9 @@
  * Field order is fixed by design: word, part of speech, definition, note.
  */
 
-import { PARTS_OF_SPEECH, WORD_COLORS, DEFAULT_COLOR } from './config.js';
-import { createWord, updateWord } from './store.js';
-import { statusForNewWord } from './view.js';
+import { PARTS_OF_SPEECH, WORD_COLORS, DEFAULT_COLOR, UNSORTED_LABEL } from './config.js';
+import { createWord, updateWord, getFolders } from './store.js';
+import { statusForNewWord, folderForNewWord } from './view.js';
 import { openDialog, closeDialog, wireDismiss } from './dialog.js';
 import { openPicker } from './picker.js';
 
@@ -21,6 +21,8 @@ const posValue = document.getElementById('field-pos-value');
 const definitionField = document.getElementById('field-definition');
 const noteField = document.getElementById('field-note');
 const colorField = document.getElementById('field-color');
+const folderTrigger = document.getElementById('field-folder');
+const folderValue = document.getElementById('field-folder-value');
 const errorElement = document.getElementById('form-error');
 const submitButton = document.getElementById('form-submit');
 const cancelButton = document.getElementById('form-cancel');
@@ -28,6 +30,7 @@ const cancelButton = document.getElementById('form-cancel');
 let editingId = null;
 let pos = '';
 let color = DEFAULT_COLOR;
+let folder = '';
 let busy = false;
 let afterSave = () => {};
 
@@ -73,6 +76,13 @@ function setPos(value) {
   posTrigger.removeAttribute('aria-invalid');
 }
 
+/** An empty name is the unsorted bucket, which is a real destination here. */
+function setFolder(name) {
+  folder = typeof name === 'string' ? name : '';
+  folderValue.textContent = folder || UNSORTED_LABEL;
+  folderTrigger.classList.toggle('is-empty', !folder);
+}
+
 function showError(message) {
   errorElement.textContent = message;
   errorElement.hidden = false;
@@ -103,6 +113,8 @@ export function openCreateForm() {
   form.reset();
   setPos('');
   setColor(DEFAULT_COLOR);
+  // A word made inside a folder belongs to it without being asked.
+  setFolder(folderForNewWord());
   clearError();
   setBusy(false);
   openDialog(dialog);
@@ -118,6 +130,7 @@ export function openEditForm(word) {
   definitionField.value = word.definition || '';
   noteField.value = word.note || '';
   setColor(word.color || DEFAULT_COLOR);
+  setFolder(word.folder || '');
   clearError();
   setBusy(false);
   openDialog(dialog);
@@ -130,6 +143,7 @@ function readFields() {
     definition: definitionField.value.trim(),
     note: noteField.value.trim(),
     color: color,
+    folder: folder,
   };
 }
 
@@ -155,6 +169,18 @@ export function initForm(handlers) {
   colorField.addEventListener('click', (event) => {
     const swatch = event.target.closest('.swatch');
     if (swatch) setColor(swatch.dataset.color);
+  });
+
+  folderTrigger.addEventListener('click', () => {
+    const options = getFolders().map((entry) => ({ value: entry.name, label: entry.name }));
+    options.push({ value: '', label: UNSORTED_LABEL });
+
+    openPicker({
+      title: 'Folder',
+      options,
+      value: folder,
+      onSelect: setFolder,
+    });
   });
 
   wireDismiss(dialog, () => {
@@ -196,8 +222,7 @@ export function initForm(handlers) {
     try {
       const saved = editingId
         ? await updateWord(Object.assign({ id: editingId }, fields))
-        // Added under Known or Unknown, a word starts in that pile; see
-        // statusForNewWord.
+        // Added under Unknown, a word starts labelled; see statusForNewWord.
         : await createWord(Object.assign({ status: statusForNewWord() }, fields));
 
       closeDialog(dialog);

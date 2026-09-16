@@ -47,23 +47,33 @@ var PASSPHRASE = 'change-me-to-something-long-and-random';
  *   5  archivedFrom, so unarchiving can put a word back where it was
  *   6  Acronym joins the parts of speech
  *   7  status (known / unknown); all sixteen colours; folders retired
+ *   8  folders return; status is only the "don't know this" label; quiz
+ *      scheduling columns; updateMany for saving quiz answers in one go
  */
-var BACKEND_VERSION = 7;
+var BACKEND_VERSION = 8;
 
 var SHEET_NAME = 'Words';
+var FOLDER_SHEET_NAME = 'Folders';
 
 /**
  * Column order. New fields go on the END of this list — inserting one in the
  * middle would shift every existing row's data into the wrong column.
  *
- * folder and archivedFrom belong to the retired folder feature. They stay in
- * the list so that rewriting a row carries their values through untouched:
- * a column missing from here would be blanked on every update.
+ * archivedFrom belongs to the retired archive. It stays in the list so that
+ * rewriting a row carries its value through untouched: a column missing from
+ * here would be blanked on every update.
+ *
+ * reviews … dueTick are the quiz schedule; see js/scheduler.js. They count
+ * answers rather than days, so there are no dates among them.
  */
 var HEADERS = [
   'id', 'word', 'pos', 'definition', 'note',
-  'createdAt', 'updatedAt', 'color', 'folder', 'archivedFrom', 'status'
+  'createdAt', 'updatedAt', 'color', 'folder', 'archivedFrom', 'status',
+  'reviews', 'streak', 'labelStreak', 'gap', 'ease', 'dueTick'
 ];
+
+/** The photo column is kept so existing rows stay aligned; nothing reads it. */
+var FOLDER_HEADERS = ['id', 'name', 'createdAt', 'photo'];
 
 var MAX_FOLDER_NAME_LENGTH = 60;
 
@@ -75,8 +85,19 @@ var WORD_COLORS = [
   'cyan', 'blue', 'indigo', 'violet', 'purple', 'magenta', 'pink', 'grey'
 ];
 
-/** Blank means the word has not been sorted into either pile yet. */
-var STATUSES = ['', 'known', 'unknown'];
+/**
+ * 'unknown' is the "don't know this" label; blank is no label. 'known' was a
+ * status in v7 and now means the same as blank — setup() clears it out.
+ */
+var STATUSES = ['', 'unknown'];
+
+var DEFAULT_EASE = 2.5;
+var MIN_EASE = 1.3;
+var MAX_EASE = 5;
+var MAX_COUNT = 10000000;
+
+/** Quiz answers are saved a handful at a time; this is the backstop. */
+var MAX_BATCH = 50;
 
 var MAX_WORD_LENGTH = 200;
 var MAX_TEXT_LENGTH = 2000;
@@ -102,7 +123,20 @@ function handle_(e) {
 
     switch (request.action) {
       case 'list':
-        return json_({ ok: true, version: BACKEND_VERSION, words: listWords_() });
+        return json_({
+          ok: true,
+          version: BACKEND_VERSION,
+          words: listWords_(),
+          folders: listFolders_()
+        });
+      case 'updateMany':
+        return json_(merge_({ ok: true, version: BACKEND_VERSION }, updateMany_(request.words)));
+      case 'createFolder':
+        return json_({ ok: true, version: BACKEND_VERSION, folder: createFolder_(request.name) });
+      case 'renameFolder':
+        return json_({ ok: true, version: BACKEND_VERSION, folder: renameFolder_(request.id, request.name) });
+      case 'deleteFolder':
+        return json_({ ok: true, version: BACKEND_VERSION, id: deleteFolder_(request.id) });
       case 'create':
         return json_({ ok: true, version: BACKEND_VERSION, word: createWord_(request.word) });
       case 'update':
@@ -134,6 +168,11 @@ function json_(payload) {
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function merge_(target, source) {
+  for (var key in source) target[key] = source[key];
+  return target;
 }
 
 function fail_(code, message) {
@@ -240,6 +279,17 @@ function toText_(value) {
   return value === null || value === undefined ? '' : String(value);
 }
 
+/** A whole number from a cell, or the fallback when the cell is blank. */
+function toInt_(value, fallback) {
+  var number = parseInt(value, 10);
+  return isFinite(number) ? number : fallback;
+}
+
+function toNumber_(value, fallback) {
+  var number = parseFloat(value);
+  return isFinite(number) ? number : fallback;
+}
+
 function findRow_(sheet, map, id) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return -1;
@@ -269,10 +319,18 @@ function rowToWord_(row, map) {
     note: read('note'),
     // Rows written before the colour column existed come back blank.
     color: WORD_COLORS.indexOf(colour) === -1 ? 'default' : colour,
-    // Retired folder fields, carried through so a rewrite does not lose them.
+    // Blank means the word is unsorted; the app shows those together.
     folder: read('folder'),
+    // Retired with the archive, carried through so a rewrite does not lose it.
     archivedFrom: read('archivedFrom'),
     status: STATUSES.indexOf(status) === -1 ? '' : status,
+    // Blank on every row written before the quiz existed: a word never asked.
+    reviews: toInt_(read('reviews'), 0),
+    streak: toInt_(read('streak'), 0),
+    labelStreak: toInt_(read('labelStreak'), 0),
+    gap: toInt_(read('gap'), 0),
+    ease: toNumber_(read('ease'), DEFAULT_EASE),
+    dueTick: toInt_(read('dueTick'), 0),
     createdAt: read('createdAt'),
     updatedAt: read('updatedAt')
   };
@@ -306,6 +364,7 @@ function validate_(input) {
   var folder = String(input.folder || '').trim();
   var archivedFrom = String(input.archivedFrom || '').trim();
   var status = String(input.status || '').trim();
+  if (status === 'known') status = '';
 
   if (!word) fail_('BAD_REQUEST', 'Word is required.');
   if (word.length > MAX_WORD_LENGTH) fail_('BAD_REQUEST', 'Word is too long.');
@@ -317,10 +376,34 @@ function validate_(input) {
   if (archivedFrom.length > MAX_FOLDER_NAME_LENGTH) fail_('BAD_REQUEST', 'Folder name is too long.');
   if (STATUSES.indexOf(status) === -1) fail_('BAD_REQUEST', 'Unknown status.');
 
+  var ease = input.ease === undefined || input.ease === '' ? DEFAULT_EASE : Number(input.ease);
+  if (!isFinite(ease) || ease < MIN_EASE || ease > MAX_EASE) fail_('BAD_REQUEST', 'Bad ease.');
+
   return {
     word: word, pos: pos, definition: definition, note: note,
-    color: color, folder: folder, archivedFrom: archivedFrom, status: status
+    color: color, folder: folder, archivedFrom: archivedFrom, status: status,
+    reviews: count_(input.reviews, 'reviews'),
+    streak: count_(input.streak, 'streak'),
+    labelStreak: count_(input.labelStreak, 'labelStreak'),
+    gap: count_(input.gap, 'gap'),
+    ease: Math.round(ease * 100) / 100,
+    dueTick: count_(input.dueTick, 'dueTick')
   };
+}
+
+/** A non-negative whole number, or 0 when the field was not sent at all. */
+function count_(value, name) {
+  if (value === undefined || value === null || value === '') return 0;
+  var number = Number(value);
+  if (!isFinite(number) || number < 0 || number > MAX_COUNT || Math.floor(number) !== number) {
+    fail_('BAD_REQUEST', 'Bad ' + name + '.');
+  }
+  return number;
+}
+
+/** Every stored field of a word, plus the three the server owns. */
+function buildRecord_(fields, id, createdAt, updatedAt) {
+  return merge_({ id: id, createdAt: createdAt, updatedAt: updatedAt }, fields);
 }
 
 /* --- Operations ----------------------------------------------------------- */
@@ -363,19 +446,7 @@ function createWord_(input) {
     var schema = ensureHeaders_(sheet);
     var now = new Date().toISOString();
 
-    var record = {
-      id: Utilities.getUuid(),
-      word: fields.word,
-      pos: fields.pos,
-      definition: fields.definition,
-      note: fields.note,
-      color: fields.color,
-      folder: fields.folder,
-      archivedFrom: fields.archivedFrom,
-      status: fields.status,
-      createdAt: now,
-      updatedAt: now
-    };
+    var record = buildRecord_(fields, Utilities.getUuid(), now, now);
 
     sheet.appendRow(wordToRow_(record, schema.map, schema.width));
     return record;
@@ -397,23 +468,86 @@ function updateWord_(input) {
 
     var existing = rowToWord_(sheet.getRange(row, 1, 1, width).getValues()[0], schema.map);
 
-    var record = {
-      id: id,
-      word: fields.word,
-      pos: fields.pos,
-      definition: fields.definition,
-      note: fields.note,
-      color: fields.color,
-      folder: fields.folder,
-      archivedFrom: fields.archivedFrom,
-      status: fields.status,
-      createdAt: existing.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    var now = new Date().toISOString();
+    var record = buildRecord_(fields, id, existing.createdAt || now, now);
 
     sheet.getRange(row, 1, 1, width).setValues([wordToRow_(record, schema.map, width)]);
     return record;
   });
+}
+
+/**
+ * Several rewrites under one lock and one read of the id column — what a run
+ * of quiz answers needs, where one request per answer would cost a couple of
+ * seconds each.
+ *
+ * A word deleted on another device in the meantime is skipped rather than
+ * failing the batch; its id comes back in `missing` so the app can drop it.
+ */
+function updateMany_(inputs) {
+  if (!inputs || !inputs.length) fail_('BAD_REQUEST', 'Nothing to update.');
+  if (inputs.length > MAX_BATCH) fail_('BAD_REQUEST', 'Too many updates at once.');
+
+  // Validated before the lock, so a bad entry costs nobody else a wait.
+  var prepared = [];
+  for (var i = 0; i < inputs.length; i++) {
+    if (!inputs[i] || !inputs[i].id) fail_('BAD_REQUEST', 'Missing id.');
+    prepared.push({ id: String(inputs[i].id), fields: validate_(inputs[i]) });
+  }
+
+  return withLock_(function () {
+    var sheet = getSheet_();
+    var schema = ensureHeaders_(sheet);
+    var width = schema.width;
+    var lastRow = sheet.getLastRow();
+
+    var rows = {};
+    if (lastRow >= 2) {
+      var ids = sheet.getRange(2, schema.map.id + 1, lastRow - 1, 1).getValues();
+      var created = sheet.getRange(2, schema.map.createdAt + 1, lastRow - 1, 1).getValues();
+      for (var r = 0; r < ids.length; r++) {
+        if (ids[r][0]) rows[String(ids[r][0])] = { row: r + 2, createdAt: toText_(created[r][0]) };
+      }
+    }
+
+    var now = new Date().toISOString();
+    var saved = [];
+    var missing = [];
+
+    for (var p = 0; p < prepared.length; p++) {
+      var entry = prepared[p];
+      var hit = rows[entry.id];
+      if (!hit) {
+        missing.push(entry.id);
+        continue;
+      }
+      var record = buildRecord_(entry.fields, entry.id, hit.createdAt || now, now);
+      sheet.getRange(hit.row, 1, 1, width).setValues([wordToRow_(record, schema.map, width)]);
+      saved.push(record);
+    }
+
+    return { words: saved, missing: missing };
+  });
+}
+
+/** Clears the v7 "known" status, which no longer means anything. */
+function clearKnownStatus_() {
+  var sheet = getSheet_();
+  var schema = ensureHeaders_(sheet);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  var range = sheet.getRange(2, schema.map.status + 1, lastRow - 1, 1);
+  var values = range.getValues();
+  var touched = 0;
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0]).trim() === 'known') {
+      values[i][0] = '';
+      touched += 1;
+    }
+  }
+  if (touched) range.setValues(values);
+  return touched;
 }
 
 function deleteWord_(id) {
@@ -432,6 +566,215 @@ function deleteWord_(id) {
   });
 }
 
+/* --- Folders -------------------------------------------------------------- */
+
+function getFolderSheet_() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(FOLDER_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(FOLDER_SHEET_NAME);
+    sheet.getRange(1, 1, 1, FOLDER_HEADERS.length).setValues([FOLDER_HEADERS]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, sheet.getMaxRows(), FOLDER_HEADERS.length).setNumberFormat('@');
+  }
+
+  return sheet;
+}
+
+/** Same additive migration as the Words sheet; see ensureHeaders_. */
+function ensureFolderHeaders_(sheet) {
+  var read = Math.max(sheet.getLastColumn(), 1);
+  var header = sheet.getRange(1, 1, 1, read).getValues()[0];
+
+  var map = {};
+  for (var i = 0; i < header.length; i++) {
+    var name = String(header[i]).trim();
+    if (name) map[name] = i;
+  }
+
+  var missing = [];
+  for (var h = 0; h < FOLDER_HEADERS.length; h++) {
+    if (!(FOLDER_HEADERS[h] in map)) missing.push(FOLDER_HEADERS[h]);
+  }
+
+  if (missing.length) {
+    var start = header.length + 1;
+    var needed = start + missing.length - 1;
+    if (needed > sheet.getMaxColumns()) {
+      sheet.insertColumnsAfter(sheet.getMaxColumns(), needed - sheet.getMaxColumns());
+    }
+    sheet.getRange(1, start, 1, missing.length).setValues([missing]);
+    sheet.getRange(1, start, sheet.getMaxRows(), missing.length).setNumberFormat('@');
+    for (var m = 0; m < missing.length; m++) map[missing[m]] = header.length + m;
+    SpreadsheetApp.flush();
+  }
+
+  var width = 0;
+  for (var key in map) {
+    if (map[key] + 1 > width) width = map[key] + 1;
+  }
+
+  return { map: map, width: width };
+}
+
+/** Oldest first, so the app can show folders in the order they were made. */
+function listFolders_() {
+  var sheet = getFolderSheet_();
+  var schema = ensureFolderHeaders_(sheet);
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  var values = sheet.getRange(2, 1, lastRow - 1, schema.width).getValues();
+  var folders = [];
+
+  for (var i = 0; i < values.length; i++) {
+    var row = values[i];
+    var read = function (field) {
+      var index = schema.map[field];
+      return index === undefined ? '' : toText_(row[index]);
+    };
+    if (!read('id')) continue;
+    // The photo column is left out: those data URLs run to tens of kilobytes
+    // each, and nothing shows them any more.
+    folders.push({
+      id: read('id'),
+      name: read('name'),
+      createdAt: read('createdAt')
+    });
+  }
+  return folders;
+}
+
+function findFolderRow_(sheet, id) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+
+  var ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === id) return i + 2;
+  }
+  return -1;
+}
+
+function validFolderName_(input) {
+  var name = String(input || '').trim();
+  if (!name) fail_('BAD_REQUEST', 'Folder name is required.');
+  if (name.length > MAX_FOLDER_NAME_LENGTH) fail_('BAD_REQUEST', 'Folder name is too long.');
+  return name;
+}
+
+/** Names are the link between a word and its folder, so they must be unique. */
+function folderNameTaken_(folders, name, exceptId) {
+  var target = name.toLowerCase();
+  for (var i = 0; i < folders.length; i++) {
+    if (folders[i].id === exceptId) continue;
+    if (folders[i].name.toLowerCase() === target) return true;
+  }
+  return false;
+}
+
+function createFolder_(input) {
+  var name = validFolderName_(input);
+
+  return withLock_(function () {
+    var sheet = getFolderSheet_();
+    if (folderNameTaken_(listFolders_(), name, null)) {
+      fail_('DUPLICATE', 'A folder with that name already exists.');
+    }
+
+    var schema = ensureFolderHeaders_(sheet);
+    var record = { id: Utilities.getUuid(), name: name, createdAt: new Date().toISOString() };
+
+    var row = [];
+    for (var i = 0; i < schema.width; i++) row.push('');
+    for (var h = 0; h < FOLDER_HEADERS.length; h++) {
+      var index = schema.map[FOLDER_HEADERS[h]];
+      if (index !== undefined) row[index] = escapeCell_(record[FOLDER_HEADERS[h]]);
+    }
+
+    sheet.appendRow(row);
+    return record;
+  });
+}
+
+function renameFolder_(id, input) {
+  if (!id) fail_('BAD_REQUEST', 'Missing folder id.');
+  var name = validFolderName_(input);
+  var target = String(id);
+
+  return withLock_(function () {
+    var sheet = getFolderSheet_();
+    var folders = listFolders_();
+
+    var current = null;
+    for (var i = 0; i < folders.length; i++) {
+      if (folders[i].id === target) current = folders[i];
+    }
+    if (!current) fail_('NOT_FOUND', 'No folder with that id.');
+
+    if (folderNameTaken_(folders, name, target)) {
+      fail_('DUPLICATE', 'A folder with that name already exists.');
+    }
+
+    var schema = ensureFolderHeaders_(sheet);
+    var row = findFolderRow_(sheet, target);
+    sheet.getRange(row, schema.map.name + 1).setValue(escapeCell_(name));
+
+    // Words point at the folder by name, so they all have to follow.
+    if (current.name !== name) relabelWords_(current.name, name);
+
+    return { id: target, name: name, createdAt: current.createdAt };
+  });
+}
+
+function deleteFolder_(id) {
+  if (!id) fail_('BAD_REQUEST', 'Missing folder id.');
+  var target = String(id);
+
+  return withLock_(function () {
+    var sheet = getFolderSheet_();
+    var folders = listFolders_();
+
+    var current = null;
+    for (var i = 0; i < folders.length; i++) {
+      if (folders[i].id === target) current = folders[i];
+    }
+    if (!current) fail_('NOT_FOUND', 'No folder with that id.');
+
+    // The words survive; they just stop belonging anywhere.
+    relabelWords_(current.name, '');
+
+    sheet.deleteRow(findFolderRow_(sheet, target));
+    return target;
+  });
+}
+
+/** Rewrites the folder column for every word currently in `from`. */
+function relabelWords_(from, to) {
+  var sheet = getSheet_();
+  var schema = ensureHeaders_(sheet);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  var column = schema.map.folder + 1;
+  var range = sheet.getRange(2, column, lastRow - 1, 1);
+  var values = range.getValues();
+
+  var touched = 0;
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0]) === from) {
+      values[i][0] = to;
+      touched += 1;
+    }
+  }
+
+  if (touched) range.setValues(values);
+  return touched;
+}
+
+/* --- One-time setup ------------------------------------------------------- */
 /* --- One-time setup ------------------------------------------------------- */
 
 /**
@@ -456,6 +799,12 @@ function setup() {
   } else {
     Logger.log('No new columns needed.');
   }
+
+  getFolderSheet_();
+  Logger.log('Folders: %s', listFolders_().map(function (f) { return f.name; }).join(', ') || '(none)');
+
+  var cleared = clearKnownStatus_();
+  if (cleared) Logger.log('Cleared the old "known" status from %s word(s).', cleared);
 
   if (PASSPHRASE === 'change-me-to-something-long-and-random') {
     Logger.log('WARNING: PASSPHRASE is still the default. Change it before deploying.');

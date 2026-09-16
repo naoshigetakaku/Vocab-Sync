@@ -2,9 +2,9 @@
  * detail.js — the dialog that shows every field of one word.
  */
 
-import { getWord, deleteWord, isPending } from './store.js';
+import { getWord, deleteWord, isPending, setLabel } from './store.js';
 import {
-  DEFAULT_COLOR, YOUGLISH_BASE, YOUGLISH_LANGUAGE, STATUS_KNOWN, STATUS_UNKNOWN,
+  DEFAULT_COLOR, YOUGLISH_BASE, YOUGLISH_LANGUAGE, STATUS_UNKNOWN, LABEL_CLEAR_STREAK,
 } from './config.js';
 import { openDialog, closeDialog, wireDismiss } from './dialog.js';
 import { askConfirm } from './confirm.js';
@@ -12,7 +12,9 @@ import { toast } from './toast.js';
 
 const dialog = document.getElementById('detail-dialog');
 const posElement = document.getElementById('detail-pos');
-const statusElement = document.getElementById('detail-status');
+const labelButton = document.getElementById('detail-label');
+const labelText = document.getElementById('detail-label-text');
+const labelDots = document.getElementById('detail-label-dots');
 const wordElement = document.getElementById('detail-word');
 const definitionBlock = document.getElementById('detail-definition-block');
 const definitionElement = document.getElementById('detail-definition');
@@ -29,10 +31,18 @@ function fill(word) {
   posElement.textContent = word.pos || '';
   posElement.hidden = !word.pos;
 
-  const status = word.status || '';
-  statusElement.dataset.status = status;
-  statusElement.textContent = status === STATUS_KNOWN ? 'Known' : status === STATUS_UNKNOWN ? 'Unknown' : '';
-  statusElement.hidden = !status;
+  // The label doubles as the control that puts it on or takes it off.
+  const labelled = word.status === STATUS_UNKNOWN;
+  labelButton.dataset.status = labelled ? STATUS_UNKNOWN : '';
+  labelButton.setAttribute('aria-pressed', labelled ? 'true' : 'false');
+  labelText.textContent = labelled ? 'Don\u2019t know this' : 'Mark don\u2019t know';
+
+  // Filled circles for right answers so far, hollow for the ones still to go.
+  const done = labelled ? Math.min(LABEL_CLEAR_STREAK, word.labelStreak || 0) : 0;
+  labelDots.textContent = labelled
+    ? '\u25cf'.repeat(done) + '\u25cb'.repeat(LABEL_CLEAR_STREAK - done)
+    : '';
+  labelDots.hidden = !labelled;
 
   wordElement.textContent = word.word;
   wordElement.dataset.color = word.color || DEFAULT_COLOR;
@@ -73,6 +83,21 @@ export function syncDetail() {
 
 export function initDetail(handlers) {
   onEdit = handlers.onEdit;
+
+  labelButton.addEventListener('click', async () => {
+    if (!currentId) return;
+    const word = getWord(currentId);
+    if (!word) return;
+
+    const labelled = word.status === STATUS_UNKNOWN;
+    try {
+      await setLabel(currentId, !labelled);
+      syncDetail();
+      toast(labelled ? 'Label cleared.' : 'Marked \u201cdon\u2019t know\u201d.');
+    } catch (error) {
+      toast(error.message);
+    }
+  });
 
   wireDismiss(dialog, () => {
     currentId = null;

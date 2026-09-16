@@ -2,8 +2,10 @@
    layout.css — app shell, header, tabs, word list.
    ========================================================================== */
 
-/* Outside the scroller, so it cannot move with the list. */
+/* Outside the scroller, so it cannot move with the list. The folder menu
+   hangs off its bottom edge, which is why it is a positioning context. */
 .app-header {
+  position: relative;
   flex: none;
   z-index: 10;
   background: var(--bg);
@@ -20,16 +22,42 @@
   padding: 14px 0 10px;
 }
 
+/* The name of the open folder, and the button that opens the folder menu. */
 .app-header__title {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.app-header__title span {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.app-header__chevron {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  stroke-width: 2.4;
+  color: var(--text-faint);
+  transition: transform var(--dur-mid) var(--ease-out);
+}
+
+.app-header__title[aria-expanded="true"] .app-header__chevron { transform: rotate(180deg); }
 
 /* Right-hand cluster of header controls. */
 .app-header__tools {
@@ -67,7 +95,7 @@
   stroke-width: 1.9;
 }
 
-/* --- Tabs: All / Known / Unknown -------------------------------------------
+/* --- Tabs: All / Unknown -------------------------------------------
    One pill slides behind the selected tab and takes that tab's colour. It is
    moved with a transform, not by changing its position, so the slide stays on
    the compositor. */
@@ -76,7 +104,7 @@
   --filter-index: 0;
   position: relative;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   margin-bottom: 11px;
   padding: 3px;
   border-radius: 999px;
@@ -89,7 +117,7 @@
   top: 3px;
   bottom: 3px;
   left: 3px;
-  width: calc((100% - 6px) / 3);
+  width: calc((100% - 6px) / 2);
   border-radius: 999px;
   background: var(--segment-all);
   box-shadow: var(--shadow-segment);
@@ -98,7 +126,6 @@
               background-color 300ms var(--ease-out);
 }
 
-.filter[data-active="known"]   .filter__indicator { background: var(--known-tint); box-shadow: none; }
 .filter[data-active="unknown"] .filter__indicator { background: var(--unknown-tint); box-shadow: none; }
 
 .filter__tab {
@@ -118,10 +145,8 @@
 
 .filter__tab[aria-selected="true"] { color: var(--text); }
 
-/* Known is green and Unknown red wherever they appear, selected or not. */
-.filter__tab--known   { color: var(--known); }
-.filter__tab--unknown { color: var(--unknown); }
-.filter__tab--known[aria-selected="true"]   { color: var(--known); }
+/* Unknown is red wherever it appears, selected or not. */
+.filter__tab--unknown,
 .filter__tab--unknown[aria-selected="true"] { color: var(--unknown); }
 
 /* The only scrolling region on the home screen. */
@@ -135,9 +160,76 @@
   scrollbar-gutter: stable;
   padding-left: max(var(--page-pad), var(--safe-left));
   padding-right: max(var(--page-pad), var(--safe-right));
-  /* Leave room for the floating button plus the home indicator. */
-  padding-bottom: calc(112px + var(--safe-bottom));
+  /* Leave room for the floating button; the tab bar is in the flow below. */
+  padding-bottom: 96px;
 }
+
+/* --- Tab bar -------------------------------------------------------------- */
+/* In the flow rather than fixed, so the list above it simply ends where it
+   begins and nothing has to be told how tall it is. */
+
+.tabbar {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  padding-bottom: var(--safe-bottom);
+}
+
+.tabbar__tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 7px;
+  border: 0;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.tabbar__tab svg { width: 22px; height: 22px; stroke-width: 1.8; }
+.tabbar__tab.is-active { color: var(--text); }
+.tabbar__tab:active { transform: scale(0.96); }
+
+/* How many words the quiz has waiting in the open folder. */
+.tabbar__badge {
+  position: absolute;
+  top: 3px;
+  left: calc(50% + 7px);
+  min-width: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--unknown);
+  color: var(--on-badge);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+}
+
+/* Behind the folder menu, over everything else the header does not cover. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: var(--scrim);
+  opacity: 0;
+  transition: opacity var(--dur-mid) var(--ease-out);
+}
+
+.scrim.is-open { opacity: 1; }
+
+/* The quiz takes the whole screen: no header, no tab bar, one card. */
+body.is-quizzing .app-header,
+body.is-quizzing .tabbar,
+body.is-quizzing .fab { display: none; }
 
 /* Held still while a dialog is open; see js/scroll-lock.js. */
 .app-main.is-locked { overflow: hidden; }
@@ -152,8 +244,8 @@
 /* --- Swipe to file ---------------------------------------------------------
    The row is opaque and slides over labels that are already in place, so the
    action is uncovered rather than drawn — which is why nothing has to be
-   inserted or measured mid-gesture. Right uncovers Known on the left edge;
-   left uncovers Unknown on the right edge. */
+   inserted or measured mid-gesture. Right uncovers "clear label" on the left
+   edge; left uncovers "don't know" on the right edge. */
 
 .word-item {
   position: relative;
@@ -175,21 +267,21 @@
   pointer-events: none;
 }
 
-.word-item__action--known {
+.word-item__action--clear {
   justify-content: flex-start;
   color: var(--known);
   background: var(--known-tint);
 }
 
-.word-item__action--unknown {
+.word-item__action--label {
   justify-content: flex-end;
   color: var(--unknown);
   background: var(--unknown-tint);
 }
 
 /* Only the label for the direction of travel ever shows. */
-.word-item.is-right .word-item__action--known,
-.word-item.is-left  .word-item__action--unknown {
+.word-item.is-right .word-item__action--clear,
+.word-item.is-left  .word-item__action--label {
   opacity: var(--row-progress, 0);
 }
 
@@ -265,8 +357,8 @@
   overflow-wrap: anywhere;
 }
 
-/* Which pile a word is in. Only under All — on the other tabs every row
-   would carry the same mark, which says nothing. */
+/* Marks a labelled word. Only under All — under Unknown every row would
+   carry the same mark, which says nothing. */
 .word-row__mark {
   display: none;
   flex: none;
@@ -275,11 +367,6 @@
   margin-left: auto;
   margin-right: 4px;
   border-radius: 50%;
-}
-
-.word-list[data-filter="all"] .word-row[data-status="known"] .word-row__mark {
-  display: block;
-  background: var(--known);
 }
 
 .word-list[data-filter="all"] .word-row[data-status="unknown"] .word-row__mark {

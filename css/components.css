@@ -8,7 +8,7 @@
 .fab {
   position: fixed;
   right: max(var(--page-pad), var(--safe-right));
-  bottom: calc(var(--page-pad) + var(--safe-bottom));
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 14px);
   z-index: 20;
   display: grid;
   place-items: center;
@@ -200,8 +200,7 @@
   gap: 6px;
 }
 
-.detail__pos,
-.detail__status {
+.detail__pos {
   display: inline-block;
   padding: 3px 9px;
   border: 1px solid var(--line-strong);
@@ -213,9 +212,38 @@
   color: var(--text-dim);
 }
 
-.detail__status { border-color: transparent; }
-.detail__status[data-status="known"]   { color: var(--known);   background: var(--known-tint); }
-.detail__status[data-status="unknown"] { color: var(--unknown); background: var(--unknown-tint); }
+/* The label on the detail card doubles as the control for it. */
+.detail__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+
+.detail__label:active { transform: scale(0.95); }
+
+.detail__label[data-status="unknown"] {
+  border-style: solid;
+  border-color: transparent;
+  background: var(--unknown-tint);
+  color: var(--unknown);
+}
+
+/* Filled for right answers so far, hollow for the ones still to go. */
+.detail__dots {
+  letter-spacing: 1px;
+  font-size: 9px;
+}
 
 .detail__headline {
   display: flex;
@@ -276,9 +304,324 @@
   overflow-wrap: anywhere;
 }
 
-/* --- Cards ---------------------------------------------------------------- */
-/* One flash card per screen, snapped. The deck is its own scroller, so the
-   page behind it has to stop scrolling while it is up. */
+/* --- Folder menu ----------------------------------------------------------- */
+/* Hangs off the bottom edge of the header and drops into place. Transform and
+   opacity only, so the drop stays on the compositor. */
+
+.folder-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 11;
+  padding: 4px max(var(--page-pad), var(--safe-left)) 14px max(var(--page-pad), var(--safe-right));
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: var(--bg);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
+  transform: translateY(-8px);
+  opacity: 0;
+  transition: transform 200ms var(--ease-out), opacity 160ms var(--ease-out);
+}
+
+.folder-menu.is-open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.folder-menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 2px 2px;
+}
+
+.folder-menu__title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.folder-menu__edit {
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.folder-menu__list {
+  max-height: 46dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.folder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.folder-row__choose {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.folder-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-row__choose[aria-current="true"] .folder-row__name { font-weight: 650; }
+
+.folder-row__count {
+  flex: none;
+  font-size: 13px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.folder-row__check {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  stroke-width: 2.4;
+}
+
+.folder-row__tools {
+  flex: none;
+  display: flex;
+  gap: 2px;
+}
+
+.folder-row__icon { width: 17px; height: 17px; stroke-width: 1.9; }
+
+.icon-button--danger { color: var(--danger); }
+
+/* Editing is about the folders, not about which one is open. */
+.folder-row.is-editing .folder-row__choose { pointer-events: none; }
+.folder-row.is-editing .folder-row__count { display: none; }
+
+.folder-menu__new {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.folder-menu__new .field__input { flex: 1 1 auto; min-height: 40px; }
+.folder-menu__new .button { flex: none; min-height: 40px; }
+
+.folder-menu__error { padding-top: 8px; }
+
+/* --- Quiz home ------------------------------------------------------------- */
+
+.quiz-home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 26px;
+  text-align: center;
+}
+
+.quiz-home__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.quiz-home__count {
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.quiz-home__meta {
+  display: flex;
+  gap: 14px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.quiz-home__unknown { color: var(--unknown); font-weight: 600; }
+
+.quiz-home__start {
+  width: 100%;
+  max-width: 320px;
+  margin-top: 26px;
+}
+
+.quiz-home__progress {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 40px;
+  text-align: left;
+}
+
+.quiz-home__caption {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 7px;
+}
+
+.bar {
+  display: flex;
+  height: 9px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--segment-bg);
+}
+
+.bar__part { transition: width var(--dur-mid) var(--ease-out); }
+.bar__part--new      { background: var(--line-strong); }
+.bar__part--learning { background: var(--text-dim); }
+.bar__part--solid    { background: var(--known); }
+
+.quiz-home__legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.quiz-home__empty {
+  margin-top: 30px;
+  font-size: 15px;
+  color: var(--text-faint);
+}
+
+/* --- Quiz session ---------------------------------------------------------- */
+/* Over everything, with its own bar: one card at a time and nothing else. */
+
+.quiz {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding: var(--safe-top) max(var(--page-pad), var(--safe-right))
+           calc(16px + var(--safe-bottom)) max(var(--page-pad), var(--safe-left));
+}
+
+.quiz__bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 10px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.quiz__end {
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quiz__count { font-variant-numeric: tabular-nums; }
+
+.quiz__stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Depth for the turn. Set here rather than inside the card's transform so
+     the card itself keeps a plain rotateY the compositor can run. */
+  perspective: 1600px;
+}
+
+.quiz__hint {
+  flex: none;
+  padding: 14px 0 4px;
+  font-size: 13px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.quiz__actions {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.grade {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 9px 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+
+.grade:active { transform: scale(0.97); }
+
+.grade--missed { background: var(--unknown-tint); color: var(--unknown); }
+.grade--got    { background: var(--known-tint);   color: var(--known); }
+
+.grade__label { font-size: 15px; font-weight: 650; }
+.grade__hint  { font-size: 11px; opacity: 0.85; }
+
+.quiz__summary {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.quiz__summary-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.quiz__summary-line { font-size: 15px; color: var(--text-dim); }
+.quiz__summary .button { margin-top: 18px; min-width: 180px; }
+
+/* --- Card deck -------------------------------------------------------------
+   The list's other face: the same words one screen at a time, snapped. Its
+   own scroller, so the page behind it has to stop scrolling while it is up. */
 
 .app-main.is-cards {
   overflow: hidden;
@@ -303,25 +646,41 @@
   align-items: center;
   justify-content: center;
   min-height: 100%;
-  padding: 18px 0 calc(92px + var(--safe-bottom));
+  padding: 18px 0 calc(var(--tabbar-h) + var(--safe-bottom) + 84px);
   scroll-snap-align: center;
   /* Stops a hard flick from skimming past several words at once. */
   scroll-snap-stop: always;
-  /* Depth for the turn. Set here rather than inside the card's transform so
-     the card itself keeps a plain rotateY that the compositor can run. */
   perspective: 1600px;
 }
 
+/* Which words are labelled, as in the list: only under All. */
+.flashcard__mark {
+  display: none;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.cards[data-filter="all"] .flashcard[data-status="unknown"] .flashcard__mark {
+  display: block;
+  background: var(--unknown);
+}
+
+/* --- Flash card ------------------------------------------------------------ */
 /* Both faces share one grid cell, so the card is exactly as tall as its
    taller face and neither face ever has to scroll on its own — a scrolling
    element inside a 3D turn is where iOS starts showing the wrong side. */
+
 .flashcard {
   position: relative;
   display: grid;
   width: 100%;
   max-width: 520px;
-  min-height: min(58vh, 460px);
-  min-height: min(58dvh, 460px);
+  min-height: min(52vh, 440px);
+  min-height: min(52dvh, 440px);
   transform-style: preserve-3d;
   transition: transform 520ms var(--ease-out);
   cursor: pointer;
@@ -330,7 +689,7 @@
 
 .flashcard.is-flipped { transform: rotateY(180deg); }
 
-/* Promoted only around a turn; see js/cards.js. */
+/* Promoted only around a turn; see js/quiz.js. */
 .flashcard.is-primed { will-change: transform; }
 
 .flashcard:focus-visible .flashcard__face { border-color: var(--accent); }
@@ -341,13 +700,14 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 30px 24px 16px;
+  padding: 26px 22px 14px;
   border: 1px solid var(--line);
   border-radius: 24px;
   background: var(--surface-raise);
   box-shadow: var(--shadow-card), inset 0 1px 0 var(--gloss-edge);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  overflow: hidden;
 }
 
 /* An explicit rotation on the front as well: Safari only honours
@@ -358,14 +718,12 @@
   text-align: center;
 }
 
-.flashcard__face--back {
-  transform: rotateY(180deg);
-}
+.flashcard__face--back { transform: rotateY(180deg); }
 
 .flashcard__word {
   margin: auto 0;
   padding: 12px 0;
-  font-size: 40px;
+  font-size: 38px;
   font-weight: 700;
   line-height: 1.12;
   letter-spacing: -0.03em;
@@ -374,7 +732,14 @@
 
 .flashcard__body {
   flex: 1 1 auto;
+  min-height: 0;
   text-align: left;
+}
+
+.flashcard__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .flashcard__title {
@@ -398,25 +763,17 @@
 
 .flashcard__face--back .flashcard__youglish { align-self: flex-end; }
 
-/* Which pile the word is in — only under All, as in the list. */
-.flashcard__mark {
-  display: none;
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.cards[data-filter="all"] .flashcard[data-status="known"] .flashcard__mark {
-  display: block;
-  background: var(--known);
-}
-
-.cards[data-filter="all"] .flashcard[data-status="unknown"] .flashcard__mark {
-  display: block;
-  background: var(--unknown);
+/* The label, as it appears on the back of a card. */
+.quiz-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--unknown-tint);
+  color: var(--unknown);
+  font-size: 11px;
+  font-weight: 650;
 }
 
 /* A browser window has the room for larger type; see the note on wide
@@ -424,6 +781,7 @@
 @media (display-mode: browser) and (min-width: 700px) {
   .flashcard { max-width: 640px; }
   .flashcard__word { font-size: 52px; }
+  .quiz__actions, .quiz__bar, .quiz__hint { max-width: 640px; margin-inline: auto; width: 100%; }
 }
 
 /* --- Option picker -------------------------------------------------------- */
@@ -694,7 +1052,7 @@
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(88px + var(--safe-bottom));
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 84px);
   z-index: 40;
   max-width: min(420px, calc(100vw - 32px));
   padding: 11px 18px;
@@ -710,7 +1068,7 @@
   position: fixed;
   left: max(var(--page-pad), var(--safe-left));
   right: max(var(--page-pad), var(--safe-right));
-  bottom: calc(var(--page-pad) + var(--safe-bottom));
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 14px);
   z-index: 30;
   display: flex;
   align-items: center;

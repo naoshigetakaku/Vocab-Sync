@@ -152,20 +152,41 @@
 /* A row that has just been created slides in on its own. */
 .word-row.is-new { animation: row-in var(--dur-mid) var(--ease-spring) both; }
 
-/* A word swiped into a pile under All stays where it is, washed for a moment
-   in the colour of the pile it went to. */
-@keyframes flash-known {
+/* A word labelled or cleared under All stays where it is, washed for a
+   moment in red (labelled) or green (cleared). */
+@keyframes flash-clear {
   from { background-color: var(--known-tint); }
   to   { background-color: var(--bg); }
 }
 
-@keyframes flash-unknown {
+@keyframes flash-label {
   from { background-color: var(--unknown-tint); }
   to   { background-color: var(--bg); }
 }
 
-.word-item .word-row.is-flash-known   { animation: flash-known   700ms var(--ease-out) both; }
-.word-item .word-row.is-flash-unknown { animation: flash-unknown 700ms var(--ease-out) both; }
+.word-item .word-row.is-flash-clear { animation: flash-clear 700ms var(--ease-out) both; }
+.word-item .word-row.is-flash-label { animation: flash-label 700ms var(--ease-out) both; }
+
+/* --- Quiz ----------------------------------------------------------------- */
+/* The answered card leaves to the left, the next arrives from the right.
+   No fill-mode: once each is over, the transform must be free again for the
+   card to turn. */
+
+@keyframes card-leave {
+  from { transform: translateX(0);      opacity: 1; }
+  to   { transform: translateX(-18px);  opacity: 0; }
+}
+
+@keyframes card-enter {
+  from { transform: translateX(18px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.flashcard.is-leaving  { animation: card-leave 170ms var(--ease-out); opacity: 0; }
+.flashcard.is-entering { animation: card-enter 200ms var(--ease-out); }
+
+/* The grading buttons appear with the answer. */
+.quiz__actions:not([hidden]) { animation: row-in var(--dur-mid) var(--ease-out) both; }
 
 /* --- Chrome --------------------------------------------------------------- */
 

@@ -3,7 +3,8 @@
  */
 
 import { getCredentials } from './auth.js';
-import { REQUEST_TIMEOUT_MS, REQUIRED_BACKEND_VERSION } from './config.js';
+import { REQUEST_TIMEOUT_MS, REQUIRED_BACKEND_VERSION, STORAGE_KEYS } from './config.js';
+import { readJson, writeJson } from './storage.js';
 
 export class ApiError extends Error {
   constructor(code, message) {
@@ -40,6 +41,18 @@ let backendVersion = null;
 /** null until a request has succeeded; then the deployment's own version. */
 export function getBackendVersion() {
   return backendVersion;
+}
+
+/** What the last session saw, so a first request can already rely on it. */
+let lastKnownVersion = Number(readJson(STORAGE_KEYS.backendVersion, 0)) || 0;
+
+/**
+ * This session's answer if there is one, else the last session's. Used to
+ * pick a request format before anything has been asked of the server yet —
+ * the queue is flushed before the first list — never to warn about anything.
+ */
+export function getKnownBackendVersion() {
+  return backendVersion === null ? lastKnownVersion : backendVersion;
 }
 
 /** True once a response has proved the deployment predates this build. */
@@ -97,12 +110,31 @@ async function call(action, payload) {
   }
 
   backendVersion = Number(data.version) || 0;
+  if (backendVersion !== lastKnownVersion) {
+    lastKnownVersion = backendVersion;
+    writeJson(STORAGE_KEYS.backendVersion, backendVersion);
+  }
   return data;
 }
 
+MESSAGES.DUPLICATE = 'A folder with that name already exists.';
+
 export const api = {
-  list: () => call('list', {}).then((data) => data.words || []),
+  /** The whole snapshot: words and the folders they live in. */
+  list: () => call('list', {}).then((data) => ({
+    words: data.words || [],
+    folders: data.folders || [],
+  })),
   create: (fields) => call('create', { word: fields }).then((data) => data.word),
   update: (fields) => call('update', { word: fields }).then((data) => data.word),
+  /** Several rewrites in one request; see updateMany_ in Code.gs. */
+  updateMany: (list) => call('updateMany', { words: list }).then((data) => ({
+    words: data.words || [],
+    missing: data.missing || [],
+  })),
   remove: (id) => call('delete', { id }).then(() => true),
+
+  createFolder: (name) => call('createFolder', { name }).then((data) => data.folder),
+  renameFolder: (id, name) => call('renameFolder', { id, name }).then((data) => data.folder),
+  removeFolder: (id) => call('deleteFolder', { id }).then(() => true),
 };

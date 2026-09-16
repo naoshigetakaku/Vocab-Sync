@@ -13,7 +13,7 @@
  */
 
 import { visibleWords, paintEmpty } from './list.js';
-import { getFilter } from './view.js';
+import { getFilter, selectionLabel } from './view.js';
 import { DEFAULT_COLOR, YOUGLISH_BASE, YOUGLISH_LANGUAGE } from './config.js';
 
 const cardsElement = document.getElementById('cards');
@@ -36,7 +36,7 @@ function shuffled(items) {
   return copy;
 }
 
-/** Deals a fresh order, every card face up. Called when the mode is opened. */
+/** Deals a fresh order, every card face up. Called when the tab is opened. */
 export function shuffleCards() {
   order = shuffled(visibleWords().map((word) => word.id));
   flipped.clear();
@@ -197,7 +197,7 @@ function prime(event) {
 }
 
 function signatureOf(words) {
-  return getFilter() + '\n' + words
+  return selectionLabel() + '\n' + getFilter() + '\n' + words
     .map((word) => [
       word.id, word.word, word.pos, word.definition, word.note, word.color, word.status || '',
     ].join('\t'))

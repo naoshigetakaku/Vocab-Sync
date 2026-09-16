@@ -4,13 +4,19 @@
 
 import { hasCredentials } from './auth.js';
 import { isRetryable, isBackendStale, getBackendVersion } from './api.js';
-import { subscribe, refresh, reset, getWord, setStatus } from './store.js';
-import { FILTERS, STATUS_KNOWN, STATUS_UNKNOWN } from './config.js';
-import { subscribeView, getFilter, setFilter, getMode, setMode } from './view.js';
+import { subscribe, refresh, reset, getWord, setLabel, flush } from './store.js';
+import { FILTERS, STATUS_UNKNOWN } from './config.js';
 import {
-  initList, render as renderList, highlightNew, animateNextReflow, flashRow,
+  subscribeView, getFilter, setFilter, getTab, setTab, setSelection,
+  selectionLabel, isSelected, FOLDER,
+} from './view.js';
+import {
+  initList, render as renderList, highlightNew, animateNextReflow, flashRow, hideEmpty,
 } from './list.js';
+import { initFolderMenu, renderFolderMenu, isFolderMenuOpen, closeFolderMenu } from './folder-menu.js';
+import { initFolderForm, openRenameFolder } from './folder-form.js';
 import { initCards, renderCards, shuffleCards } from './cards.js';
+import { initQuiz, renderQuizHome, readyCount, isQuizRunning } from './quiz.js';
 import { initDetail, openDetail, syncDetail } from './detail.js';
 import { initForm, openCreateForm, openEditForm } from './form.js';
 import { initSetup, openSetup } from './setup.js';
@@ -18,26 +24,29 @@ import { initInstallHint } from './install-hint.js';
 import { initSort, openSortPicker } from './sort.js';
 import { initPicker } from './picker.js';
 import { initConfirm } from './confirm.js';
-import { enableRowSwipe, RIGHT } from './swipe-row.js';
+import { enableRowSwipe, LEFT } from './swipe-row.js';
 import { toast } from './toast.js';
 
 const addButton = document.getElementById('add-button');
 const settingsButton = document.getElementById('settings-button');
 const sortButton = document.getElementById('sort-button');
+const folderName = document.getElementById('folder-name');
 const wordListElement = document.getElementById('word-list');
 const cardsElement = document.getElementById('cards');
+const quizHomeElement = document.getElementById('quiz-home');
 const mainElement = document.querySelector('.app-main');
-const modeButton = document.getElementById('mode-button');
-const modeIconList = document.getElementById('mode-icon-list');
-const modeIconCards = document.getElementById('mode-icon-cards');
 const filterElement = document.getElementById('filter');
+const tabbarElement = document.getElementById('tabbar');
+const badgeElement = document.getElementById('quiz-badge');
 
 const VIEW_ANIMATION_MS = 420;
 
 let syncing = false;
 let staleWarningShown = false;
+let renamingOpenFolder = false;
 let previousFilter = getFilter();
-let previousMode = getMode();
+let previousTab = getTab();
+let previousFolder = selectionLabel();
 
 /**
  * Saving Code.gs in the editor is not the same as deploying it, and a stale
@@ -83,16 +92,13 @@ function filterIndex(value) {
 }
 
 function paintHeader() {
-  const cards = getMode() === 'cards';
+  const tab = getTab();
+  const quiz = tab === 'quiz';
 
-  // The button offers the mode you are not in.
-  //
-  // toggleAttribute, not .hidden: `hidden` is an IDL property of HTMLElement,
-  // and these are SVG elements — assigning to .hidden there sets a plain
-  // JavaScript property and changes nothing on screen.
-  modeIconList.toggleAttribute('hidden', !cards);
-  modeIconCards.toggleAttribute('hidden', cards);
-  modeButton.setAttribute('aria-label', cards ? 'Switch to list' : 'Switch to cards');
+  folderName.textContent = selectionLabel();
+  // The deck deals its own order, so sorting has nothing to say there.
+  sortButton.hidden = tab !== 'list';
+  filterElement.hidden = quiz;
 
   const filter = getFilter();
   filterElement.dataset.active = filter;
@@ -100,6 +106,19 @@ function paintHeader() {
   filterElement.querySelectorAll('.filter__tab').forEach((tab) => {
     tab.setAttribute('aria-selected', tab.dataset.filter === filter ? 'true' : 'false');
   });
+
+  tabbarElement.querySelectorAll('.tabbar__tab').forEach((tab) => {
+    const active = tab.dataset.tab === getTab();
+    tab.classList.toggle('is-active', active);
+    tab.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+
+  const ready = readyCount();
+  badgeElement.textContent = String(ready);
+  badgeElement.hidden = ready === 0;
+
+  // Nothing to add from the quiz side, and the button would sit on the card.
+  addButton.hidden = quiz;
 }
 
 /** Slides the arriving content in from the side it came from. */
@@ -113,66 +132,75 @@ function animateView(element, kind) {
 }
 
 function renderCurrent() {
-  const cards = getMode() === 'cards';
+  const tab = getTab();
   const filter = getFilter();
+  const folder = selectionLabel();
 
-  // A different tab or mode is a different screen: start it at the top, and
-  // enter it from the side of the tab that was tapped.
+  // A different tab or folder is a different screen: start it at the top,
+  // and enter it from the side of the control that was tapped.
   let entrance = null;
-  if (filter !== previousFilter) {
-    entrance = filterIndex(filter) > filterIndex(previousFilter) ? 'forward' : 'back';
-  } else if (cards !== (previousMode === 'cards')) {
+  if (folder !== previousFolder || tab !== previousTab) {
     entrance = 'fade';
+  } else if (filter !== previousFilter) {
+    entrance = filterIndex(filter) > filterIndex(previousFilter) ? 'forward' : 'back';
   }
   previousFilter = filter;
-  previousMode = getMode();
+  previousTab = tab;
+  previousFolder = folder;
 
-  wordListElement.hidden = cards;
-  cardsElement.hidden = !cards;
+  wordListElement.hidden = tab !== 'list';
+  cardsElement.hidden = tab !== 'cards';
+  quizHomeElement.hidden = tab !== 'quiz';
   // The deck does its own snap scrolling, so the page must stop scrolling.
-  mainElement.classList.toggle('is-cards', cards);
+  mainElement.classList.toggle('is-cards', tab === 'cards');
 
-  if (cards) renderCards();
-  else renderList();
+  if (tab === 'quiz') {
+    hideEmpty();
+    renderQuizHome();
+  } else if (tab === 'cards') {
+    renderCards();
+  } else {
+    renderList();
+  }
 
+  if (isFolderMenuOpen()) renderFolderMenu();
   paintHeader();
 
   if (entrance) {
     mainElement.scrollTop = 0;
     cardsElement.scrollTop = 0;
-    animateView(cards ? cardsElement : wordListElement, entrance);
+    const arriving = tab === 'quiz' ? quizHomeElement : tab === 'cards' ? cardsElement : wordListElement;
+    animateView(arriving, entrance);
   }
 }
 
-/* --- Known / unknown ------------------------------------------------------ */
+/* --- The label ------------------------------------------------------------ */
 
-function statusFor(direction) {
-  return direction === RIGHT ? STATUS_KNOWN : STATUS_UNKNOWN;
-}
-
-/** Only a swipe that would change the word's pile is offered. */
+/** Only the swipe that would change something is offered. */
 function allowsSwipe(id, direction) {
   const word = getWord(id);
-  return Boolean(word) && (word.status || '') !== statusFor(direction);
+  if (!word) return false;
+  const labelled = word.status === STATUS_UNKNOWN;
+  return direction === LEFT ? !labelled : labelled;
 }
 
-/** Under All the word is still on screen afterwards; under a tab it leaves. */
+/** Under All the word is still on screen afterwards; under Unknown it leaves. */
 function staysAfterSwipe() {
-  return getFilter() === 'all';
+  return getFilter() !== STATUS_UNKNOWN;
 }
 
 async function performSwipe(id, direction) {
-  const status = statusFor(direction);
+  const label = direction === LEFT;
   const stays = staysAfterSwipe();
 
   // Either the row takes its new colour where it is, or the rows after it
   // glide up into the gap it leaves.
-  if (stays) flashRow(id);
+  if (stays) flashRow(id, label);
   else animateNextReflow();
 
   try {
-    await setStatus(id, status);
-    if (!stays) toast(status === STATUS_KNOWN ? 'Moved to Known.' : 'Moved to Unknown.');
+    await setLabel(id, label);
+    if (!stays) toast('Label cleared.');
   } catch (error) {
     toast(error.message);
   }
@@ -201,10 +229,10 @@ function initServiceWorker() {
     if (!hadController || reloading) return;
     reloading = true;
 
-    // Never yank the page out from under someone mid-entry.
-    if (document.querySelector('dialog[open]')) {
+    // Never yank the page out from under someone mid-entry, or mid-quiz.
+    if (document.querySelector('dialog[open]') || isQuizRunning()) {
       const retry = setInterval(() => {
-        if (!document.querySelector('dialog[open]')) {
+        if (!document.querySelector('dialog[open]') && !isQuizRunning()) {
           clearInterval(retry);
           window.location.reload();
         }
@@ -228,12 +256,28 @@ function wireUi() {
 
   initList(openDetail);
   initCards();
+  initQuiz({ onChange: renderCurrent });
   initDetail({ onEdit: openEditForm });
   initForm({
     afterSave: (saved) => {
       if (saved) highlightNew(saved.id);
       renderCurrent();
       syncDetail();
+    },
+  });
+  initFolderMenu({
+    onRename: (folder) => {
+      renamingOpenFolder = isSelected({ kind: FOLDER, name: folder.name });
+      openRenameFolder(folder);
+    },
+  });
+  initFolderForm({
+    afterSave: (saved) => {
+      // The view holds the folder by name, so it has to follow the rename or
+      // it points at nothing.
+      if (renamingOpenFolder) setSelection({ kind: FOLDER, name: saved.name });
+      renamingOpenFolder = false;
+      renderCurrent();
     },
   });
   initSetup({
@@ -254,26 +298,30 @@ function wireUi() {
     if (tab) setFilter(tab.dataset.filter);
   });
 
-  modeButton.addEventListener('click', () => {
-    const toCards = getMode() !== 'cards';
+  tabbarElement.addEventListener('click', (event) => {
+    const tab = event.target.closest('.tabbar__tab');
+    if (!tab) return;
+    closeFolderMenu();
     // A fresh deal every time the deck is opened, which is the point of it.
-    if (toCards) shuffleCards();
-    setMode(toCards ? 'cards' : 'list');
+    if (tab.dataset.tab === 'cards' && getTab() !== 'cards') shuffleCards();
+    setTab(tab.dataset.tab);
   });
 
-  // Right for known, left for unknown. The cards are not a list, so there is
-  // nothing to swipe there.
+  // Left marks a word "don't know this", right takes the label off. Only the
+  // list has rows to swipe.
   enableRowSwipe(wordListElement, {
-    canSwipe: () => getMode() === 'list',
+    canSwipe: () => getTab() === 'list' && !isFolderMenuOpen(),
     allows: allowsSwipe,
     stays: staysAfterSwipe,
     perform: performSwipe,
   });
 
   // iOS suspends standalone web apps aggressively; re-sync whenever the app
-  // comes back to the foreground rather than polling on a timer.
+  // comes back to the foreground rather than polling on a timer. Going away
+  // is the last chance to push quiz answers before the app is frozen.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') sync(true);
+    else flush().catch(() => {});
   });
   window.addEventListener('online', () => sync(true));
 
