@@ -67,8 +67,7 @@ export const FILTERS = [
   { value: STATUS_UNKNOWN, label: 'Unknown' },
 ];
 
-/** Names for the two entries in the folder menu that are not folders. */
-export const ALL_WORDS_LABEL = 'All words';
+/** The menu entry for words that are in no folder at all. */
 export const UNSORTED_LABEL = 'Unsorted';
 
 export const MAX_FOLDER_NAME_LENGTH = 60;

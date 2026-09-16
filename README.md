@@ -5,7 +5,8 @@ list appears on every device. No server of your own, no build step, no fees.
 
 The home screen is the open folder's words, by themselves; tap one for its
 part of speech, definition and note, or tap the folder name at the top to
-switch folders and make new ones. Swipe a word **left** to label it *don't know
+switch folders and make new ones. Words in no folder gather under Unsorted,
+which appears in that menu only when something is in it. Swipe a word **left** to label it *don't know
 this* and **right** to take the label off; the **All / Unknown** tabs show
 everything or only the labelled words.
 

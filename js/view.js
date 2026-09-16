@@ -2,18 +2,17 @@
  * view.js — what the screen is showing.
  *
  * Three independent choices:
- *   - which folder is open (or All words, or Unsorted) — shared by both tabs
+ *   - which folder is open (or Unsorted) — shared by every tab
  *     and remembered across launches;
  *   - which words of it the list shows, All or Unknown — also remembered;
  *   - which tab is up, List or Quiz — not remembered, so the app always
  *     opens on the list.
  */
 
-import { FILTERS, STATUS_UNKNOWN, STORAGE_KEYS, ALL_WORDS_LABEL, UNSORTED_LABEL } from './config.js';
+import { FILTERS, STATUS_UNKNOWN, STORAGE_KEYS, UNSORTED_LABEL } from './config.js';
 import { readJson, writeJson } from './storage.js';
-import { getWords, getFolders, getWordsInFolder, findFolderByName } from './store.js';
+import { getFolders, getWordsInFolder, findFolderByName } from './store.js';
 
-export const ALL = 'all';
 export const UNSORTED = 'unsorted';
 export const FOLDER = 'folder';
 
@@ -48,15 +47,15 @@ function emit() {
  *
  * A remembered folder may have been renamed or deleted on another device;
  * nothing remembered at all is a first launch. Either way the first folder is
- * the sensible place to land, and All words when there are no folders.
+ * the sensible place to land, and Unsorted when there are no folders — with
+ * no folders, every word is in it.
  */
 export function getSelection() {
-  if (selection && selection.kind === ALL) return selection;
   if (selection && selection.kind === UNSORTED) return selection;
   if (selection && selection.kind === FOLDER && findFolderByName(selection.name)) return selection;
 
   const first = getFolders()[0];
-  return first ? { kind: FOLDER, name: first.name } : { kind: ALL };
+  return first ? { kind: FOLDER, name: first.name } : { kind: UNSORTED };
 }
 
 export function setSelection(next) {
@@ -73,17 +72,13 @@ export function isSelected(candidate) {
 
 export function selectionLabel() {
   const current = getSelection();
-  if (current.kind === ALL) return ALL_WORDS_LABEL;
-  if (current.kind === UNSORTED) return UNSORTED_LABEL;
-  return current.name;
+  return current.kind === UNSORTED ? UNSORTED_LABEL : current.name;
 }
 
 /** Every word in the open folder, whatever the tab. */
 export function wordsInScope() {
   const current = getSelection();
-  if (current.kind === ALL) return getWords();
-  if (current.kind === UNSORTED) return getWordsInFolder(null);
-  return getWordsInFolder(current.name);
+  return getWordsInFolder(current.kind === UNSORTED ? null : current.name);
 }
 
 /** The folder a word added right now belongs to; blank means unsorted. */

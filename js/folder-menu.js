@@ -6,11 +6,11 @@
  * the only way to change folders: the header title is the button.
  */
 
-import { ALL_WORDS_LABEL, UNSORTED_LABEL } from './config.js';
+import { UNSORTED_LABEL } from './config.js';
 import {
-  getFolders, getWords, getWordsInFolder, countUnsorted, createFolder, deleteFolder,
+  getFolders, getWordsInFolder, countUnsorted, createFolder, deleteFolder,
 } from './store.js';
-import { ALL, UNSORTED, FOLDER, getSelection, setSelection, isSelected } from './view.js';
+import { UNSORTED, FOLDER, getSelection, setSelection, isSelected } from './view.js';
 import { askConfirm } from './confirm.js';
 import { toast } from './toast.js';
 
@@ -84,8 +84,8 @@ function buildRow(entry) {
 
   item.appendChild(choose);
 
-  // Only real folders can be renamed or deleted; All words and Unsorted are
-  // views of what the folders leave over.
+  // Only real folders can be renamed or deleted; Unsorted is a view of what
+  // the folders leave over.
   if (editing && entry.kind === FOLDER) {
     const tools = document.createElement('span');
     tools.className = 'folder-row__tools';
@@ -116,12 +116,7 @@ function buildRow(entry) {
 }
 
 function entries() {
-  const list = [{
-    kind: ALL,
-    label: ALL_WORDS_LABEL,
-    count: getWords().length,
-    selected: isSelected({ kind: ALL }),
-  }];
+  const list = [];
 
   getFolders().forEach((folder) => {
     list.push({
@@ -224,9 +219,10 @@ async function confirmDelete(id) {
   if (!confirmed) return;
 
   try {
-    // The open folder may be the one going; the view falls back on its own.
+    // Deleting the folder that is open moves the words to Unsorted, so that
+    // is where the view follows them.
     if (getSelection().kind === FOLDER && getSelection().name === folder.name) {
-      setSelection({ kind: ALL });
+      setSelection({ kind: UNSORTED });
     }
     await deleteFolder(id);
     renderFolderMenu();
