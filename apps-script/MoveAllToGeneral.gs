@@ -1,7 +1,7 @@
 /**
  * MoveAllToGeneral.gs — a one-off tidy-up. Run it once, then delete this file.
  *
- * Puts every word into a single folder called GENERAL and removes every other
+ * Puts every word into a single folder called General and removes every other
  * folder from the Folders sheet. No word is deleted, and nothing else about a
  * word changes: the label, the quiz schedule, the colour and the note are all
  * left exactly as they are.
@@ -14,10 +14,10 @@
  *      run moveAllToGeneralDryRun() first if you would rather see them.
  *
  * Afterwards the app catches up on its own the next time it syncs. If it was
- * showing a folder that no longer exists it falls back to GENERAL.
+ * showing a folder that no longer exists it falls back to General.
  */
 
-var GENERAL_FOLDER = 'GENERAL';
+var GENERAL_FOLDER = 'General';
 
 /** Counts what would change, and writes nothing. */
 function moveAllToGeneralDryRun() {
