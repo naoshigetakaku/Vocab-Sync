@@ -11,7 +11,7 @@
 
 import { FILTERS, STATUS_UNKNOWN, STORAGE_KEYS, UNSORTED_LABEL } from './config.js';
 import { readJson, writeJson } from './storage.js';
-import { getFolders, getWordsInFolder, findFolderByName } from './store.js';
+import { getFolders, getWordsInFolder, findFolderByName, countUnsorted } from './store.js';
 
 export const UNSORTED = 'unsorted';
 export const FOLDER = 'folder';
@@ -43,15 +43,16 @@ function emit() {
 /* --- Folder --------------------------------------------------------------- */
 
 /**
- * The folder that is open, settled against the folders that actually exist.
+ * The folder that is open, settled against what the sheet actually holds.
  *
- * A remembered folder may have been renamed or deleted on another device;
- * nothing remembered at all is a first launch. Either way the first folder is
- * the sensible place to land, and Unsorted when there are no folders — with
- * no folders, every word is in it.
+ * A remembered folder may have been renamed or deleted on another device, and
+ * Unsorted stops being a place at all once its last word is filed — which is
+ * how an app left on Unsorted could show nothing while every word sat in a
+ * folder one tap away. Either way the first folder is where to land, and
+ * Unsorted only when there are no folders to land in.
  */
 export function getSelection() {
-  if (selection && selection.kind === UNSORTED) return selection;
+  if (selection && selection.kind === UNSORTED && countUnsorted() > 0) return selection;
   if (selection && selection.kind === FOLDER && findFolderByName(selection.name)) return selection;
 
   const first = getFolders()[0];
