@@ -1,19 +1,20 @@
 /**
  * sort.js — ordering of the word list.
  *
- * The header's sort button opens the picker; this module owns the mode and
- * the picker, not the button.
+ * There is no sort screen: the List tab's own label is the order, and tapping
+ * that tab again steps to the next one. This module owns the order and the
+ * wording; the tab bar just shows what it is told.
  */
 
 import { STORAGE_KEYS } from './config.js';
 import { readJson, writeJson } from './storage.js';
-import { openPicker } from './picker.js';
 
+/** The order they step through, and the label each shows on the tab. */
 const MODES = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
   { value: 'az', label: 'A–Z' },
   { value: 'za', label: 'Z–A' },
+  { value: 'newest', label: 'New–Old' },
+  { value: 'oldest', label: 'Old–New' },
 ];
 
 const COMPARATORS = {
@@ -39,8 +40,8 @@ function isKnown(value) {
   return MODES.some((mode) => mode.value === value);
 }
 
-let current = readJson(STORAGE_KEYS.sort, 'newest');
-if (!isKnown(current)) current = 'newest';
+let current = readJson(STORAGE_KEYS.sort, 'az');
+if (!isKnown(current)) current = 'az';
 
 let onChange = () => {};
 
@@ -52,20 +53,21 @@ export function sortWords(words) {
   return words.slice().sort(COMPARATORS[current]);
 }
 
-export function initSort(handler) {
-  onChange = handler || (() => {});
+/** What the List tab reads right now. */
+export function getSortLabel() {
+  const mode = MODES.find((entry) => entry.value === current);
+  return mode ? mode.label : MODES[0].label;
 }
 
-export function openSortPicker() {
-  openPicker({
-    title: 'Sort by',
-    options: MODES,
-    value: current,
-    onSelect: (value) => {
-      if (!isKnown(value) || value === current) return;
-      current = value;
-      writeJson(STORAGE_KEYS.sort, current);
-      onChange();
-    },
-  });
+/** Steps to the next order and returns its label. */
+export function cycleSort() {
+  const at = MODES.findIndex((entry) => entry.value === current);
+  current = MODES[(at + 1) % MODES.length].value;
+  writeJson(STORAGE_KEYS.sort, current);
+  onChange();
+  return getSortLabel();
+}
+
+export function initSort(handler) {
+  onChange = handler || (() => {});
 }

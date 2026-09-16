@@ -166,6 +166,9 @@ export function openFolderMenu() {
   clearTimeout(closeTimer);
   menu.hidden = false;
   scrim.hidden = false;
+  // The add button floats above the scrim, so it has to be taken out of
+  // reach with it; otherwise the form opens behind the open menu.
+  document.body.classList.add('is-menu-open');
   renderFolderMenu();
 
   // The panel has to be in the document at its closed position for one frame,
@@ -184,6 +187,7 @@ export function closeFolderMenu() {
 
   menu.classList.remove('is-open');
   scrim.classList.remove('is-open');
+  document.body.classList.remove('is-menu-open');
   button.setAttribute('aria-expanded', 'false');
 
   clearTimeout(closeTimer);

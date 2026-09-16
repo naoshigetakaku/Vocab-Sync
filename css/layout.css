@@ -2,10 +2,8 @@
    layout.css — app shell, header, tabs, word list.
    ========================================================================== */
 
-/* Outside the scroller, so it cannot move with the list. The folder menu
-   hangs off its bottom edge, which is why it is a positioning context. */
+/* Outside the scroller, so it cannot move with the list. */
 .app-header {
-  position: relative;
   flex: none;
   z-index: 10;
   background: var(--bg);
@@ -20,6 +18,13 @@
   align-items: baseline;
   gap: 8px;
   padding: 14px 0 10px;
+}
+
+/* The folder menu hangs off the bottom of the title bar and covers whatever
+   is below it, so the tabs never sit between the two. */
+.app-header__anchor {
+  position: relative;
+  z-index: 2;
 }
 
 /* The name of the open folder, and the button that opens the folder menu. */
@@ -225,6 +230,13 @@
 }
 
 .scrim.is-open { opacity: 1; }
+
+/* Out of reach while the folder menu is open: it floats above the scrim. */
+body.is-menu-open .fab {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
 
 /* The quiz takes the whole screen: no header, no tab bar, one card. */
 body.is-quizzing .app-header,

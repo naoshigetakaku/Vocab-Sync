@@ -21,7 +21,7 @@ import { initDetail, openDetail, syncDetail } from './detail.js';
 import { initForm, openCreateForm, openEditForm } from './form.js';
 import { initSetup, openSetup } from './setup.js';
 import { initInstallHint } from './install-hint.js';
-import { initSort, openSortPicker } from './sort.js';
+import { initSort, cycleSort, getSortLabel } from './sort.js';
 import { initPicker } from './picker.js';
 import { initConfirm } from './confirm.js';
 import { enableRowSwipe, LEFT } from './swipe-row.js';
@@ -29,7 +29,7 @@ import { toast } from './toast.js';
 
 const addButton = document.getElementById('add-button');
 const settingsButton = document.getElementById('settings-button');
-const sortButton = document.getElementById('sort-button');
+const sortLabel = document.getElementById('tab-list-label');
 const folderName = document.getElementById('folder-name');
 const wordListElement = document.getElementById('word-list');
 const cardsElement = document.getElementById('cards');
@@ -96,9 +96,10 @@ function paintHeader() {
   const quiz = tab === 'quiz';
 
   folderName.textContent = selectionLabel();
-  // The deck deals its own order, so sorting has nothing to say there.
-  sortButton.hidden = tab !== 'list';
   filterElement.hidden = quiz;
+
+  // The List tab's label is the order the list is in; see js/sort.js.
+  sortLabel.textContent = getSortLabel();
 
   const filter = getFilter();
   filterElement.dataset.active = filter;
@@ -117,8 +118,9 @@ function paintHeader() {
   badgeElement.textContent = String(ready);
   badgeElement.hidden = ready === 0;
 
-  // Nothing to add from the quiz side, and the button would sit on the card.
-  addButton.hidden = quiz;
+  // Only the list has somewhere to put a new word, and on the other tabs the
+  // button would sit on top of a card.
+  addButton.hidden = tab !== 'list';
 }
 
 /** Slides the arriving content in from the side it came from. */
@@ -290,7 +292,6 @@ function wireUi() {
   initInstallHint();
 
   addButton.addEventListener('click', openCreateForm);
-  sortButton.addEventListener('click', openSortPicker);
   settingsButton.addEventListener('click', () => openSetup({ manual: true }));
 
   filterElement.addEventListener('click', (event) => {
@@ -298,13 +299,28 @@ function wireUi() {
     if (tab) setFilter(tab.dataset.filter);
   });
 
+  // Tapping the tab you are already on does the thing that tab is for again:
+  // the list steps to the next order, the deck deals a fresh hand.
   tabbarElement.addEventListener('click', (event) => {
     const tab = event.target.closest('.tabbar__tab');
     if (!tab) return;
     closeFolderMenu();
-    // A fresh deal every time the deck is opened, which is the point of it.
-    if (tab.dataset.tab === 'cards' && getTab() !== 'cards') shuffleCards();
-    setTab(tab.dataset.tab);
+
+    const wanted = tab.dataset.tab;
+    const already = getTab() === wanted;
+
+    if (wanted === 'cards') {
+      shuffleCards();
+      if (already) renderCurrent();
+    } else if (wanted === 'list' && already) {
+      cycleSort();
+      sortLabel.classList.remove('is-changed');
+      // Restart the swap even on a quick second tap.
+      void sortLabel.offsetWidth;
+      sortLabel.classList.add('is-changed');
+    }
+
+    setTab(wanted);
   });
 
   // Left marks a word "don't know this", right takes the label off. Only the

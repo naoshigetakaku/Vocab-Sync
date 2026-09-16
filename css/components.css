@@ -16,21 +16,24 @@
   height: 56px;
   border: 0;
   border-radius: 50%;
-  background: var(--accent);
   color: var(--on-accent);
-  box-shadow: var(--shadow-fab);
   cursor: pointer;
   transition: transform var(--dur-fast) var(--ease-spring),
               opacity var(--dur-fast) var(--ease-out);
 }
 
-/* A faint highlight rolling off the top, rather than a flat disc. */
+/* Glass rather than a flat disc: a highlight rolling off the top, a soft
+   pool of light at the foot, and a bright rim where the two meet the edge.
+   All of it is painted once — no blur filter, nothing that costs a frame. */
 .fab {
-  background-image: linear-gradient(
-    180deg,
-    var(--gloss-sheen) 0%,
-    transparent 58%
-  );
+  background-color: var(--accent);
+  background-image:
+    linear-gradient(180deg, var(--fab-sheen) 0%, transparent 54%),
+    radial-gradient(120% 80% at 50% 118%, var(--fab-glow), transparent 72%);
+  box-shadow:
+    var(--shadow-fab),
+    inset 0 1.5px 0 var(--fab-rim),
+    inset 0 -1px 0 var(--fab-shade);
 }
 
 .fab:active { transform: scale(0.9); }
@@ -305,14 +308,16 @@
 }
 
 /* --- Folder menu ----------------------------------------------------------- */
-/* Hangs off the bottom edge of the header and drops into place. Transform and
-   opacity only, so the drop stays on the compositor. */
+/* Hangs off the bottom edge of the title bar and drops into place, over the
+   tabs and the list. Transform and opacity only, so the drop stays on the
+   compositor. The negative insets take it back out to the screen edges,
+   since it sits inside the header's padding. */
 
 .folder-menu {
   position: absolute;
   top: 100%;
-  left: 0;
-  right: 0;
+  left: calc(-1 * max(var(--page-pad), var(--safe-left)));
+  right: calc(-1 * max(var(--page-pad), var(--safe-right)));
   z-index: 11;
   padding: 4px max(var(--page-pad), var(--safe-left)) 14px max(var(--page-pad), var(--safe-right));
   border-bottom: 1px solid var(--line-strong);
@@ -527,7 +532,12 @@
   flex-direction: column;
   background: var(--bg);
   padding: var(--safe-top) max(var(--page-pad), var(--safe-right))
-           calc(16px + var(--safe-bottom)) max(var(--page-pad), var(--safe-left));
+           calc(var(--quiz-pad-b) + var(--safe-bottom)) max(var(--page-pad), var(--safe-left));
+  /* The bar above the card and the block below it are both fixed heights, so
+     the stage between them can be padded into the middle of the screen. */
+  --quiz-bar-h: 42px;
+  --quiz-foot-h: 84px;
+  --quiz-pad-b: 16px;
 }
 
 .quiz__bar {
@@ -535,7 +545,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0 10px;
+  min-height: var(--quiz-bar-h);
   font-size: 13px;
   color: var(--text-faint);
 }
@@ -558,25 +568,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Makes up the difference between the chrome above and below — the buttons
+     and the padding under them against the bar — so the card is centred on
+     the screen rather than in what is left of it. */
+  padding-top: calc(var(--quiz-foot-h) + var(--quiz-pad-b) - var(--quiz-bar-h));
   /* Depth for the turn. Set here rather than inside the card's transform so
      the card itself keeps a plain rotateY the compositor can run. */
   perspective: 1600px;
 }
 
-.quiz__hint {
+/* One block of a fixed height holding both, so showing the answer does not
+   move the card. */
+.quiz__foot {
+  position: relative;
   flex: none;
-  padding: 14px 0 4px;
+  min-height: var(--quiz-foot-h);
+}
+
+.quiz__hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 13px;
   color: var(--text-faint);
   text-align: center;
 }
 
 .quiz__actions {
-  flex: none;
+  position: absolute;
+  inset: 12px 0 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  padding-top: 12px;
 }
 
 .grade {
@@ -639,14 +664,16 @@
 
 .cards::-webkit-scrollbar { display: none; }
 
-/* A screen per card. min-height rather than height, so a card whose back is
-   long can grow past the screen and still be read to the end. */
+/* A screen per card, the card dead centre in it. min-height rather than
+   height, so a card whose back is long can grow past the screen and still be
+   read to the end. The add button is hidden on this tab, so the padding can
+   be even top and bottom. */
 .card-slot {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100%;
-  padding: 18px 0 calc(var(--tabbar-h) + var(--safe-bottom) + 84px);
+  padding: 18px 0;
   scroll-snap-align: center;
   /* Stops a hard flick from skimming past several words at once. */
   scroll-snap-stop: always;
@@ -781,7 +808,7 @@
 @media (display-mode: browser) and (min-width: 700px) {
   .flashcard { max-width: 640px; }
   .flashcard__word { font-size: 52px; }
-  .quiz__actions, .quiz__bar, .quiz__hint { max-width: 640px; margin-inline: auto; width: 100%; }
+  .quiz__bar, .quiz__foot { max-width: 640px; margin-inline: auto; width: 100%; }
 }
 
 /* --- Option picker -------------------------------------------------------- */

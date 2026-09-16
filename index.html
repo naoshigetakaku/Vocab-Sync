@@ -36,6 +36,7 @@
 
   <header class="app-header">
     <div class="app-header__inner">
+      <div class="app-header__anchor">
       <div class="app-header__bar">
         <!-- The folder that is open, and the way to change it. -->
         <button class="app-header__title" id="folder-button" type="button" aria-expanded="false">
@@ -46,13 +47,6 @@
         </button>
 
         <div class="app-header__tools">
-          <button class="header-action" id="sort-button" type="button"
-                  aria-label="Sort" aria-haspopup="listbox">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M7 4v16M3.5 16.5L7 20l3.5-3.5M17 20V4M13.5 7.5L17 4l3.5 3.5" />
-            </svg>
-          </button>
-
           <button class="header-action" id="settings-button" type="button" aria-label="Connection settings">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
@@ -63,6 +57,26 @@
         </div>
       </div>
 
+      <!-- Hangs off the bottom of the title bar and covers whatever is under
+           it; see js/folder-menu.js. -->
+      <div class="folder-menu" id="folder-menu" hidden>
+        <div class="folder-menu__head">
+          <span class="folder-menu__title">Folders</span>
+          <button class="folder-menu__edit" id="folder-edit" type="button" aria-pressed="false">Edit</button>
+        </div>
+
+        <ul class="folder-menu__list" id="folder-list"></ul>
+
+        <form class="folder-menu__new" id="folder-create">
+          <input class="field__input" id="field-new-folder" type="text" placeholder="New folder name"
+                 autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="60">
+          <button class="button" id="folder-create-submit" type="submit">Create</button>
+        </form>
+
+        <p class="form__error folder-menu__error" id="folder-menu-error" hidden></p>
+      </div>
+      </div>
+
       <!-- Every word in the folder, or only the ones labelled. The pill
            behind the selected tab slides between them. -->
       <div class="filter" id="filter" role="tablist" aria-label="Show">
@@ -70,24 +84,6 @@
         <button class="filter__tab" type="button" role="tab" data-filter="all">All</button>
         <button class="filter__tab filter__tab--unknown" type="button" role="tab" data-filter="unknown">Unknown</button>
       </div>
-    </div>
-
-    <!-- Drops from under the header; see js/folder-menu.js. -->
-    <div class="folder-menu" id="folder-menu" hidden>
-      <div class="folder-menu__head">
-        <span class="folder-menu__title">Folders</span>
-        <button class="folder-menu__edit" id="folder-edit" type="button" aria-pressed="false">Edit</button>
-      </div>
-
-      <ul class="folder-menu__list" id="folder-list"></ul>
-
-      <form class="folder-menu__new" id="folder-create">
-        <input class="field__input" id="field-new-folder" type="text" placeholder="New folder name"
-               autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="60">
-        <button class="button" id="folder-create-submit" type="submit">Create</button>
-      </form>
-
-      <p class="form__error folder-menu__error" id="folder-menu-error" hidden></p>
     </div>
   </header>
 
@@ -142,18 +138,20 @@
 
     <div class="quiz__stage" id="quiz-stage"></div>
 
-    <div class="quiz__actions" id="quiz-actions">
-      <button class="grade grade--missed" id="grade-missed" type="button">
-        <span class="grade__label">Missed</span>
-        <span class="grade__hint" id="grade-missed-hint"></span>
-      </button>
-      <button class="grade grade--got" id="grade-got" type="button">
-        <span class="grade__label">Got it</span>
-        <span class="grade__hint" id="grade-got-hint"></span>
-      </button>
-    </div>
+    <div class="quiz__foot" id="quiz-foot">
+      <p class="quiz__hint" id="quiz-flip-hint">Tap the card to see the answer</p>
 
-    <p class="quiz__hint" id="quiz-flip-hint">Tap the card to see the answer</p>
+      <div class="quiz__actions" id="quiz-actions">
+        <button class="grade grade--missed" id="grade-missed" type="button">
+          <span class="grade__label">Missed</span>
+          <span class="grade__hint" id="grade-missed-hint"></span>
+        </button>
+        <button class="grade grade--got" id="grade-got" type="button">
+          <span class="grade__label">Got it</span>
+          <span class="grade__hint" id="grade-got-hint"></span>
+        </button>
+      </div>
+    </div>
 
     <!-- Shown by js/quiz.js when the session ends. -->
     <div class="quiz__summary" id="quiz-summary" hidden>
@@ -175,7 +173,7 @@
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path d="M4 7h16M4 12h16M4 17h10" />
       </svg>
-      <span>List</span>
+      <span id="tab-list-label">A–Z</span>
     </button>
     <button class="tabbar__tab" id="tab-cards" type="button" data-tab="cards" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -186,8 +184,7 @@
     </button>
     <button class="tabbar__tab" id="tab-quiz" type="button" data-tab="quiz" aria-pressed="false">
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M12 3.5l7.5 4v5c0 4.2-3 7-7.5 8-4.5-1-7.5-3.8-7.5-8v-5z" />
-        <path d="M9.4 10a2.7 2.7 0 1 1 3.4 2.6c-.8.3-1.3.9-1.3 1.8M11.5 17.2h.01" />
+        <path d="M8.6 8.4a3.5 3.5 0 1 1 4.6 3.3c-1 .4-1.6 1.2-1.6 2.3v.6M12 18.6h.01" />
       </svg>
       <span>Quiz</span>
       <span class="tabbar__badge" id="quiz-badge" hidden></span>

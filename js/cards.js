@@ -10,6 +10,12 @@
  * toggles one class, and the compositor does the rest — which is what keeps
  * it smooth in the installed app, where the main thread is the first thing
  * iOS starves.
+ *
+ * A card turns back to its front as soon as it leaves the screen, so coming
+ * back to one always asks the question again rather than showing the answer
+ * you left it on. That is watched with an IntersectionObserver rather than a
+ * scroll handler: the browser reports the crossings, and a deck of hundreds
+ * costs the same as a deck of three.
  */
 
 import { visibleWords, paintEmpty } from './list.js';
@@ -27,6 +33,9 @@ let lastSignature = '';
 /** Cards currently showing their back, so a re-render keeps them that way. */
 const flipped = new Set();
 
+/** Turns a card back over once it has left the screen; see initCards. */
+let watcher = null;
+
 function shuffled(items) {
   const copy = items.slice();
   for (let i = copy.length - 1; i > 0; i--) {
@@ -41,6 +50,7 @@ export function shuffleCards() {
   order = shuffled(visibleWords().map((word) => word.id));
   flipped.clear();
   lastSignature = '';
+  cardsElement.scrollTop = 0;
 }
 
 function youglish(word) {
@@ -227,9 +237,35 @@ export function renderCards() {
   const fragment = document.createDocumentFragment();
   ordered.forEach((word) => fragment.appendChild(buildCard(word)));
   cardsElement.replaceChildren(fragment);
+  // The old nodes are gone; the watcher follows the new ones.
+  watch();
+}
+
+/** Face up again, quietly: the card is off screen when this happens. */
+function turnBack(card) {
+  const id = card.dataset.id;
+  if (!flipped.has(id)) return;
+  flipped.delete(id);
+  // No transition to see, so the layer it was promoted to can go too.
+  card.classList.remove('is-primed');
+  paintSide(card, false);
+}
+
+function watch() {
+  if (!watcher) return;
+  watcher.disconnect();
+  cardsElement.querySelectorAll('.flashcard').forEach((card) => watcher.observe(card));
 }
 
 export function initCards() {
+  if ('IntersectionObserver' in window) {
+    watcher = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) turnBack(entry.target);
+      });
+    }, { root: cardsElement, threshold: 0 });
+  }
+
   cardsElement.addEventListener('touchstart', prime, { passive: true });
 
   cardsElement.addEventListener('click', (event) => {

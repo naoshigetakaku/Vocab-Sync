@@ -188,6 +188,15 @@
 /* The grading buttons appear with the answer. */
 .quiz__actions:not([hidden]) { animation: row-in var(--dur-mid) var(--ease-out) both; }
 
+/* The order on the List tab drops in when it changes, so the tap reads as a
+   change of state rather than a flicker. */
+@keyframes label-swap {
+  from { transform: translateY(-4px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.tabbar__tab span.is-changed { animation: label-swap var(--dur-mid) var(--ease-spring) both; }
+
 /* --- Chrome --------------------------------------------------------------- */
 
 .fab { animation: fab-in var(--dur-slow) var(--ease-spring) both; }
