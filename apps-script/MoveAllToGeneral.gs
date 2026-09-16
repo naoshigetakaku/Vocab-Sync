@@ -19,6 +19,40 @@
 
 var GENERAL_FOLDER = 'General';
 
+/**
+ * The folder every word is going into, whatever case its name is in now.
+ *
+ * Folder names are unique without regard to case — a folder called GENERAL
+ * already counts as "General" being taken — so a differently cased one is
+ * renamed rather than duplicated. Getting this wrong is what left an earlier
+ * version of this script with no folder at all: it declined to create the new
+ * name, then deleted the old one for not matching it.
+ */
+function ensureGeneralFolder_() {
+  var folders = listFolders_();
+  var match = null;
+  for (var i = 0; i < folders.length; i++) {
+    if (folders[i].name.toLowerCase() === GENERAL_FOLDER.toLowerCase()) match = folders[i];
+  }
+
+  if (!match) {
+    var created = createFolder_(GENERAL_FOLDER);
+    Logger.log('Created folder "%s".', GENERAL_FOLDER);
+    return created;
+  }
+
+  if (match.name !== GENERAL_FOLDER) {
+    var sheet = getFolderSheet_();
+    var schema = ensureFolderHeaders_(sheet);
+    sheet.getRange(findFolderRow_(sheet, match.id), schema.map.name + 1)
+      .setValue(escapeCell_(GENERAL_FOLDER));
+    SpreadsheetApp.flush();
+    Logger.log('Renamed the existing "%s" folder to "%s".', match.name, GENERAL_FOLDER);
+    match.name = GENERAL_FOLDER;
+  }
+  return match;
+}
+
 /** Counts what would change, and writes nothing. */
 function moveAllToGeneralDryRun() {
   var sheet = getSheet_();
@@ -37,11 +71,12 @@ function moveAllToGeneralDryRun() {
   }
 
   var names = listFolders_().map(function (folder) { return folder.name; });
+  var target = GENERAL_FOLDER.toLowerCase();
   Logger.log('Words in the sheet: %s', words);
   Logger.log('Words that would move into "%s": %s', GENERAL_FOLDER, moving);
   Logger.log('Folders now: %s', names.join(', ') || '(none)');
   Logger.log('Folders that would be deleted: %s',
-    names.filter(function (name) { return name !== GENERAL_FOLDER; }).join(', ') || '(none)');
+    names.filter(function (name) { return name.toLowerCase() !== target; }).join(', ') || '(none)');
   Logger.log('Nothing was written. Run moveAllToGeneral() to apply it.');
 }
 
@@ -52,11 +87,7 @@ function moveAllToGeneral() {
   var lastRow = sheet.getLastRow();
 
   // 1. Make sure the folder exists, so the words point at something real.
-  var folders = listFolders_();
-  if (!folderNameTaken_(folders, GENERAL_FOLDER, null)) {
-    createFolder_(GENERAL_FOLDER);
-    Logger.log('Created folder "%s".', GENERAL_FOLDER);
-  }
+  var keep = ensureGeneralFolder_();
 
   // 2. Every word, whatever folder it was in — including none at all.
   var moved = 0;
@@ -84,7 +115,8 @@ function moveAllToGeneral() {
   //    being deleted do not shift under the loop.
   var folderSheet = getFolderSheet_();
   var remaining = listFolders_();
-  var doomed = remaining.filter(function (folder) { return folder.name !== GENERAL_FOLDER; });
+  // By id, so the one just created or renamed is never among them.
+  var doomed = remaining.filter(function (folder) { return folder.id !== keep.id; });
 
   for (var d = doomed.length - 1; d >= 0; d--) {
     var row = findFolderRow_(folderSheet, doomed[d].id);
@@ -93,7 +125,11 @@ function moveAllToGeneral() {
   Logger.log('Deleted %s folder(s): %s', doomed.length,
     doomed.map(function (folder) { return folder.name; }).join(', ') || '(none)');
 
-  Logger.log('Folders left: %s',
-    listFolders_().map(function (folder) { return folder.name; }).join(', '));
+  var left = listFolders_().map(function (folder) { return folder.name; });
+  Logger.log('Folders left: %s', left.join(', ') || '(none)');
+  if (left.indexOf(GENERAL_FOLDER) === -1) {
+    Logger.log('WARNING: "%s" is missing. The app will show every word as '
+      + 'Unsorted until a folder with that exact name exists.', GENERAL_FOLDER);
+  }
   Logger.log('Done. The app picks this up on its next sync.');
 }
