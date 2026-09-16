@@ -477,9 +477,12 @@ function updateWord_(input) {
 }
 
 /**
- * Several rewrites under one lock and one read of the id column — what a run
- * of quiz answers needs, where one request per answer would cost a couple of
- * seconds each.
+ * Several rewrites under one lock, in one read and one write.
+ *
+ * The rows a batch touches are scattered, and a setValues per row costs a
+ * round trip each — twenty-five of them ran past the app's timeout on a
+ * phone. Reading the whole block, changing it in memory and writing it back
+ * once is flat in the size of the batch instead.
  *
  * A word deleted on another device in the meantime is skipped rather than
  * failing the batch; its id comes back in `missing` so the app can drop it.
@@ -501,33 +504,60 @@ function updateMany_(inputs) {
     var width = schema.width;
     var lastRow = sheet.getLastRow();
 
-    var rows = {};
-    if (lastRow >= 2) {
-      var ids = sheet.getRange(2, schema.map.id + 1, lastRow - 1, 1).getValues();
-      var created = sheet.getRange(2, schema.map.createdAt + 1, lastRow - 1, 1).getValues();
-      for (var r = 0; r < ids.length; r++) {
-        if (ids[r][0]) rows[String(ids[r][0])] = { row: r + 2, createdAt: toText_(created[r][0]) };
-      }
-    }
-
     var now = new Date().toISOString();
     var saved = [];
     var missing = [];
 
+    if (lastRow < 2) {
+      for (var m = 0; m < prepared.length; m++) missing.push(prepared[m].id);
+      return { words: saved, missing: missing };
+    }
+
+    var range = sheet.getRange(2, 1, lastRow - 1, width);
+    var values = range.getValues();
+
+    var index = {};
+    for (var r = 0; r < values.length; r++) {
+      var id = values[r][schema.map.id];
+      if (id) index[String(id)] = r;
+    }
+
+    var touched = false;
     for (var p = 0; p < prepared.length; p++) {
       var entry = prepared[p];
-      var hit = rows[entry.id];
-      if (!hit) {
+      var at = index[entry.id];
+      if (at === undefined) {
         missing.push(entry.id);
         continue;
       }
-      var record = buildRecord_(entry.fields, entry.id, hit.createdAt || now, now);
-      sheet.getRange(hit.row, 1, 1, width).setValues([wordToRow_(record, schema.map, width)]);
+      var createdAt = toText_(values[at][schema.map.createdAt]) || now;
+      var record = buildRecord_(entry.fields, entry.id, createdAt, now);
+      values[at] = wordToRow_(record, schema.map, width);
       saved.push(record);
+      touched = true;
     }
 
+    if (touched) range.setValues(protectFormulas_(values));
     return { words: saved, missing: missing };
   });
+}
+
+/**
+ * Every row of a block about to be written back, with any text that starts
+ * with "=" neutralised.
+ *
+ * getValues() hands back what a cell displays, so the apostrophe escapeCell_
+ * added is gone; writing that straight back would turn the text into a
+ * formula. Values that are not strings — a date, a number — are left alone.
+ */
+function protectFormulas_(values) {
+  for (var r = 0; r < values.length; r++) {
+    for (var c = 0; c < values[r].length; c++) {
+      var value = values[r][c];
+      if (typeof value === 'string' && value.charAt(0) === '=') values[r][c] = "'" + value;
+    }
+  }
+  return values;
 }
 
 /** Clears the v7 "known" status, which no longer means anything. */

@@ -91,5 +91,9 @@ export const QUIZ_FLUSH_EVERY = 5;
  */
 export const REQUIRED_BACKEND_VERSION = 8;
 
-/** Apps Script cold starts can take a couple of seconds; allow for that. */
-export const REQUEST_TIMEOUT_MS = 20000;
+/**
+ * Apps Script is slow to wake and slow to write. A cold start alone can take
+ * several seconds, so this is generous on purpose: a request cut short is
+ * queued and sent again, which costs more than waiting would have.
+ */
+export const REQUEST_TIMEOUT_MS = 45000;

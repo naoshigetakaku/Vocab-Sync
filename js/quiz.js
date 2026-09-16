@@ -14,6 +14,7 @@ import {
   LABEL_CLEAR_STREAK, QUIZ_FLUSH_EVERY,
 } from './config.js';
 import { getWords, getWord, recordAnswer, flush, isLocalOnly } from './store.js';
+import { isRetryable } from './api.js';
 import { wordsInScope } from './view.js';
 import { currentTick, pickNext, preview, schedule, summarise, isNew } from './scheduler.js';
 import { toast } from './toast.js';
@@ -332,8 +333,14 @@ async function grade(correct) {
   if (session.answered % QUIZ_FLUSH_EVERY === 0) push();
 }
 
+/**
+ * Sends what has been answered so far. A timeout or a dropped connection is
+ * not worth a message: the answers stay queued and go with the next sync.
+ */
 function push() {
-  flush().catch((error) => toast(error.message));
+  flush().catch((error) => {
+    if (!isRetryable(error)) toast(error.message);
+  });
 }
 
 function finish() {
