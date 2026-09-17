@@ -164,7 +164,8 @@ function labelChip(word) {
 
 function buildCard(word) {
   const card = document.createElement('div');
-  card.className = 'flashcard';
+  // Always live: the quiz only ever has the one card; see components.css.
+  card.className = 'flashcard is-live';
   card.dataset.id = word.id;
   card.setAttribute('role', 'button');
   card.setAttribute('tabindex', '0');

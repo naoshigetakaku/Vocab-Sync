@@ -724,13 +724,10 @@
   max-width: 520px;
   min-height: min(52vh, 440px);
   min-height: min(52dvh, 440px);
-  transform-style: preserve-3d;
   transition: transform 520ms var(--ease-out);
   cursor: pointer;
   outline: none;
 }
-
-.flashcard.is-flipped { transform: rotateY(180deg); }
 
 /* Promoted only around a turn; see js/quiz.js. */
 .flashcard.is-primed { will-change: transform; }
@@ -748,20 +745,42 @@
   border-radius: 24px;
   background: var(--surface-raise);
   box-shadow: var(--shadow-card), inset 0 1px 0 var(--gloss-edge);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
   overflow: hidden;
 }
 
-/* An explicit rotation on the front as well: Safari only honours
-   backface-visibility on an element that has a 3D transform of its own. */
 .flashcard__face--front {
-  transform: rotateY(0deg);
   align-items: center;
   text-align: center;
 }
 
-.flashcard__face--back { transform: rotateY(180deg); }
+/* A card far from the screen is flat: its front only, no 3D at all. */
+.flashcard__face--back { visibility: hidden; }
+
+/* --- The turn, for live cards only -----------------------------------------
+   Every face with a 3D transform is its own compositing layer, a screen-sized
+   bitmap in memory. A deck of 132 cards made 264 of them, which iOS will not
+   allocate: a folder that size simply would not open, while a folder of three
+   did. So only a card that is on screen or next to it (js/cards.js marks it
+   is-live) is set up to turn, and the rest cost nothing but their layout. */
+
+.flashcard.is-live { transform-style: preserve-3d; }
+
+.flashcard.is-live .flashcard__face {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* An explicit rotation on the front as well: Safari only honours
+   backface-visibility on an element that has a 3D transform of its own. */
+.flashcard.is-live .flashcard__face--front { transform: rotateY(0deg); }
+
+.flashcard.is-live .flashcard__face--back {
+  transform: rotateY(180deg);
+  visibility: visible;
+}
+
+/* Never on a flat card, which would only show its front mirrored. */
+.flashcard.is-live.is-flipped { transform: rotateY(180deg); }
 
 .flashcard__word {
   margin: auto 0;

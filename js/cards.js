@@ -36,6 +36,13 @@ const flipped = new Set();
 /** Turns a card back over once it has left the screen; see initCards. */
 let watcher = null;
 
+/**
+ * Sets up the 3D turn only on cards on screen or a screen away from it.
+ * Each face with a 3D transform is a screen-sized compositing layer, and iOS
+ * refuses a few hundred of them — a large folder's deck would not open.
+ */
+let nearby = null;
+
 function shuffled(items) {
   const copy = items.slice();
   for (let i = copy.length - 1; i > 0; i--) {
@@ -180,6 +187,9 @@ function paintSide(card, showBack) {
 }
 
 function flip(card) {
+  // A tap can only land on a card on screen, which is live already; this is
+  // the guarantee rather than the mechanism.
+  card.classList.add('is-live');
   const id = card.dataset.id;
   const showBack = !flipped.has(id);
   if (showBack) flipped.add(id);
@@ -252,9 +262,15 @@ function turnBack(card) {
 }
 
 function watch() {
-  if (!watcher) return;
-  watcher.disconnect();
-  cardsElement.querySelectorAll('.flashcard').forEach((card) => watcher.observe(card));
+  const cards = cardsElement.querySelectorAll('.flashcard');
+  [watcher, nearby].forEach((observer) => {
+    if (!observer) return;
+    observer.disconnect();
+    cards.forEach((card) => observer.observe(card));
+  });
+  // Without IntersectionObserver there is no way to limit it; a small deck
+  // is still fine, and it is the only way the turn works at all.
+  if (!nearby) cards.forEach((card) => card.classList.add('is-live'));
 }
 
 export function initCards() {
@@ -264,6 +280,13 @@ export function initCards() {
         if (!entry.isIntersecting) turnBack(entry.target);
       });
     }, { root: cardsElement, threshold: 0 });
+
+    // A screen's margin either side, so a card is ready before it arrives.
+    nearby = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        entry.target.classList.toggle('is-live', entry.isIntersecting);
+      });
+    }, { root: cardsElement, rootMargin: '100% 0px', threshold: 0 });
   }
 
   cardsElement.addEventListener('touchstart', prime, { passive: true });
