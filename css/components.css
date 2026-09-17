@@ -680,16 +680,20 @@
 
 .cards::-webkit-scrollbar { display: none; }
 
-/* A screen per card, the card dead centre in it. min-height rather than
-   height, so a card whose back is long can grow past the screen and still be
-   read to the end. The add button is hidden on this tab, so the padding can
-   be even top and bottom. */
+/* A screen per card. min-height rather than height, so a card whose back is
+   long can grow past the screen and still be read to the end.
+
+   Centred on the screen, not on the strip between the header and the tab bar:
+   the header is the taller of the two, so centring in the strip leaves the
+   card sitting low. The extra bottom padding is the difference between them
+   (--chrome-diff, measured in js/cards.js), which lifts the card by half of
+   it — onto the middle of the whole screen, safe areas included. */
 .card-slot {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100%;
-  padding: 18px 0;
+  padding: 18px 0 calc(18px + var(--chrome-diff, 0px));
   scroll-snap-align: center;
   /* Stops a hard flick from skimming past several words at once. */
   scroll-snap-stop: always;

@@ -273,7 +273,37 @@ function watch() {
   if (!nearby) cards.forEach((card) => card.classList.add('is-live'));
 }
 
+/**
+ * How much taller the header is than the tab bar, for centring the card on
+ * the whole screen; see .card-slot. Measured rather than assumed, because both
+ * change with the safe areas, the folder name and the window size.
+ */
+function trackChrome() {
+  const header = document.querySelector('.app-header');
+  const tabbar = document.getElementById('tabbar');
+  if (!header || !tabbar) return;
+
+  const update = () => {
+    const diff = Math.max(0, header.offsetHeight - tabbar.offsetHeight);
+    cardsElement.style.setProperty('--chrome-diff', diff + 'px');
+  };
+
+  update();
+  if ('ResizeObserver' in window) {
+    const observer = new ResizeObserver(update);
+    // The border box, because the safe areas are padding: watching only the
+    // content box would miss a notch appearing or going on rotation.
+    observer.observe(header, { box: 'border-box' });
+    observer.observe(tabbar, { box: 'border-box' });
+  }
+  // Belt and braces for engines that ignore the box option.
+  window.addEventListener('resize', update);
+  window.addEventListener('orientationchange', update);
+}
+
 export function initCards() {
+  trackChrome();
+
   if ('IntersectionObserver' in window) {
     watcher = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
