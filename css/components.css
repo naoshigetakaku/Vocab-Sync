@@ -134,6 +134,22 @@
   margin-bottom: 4px;
 }
 
+/* One line on the Connection sheet saying which deployment this is. */
+.setup__status {
+  margin: 2px 0 2px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--segment-bg);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.setup__status.is-stale {
+  background: var(--unknown-tint);
+  color: var(--unknown);
+}
+
 .sheet__lead {
   font-size: 14px;
   line-height: 1.55;

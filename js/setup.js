@@ -9,7 +9,8 @@
  */
 
 import { getCredentials, saveCredentials, clearCredentials } from './auth.js';
-import { api } from './api.js';
+import { api, getBackendVersion, isBackendStale } from './api.js';
+import { REQUIRED_BACKEND_VERSION } from './config.js';
 import { reset } from './store.js';
 import { openDialog, closeDialog, finishClose } from './dialog.js';
 import { enableSwipeToDismiss } from './swipe.js';
@@ -23,6 +24,7 @@ const leadElement = dialog.querySelector('.sheet__lead');
 const urlField = document.getElementById('field-url');
 const passphraseField = document.getElementById('field-passphrase');
 const errorElement = document.getElementById('setup-error');
+const statusElement = document.getElementById('setup-status');
 const submitButton = document.getElementById('setup-submit');
 const disconnectButton = document.getElementById('setup-disconnect');
 
@@ -65,6 +67,38 @@ function setMode(manual) {
   disconnectButton.hidden = !manual;
 }
 
+/**
+ * The deployment's own id, shortened. Every "New deployment" in Apps Script
+ * mints a different one and leaves the old one running its old code, so
+ * comparing this between two devices shows at a glance whether they are
+ * talking to the same thing.
+ */
+function deploymentTag(url) {
+  const match = /\/s\/([^/]+)\/exec$/.exec(url || '');
+  return match ? '…' + match[1].slice(-6) : '';
+}
+
+function paintStatus(manual) {
+  const credentials = getCredentials();
+  const version = getBackendVersion();
+
+  if (!manual || !credentials || version === null) {
+    statusElement.hidden = true;
+    return;
+  }
+
+  const tag = deploymentTag(credentials.url);
+  const which = tag ? 'Deployment ' + tag : 'This deployment';
+  const stale = isBackendStale();
+  statusElement.textContent = stale
+    ? which + ' runs Apps Script v' + version + ', and this app needs v'
+      + REQUIRED_BACKEND_VERSION + '. If you have already updated Code.gs, this device is '
+      + 'on an older deployment: paste the URL your other device uses.'
+    : which + ' · Apps Script v' + version + ' · up to date';
+  statusElement.classList.toggle('is-stale', stale);
+  statusElement.hidden = false;
+}
+
 function close() {
   if (!dismissible || busy) return;
   closeDialog(dialog);
@@ -80,6 +114,7 @@ export function openSetup(options) {
   setMode(manual);
   errorElement.hidden = true;
   setBusy(false);
+  paintStatus(manual);
 
   if (manual && credentials) {
     urlField.value = credentials.url;

@@ -372,6 +372,11 @@
         <code>Code.gs</code>. Both are stored on this device only, so every device needs this once.
       </p>
 
+      <!-- Which deployment this device is talking to, and whether its code is
+           current. Two devices on different deployments is the usual reason
+           one of them shows old behaviour after an update. -->
+      <p class="setup__status" id="setup-status" hidden></p>
+
       <label class="field">
         <span class="field__label">Web App URL</span>
         <input class="field__input" id="field-url" name="url" type="url"

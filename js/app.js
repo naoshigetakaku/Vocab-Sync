@@ -56,7 +56,9 @@ let previousFolder = selectionLabel();
 function warnIfBackendStale() {
   if (staleWarningShown || !isBackendStale()) return;
   staleWarningShown = true;
-  toast('Apps Script is out of date (v' + getBackendVersion() + '). Some fields will not save — see Connection.');
+  // Versions belong to a deployment, not to the script, so the likeliest
+  // cause after an update is this device still using an older URL.
+  toast('This device is connected to an older Apps Script (v' + getBackendVersion() + '). See Connection.');
 }
 
 /**
