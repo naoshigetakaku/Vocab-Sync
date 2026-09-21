@@ -157,6 +157,9 @@ function renderCurrent() {
   quizHomeElement.hidden = tab !== 'quiz';
   // The deck does its own snap scrolling, so the page must stop scrolling.
   mainElement.classList.toggle('is-cards', tab === 'cards');
+  // Both of these centre their content on the screen, which needs the room
+  // kept clear for the add button back; see components.css.
+  mainElement.classList.toggle('is-quiz-home', tab === 'quiz');
 
   if (tab === 'quiz') {
     hideEmpty();

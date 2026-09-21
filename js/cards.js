@@ -11,6 +11,10 @@
  * it smooth in the installed app, where the main thread is the first thing
  * iOS starves.
  *
+ * On a keyboard, Enter and Space turn whichever card is on screen, without
+ * having to Tab to it first — with one card to a screen there is never any
+ * doubt about which one is meant.
+ *
  * A card turns back to its front as soon as it leaves the screen, so coming
  * back to one always asks the question again rather than showing the answer
  * you left it on. That is watched with an IntersectionObserver rather than a
@@ -236,6 +240,56 @@ function turnBack(card) {
   paintSide(card, false);
 }
 
+/**
+ * The card the reader is looking at: the one nearest the middle of the deck.
+ *
+ * Measured on the keypress rather than tracked as the deck scrolls. It costs
+ * one pass over the cards at the moment a key goes down, which is nothing,
+ * and it cannot drift out of step with where the deck actually is.
+ */
+function cardInView() {
+  const cards = cardsElement.querySelectorAll('.flashcard');
+  if (!cards.length) return null;
+
+  const middle = cardsElement.getBoundingClientRect().top + cardsElement.clientHeight / 2;
+  let best = null;
+  let closest = Infinity;
+
+  cards.forEach((card) => {
+    const box = card.getBoundingClientRect();
+    const distance = Math.abs(box.top + box.height / 2 - middle);
+    if (distance < closest) {
+      closest = distance;
+      best = card;
+    }
+  });
+
+  return best;
+}
+
+/** Enter or Space turns the card on screen; see the note at the top. */
+function onKey(event) {
+  if (cardsElement.hidden) return;
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  // A dialog is in front, and its own controls own the keyboard.
+  if (document.querySelector('dialog[open]')) return;
+
+  // Anything focusable already means something by Enter — a link opens, a
+  // button presses. Only take the key when nothing has claimed it.
+  const active = document.activeElement;
+  const focused = active && active.closest && active.closest('.flashcard');
+  if (active && !focused && active !== document.body
+      && active.closest('a, button, input, textarea, select')) {
+    return;
+  }
+
+  const card = focused || cardInView();
+  if (!card) return;
+  event.preventDefault();
+  flip(card);
+}
+
 function watch() {
   const cards = cardsElement.querySelectorAll('.flashcard');
   [watcher, nearby].forEach((observer) => {
@@ -249,9 +303,13 @@ function watch() {
 }
 
 /**
- * How much taller the header is than the tab bar, for centring the card on
- * the whole screen; see .card-slot. Measured rather than assumed, because both
- * change with the safe areas, the folder name and the window size.
+ * How much taller the header is than the tab bar, for centring on the whole
+ * screen rather than on what is left between the two bars. Measured rather
+ * than assumed, because both change with the safe areas, the folder name and
+ * the window size.
+ *
+ * Set on the root so the quiz home can centre the same way; see .card-slot
+ * and .quiz-home.
  */
 function trackChrome() {
   const header = document.querySelector('.app-header');
@@ -260,7 +318,7 @@ function trackChrome() {
 
   const update = () => {
     const diff = Math.max(0, header.offsetHeight - tabbar.offsetHeight);
-    cardsElement.style.setProperty('--chrome-diff', diff + 'px');
+    document.documentElement.style.setProperty('--chrome-diff', diff + 'px');
   };
 
   update();
@@ -303,11 +361,7 @@ export function initCards() {
     if (card) flip(card);
   });
 
-  cardsElement.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    const card = event.target.closest('.flashcard');
-    if (!card || event.target !== card) return;
-    event.preventDefault();
-    flip(card);
-  });
+  // On the document rather than the deck: a card only receives the key when
+  // it has been tabbed to, and on a Mac nothing has been.
+  document.addEventListener('keydown', onKey);
 }

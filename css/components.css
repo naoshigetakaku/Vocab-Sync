@@ -464,13 +464,34 @@
 
 /* --- Quiz home ------------------------------------------------------------- */
 
+/* The add button is not on this tab, so the 96px kept clear for it would do
+   nothing here but push the quiz home off centre. */
+.app-main.is-quiz-home { padding-bottom: 0; }
+
+/* Centred on the whole screen, the way the card deck is: the two are the
+   same gesture — one thing to look at, in the middle. --chrome-diff makes up
+   for the header being taller than the tab bar; see js/cards.js. */
 .quiz-home {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 26px;
+  min-height: 100%;
+  padding: 26px 0 calc(26px + var(--chrome-diff, 0px));
+  box-sizing: border-box;
   text-align: center;
 }
+
+/* Two empty flex items with auto margins, which centre the content between
+   them and collapse to nothing once it is taller than the screen. Plain
+   justify-content: center would clip the top in a scrolling box instead. */
+.quiz-home::before,
+.quiz-home::after {
+  content: '';
+  flex: none;
+}
+
+.quiz-home::before { margin-top: auto; }
+.quiz-home::after  { margin-bottom: auto; }
 
 .quiz-home__label {
   font-size: 12px;

@@ -80,9 +80,11 @@ Deleting the icon deletes the local cache with it. Nothing is lost — the words
 are in the spreadsheet — but the app has to be connected again.
 
 The installed app always keeps the fixed, phone-shaped layout. In a browser
-window 700px or wider (iPad or Mac) the layout spreads out instead: a
-multi-column word list and larger cards. The switch is the
-`display-mode: browser` media query in `css/layout.css`.
+window 700px or wider (iPad or Mac) the layout spreads out instead: the word
+list becomes two columns, and three once there is room, and the cards grow.
+Never four — past three the cells are narrower than the longest expressions in
+them. The switch is the `display-mode: browser` media query in
+`css/layout.css`.
 
 ## What is in the sheet
 
@@ -163,6 +165,13 @@ week away leaves no pile of overdue cards, and a long sitting never runs out.
 Answers are applied locally at once and sent to the sheet five at a time
 through `updateMany`, so no card ever waits on the network — and nothing is
 lost if the app is closed mid-session.
+
+**The keyboard.** On the cards and in the quiz, Enter or Space turns whichever
+card is on screen and turns it back, without having to Tab to it first — with
+one card to a screen there is never any doubt about which one is meant. In the
+quiz, once a card is turned, the left and right arrows answer it: left for
+Missed, right for Got it, matching where the two buttons sit. Before the turn
+the arrows do nothing, for the same reason the buttons are not there yet.
 
 The colour changes the word's own type only — never the definition, the note,
 or the part-of-speech badge — and the stored value is the key rather than a hex

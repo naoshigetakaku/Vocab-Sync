@@ -6,6 +6,11 @@
  * transform between two faces the card mode used, so nothing is built or
  * measured at the moment of the tap.
  *
+ * On a keyboard: Enter or Space turns the card, and once it is turned the
+ * left and right arrows answer it — left for Missed, right for Got it, which
+ * is the order the two buttons sit in. Before the turn the arrows do nothing,
+ * for the same reason the buttons are not there yet.
+ *
  * What to ask and when lives in scheduler.js; this file is the screen.
  */
 
@@ -210,6 +215,42 @@ function flip() {
  * Promotes the card to its own layer as the finger lands, ~100ms before the
  * tap that turns it, so the first frame of the turn is not spent making one.
  */
+/**
+ * The keyboard, while a session is running.
+ *
+ * Guarded on the session rather than on the screen: the quiz covers
+ * everything while it is up, so there is nothing else these keys could mean.
+ */
+function onKey(event) {
+  if (!session || !session.currentId) return;
+  // The session is over and the summary is up; the card behind it is not
+  // something an arrow key should still be able to answer.
+  if (!summaryElement.hidden) return;
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  // A dialog is in front, and its own controls own the keyboard.
+  if (document.querySelector('dialog[open]')) return;
+
+  const active = document.activeElement;
+  if (active && active.tagName === 'INPUT') return;
+
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    flip();
+    return;
+  }
+
+  // Left and right match where Missed and Got it sit on screen. They only
+  // answer once the card has been turned, exactly as the buttons do.
+  if (!session.flipped) return;
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault();
+    grade(false);
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    grade(true);
+  }
+}
+
 function prime(event) {
   const card = event.target.closest('.flashcard');
   if (!card || event.target.closest('a')) return;
@@ -368,12 +409,9 @@ export function initQuiz(handlers) {
     if (event.target.closest('a')) return;
     if (event.target.closest('.flashcard')) flip();
   });
-  stageElement.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    if (!event.target.classList.contains('flashcard')) return;
-    event.preventDefault();
-    flip();
-  });
+  // On the document rather than the stage: the card only receives the key
+  // when it has been tabbed to, and on a Mac nothing has been.
+  document.addEventListener('keydown', onKey);
 
   missedButton.addEventListener('click', () => grade(false));
   gotButton.addEventListener('click', () => grade(true));
