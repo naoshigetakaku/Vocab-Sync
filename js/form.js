@@ -6,7 +6,7 @@
 
 import { PARTS_OF_SPEECH, WORD_COLORS, DEFAULT_COLOR, UNSORTED_LABEL } from './config.js';
 import { createWord, updateWord, getFolders } from './store.js';
-import { statusForNewWord, folderForNewWord } from './view.js';
+import { folderForNewWord } from './view.js';
 import { openDialog, closeDialog, wireDismiss } from './dialog.js';
 import { openPicker } from './picker.js';
 
@@ -222,8 +222,7 @@ export function initForm(handlers) {
     try {
       const saved = editingId
         ? await updateWord(Object.assign({ id: editingId }, fields))
-        // Added under Unknown, a word starts labelled; see statusForNewWord.
-        : await createWord(Object.assign({ status: statusForNewWord() }, fields));
+        : await createWord(fields);
 
       closeDialog(dialog);
       editingId = null;

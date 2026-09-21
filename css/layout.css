@@ -131,7 +131,7 @@
               background-color 300ms var(--ease-out);
 }
 
-.filter[data-active="unknown"] .filter__indicator { background: var(--unknown-tint); box-shadow: none; }
+.filter[data-active="archived"] .filter__indicator { background: var(--archived-tint); box-shadow: none; }
 
 .filter__tab {
   position: relative;
@@ -150,9 +150,9 @@
 
 .filter__tab[aria-selected="true"] { color: var(--text); }
 
-/* Unknown is red wherever it appears, selected or not. */
-.filter__tab--unknown,
-.filter__tab--unknown[aria-selected="true"] { color: var(--unknown); }
+/* Archived is grey wherever it appears, selected or not. */
+.filter__tab--archived,
+.filter__tab--archived[aria-selected="true"] { color: var(--archived); }
 
 /* The only scrolling region on the home screen. */
 .app-main {
@@ -279,21 +279,21 @@ body.is-quizzing .fab { display: none; }
   pointer-events: none;
 }
 
-.word-item__action--clear {
+.word-item__action--restore {
   justify-content: flex-start;
   color: var(--known);
   background: var(--known-tint);
 }
 
-.word-item__action--label {
+.word-item__action--archive {
   justify-content: flex-end;
-  color: var(--unknown);
-  background: var(--unknown-tint);
+  color: var(--archived);
+  background: var(--archived-tint);
 }
 
 /* Only the label for the direction of travel ever shows. */
-.word-item.is-right .word-item__action--clear,
-.word-item.is-left  .word-item__action--label {
+.word-item.is-right .word-item__action--restore,
+.word-item.is-left  .word-item__action--archive {
   opacity: var(--row-progress, 0);
 }
 
@@ -367,23 +367,6 @@ body.is-quizzing .fab { display: none; }
 .word-row__text {
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-/* Marks a labelled word. Only under All — under Unknown every row would
-   carry the same mark, which says nothing. */
-.word-row__mark {
-  display: none;
-  flex: none;
-  width: 7px;
-  height: 7px;
-  margin-left: auto;
-  margin-right: 4px;
-  border-radius: 50%;
-}
-
-.word-list[data-filter="all"] .word-row[data-status="unknown"] .word-row__mark {
-  display: block;
-  background: var(--unknown);
 }
 
 /* A word queued for upload is dimmed until the server confirms it. */

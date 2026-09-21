@@ -152,21 +152,6 @@
 /* A row that has just been created slides in on its own. */
 .word-row.is-new { animation: row-in var(--dur-mid) var(--ease-spring) both; }
 
-/* A word labelled or cleared under All stays where it is, washed for a
-   moment in red (labelled) or green (cleared). */
-@keyframes flash-clear {
-  from { background-color: var(--known-tint); }
-  to   { background-color: var(--bg); }
-}
-
-@keyframes flash-label {
-  from { background-color: var(--unknown-tint); }
-  to   { background-color: var(--bg); }
-}
-
-.word-item .word-row.is-flash-clear { animation: flash-clear 700ms var(--ease-out) both; }
-.word-item .word-row.is-flash-label { animation: flash-label 700ms var(--ease-out) both; }
-
 /* --- Quiz ----------------------------------------------------------------- */
 /* The answered card leaves to the left, the next arrives from the right.
    No fill-mode: once each is over, the transform must be free again for the

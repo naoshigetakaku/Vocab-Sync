@@ -9,14 +9,12 @@
  * What to ask and when lives in scheduler.js; this file is the screen.
  */
 
-import {
-  DEFAULT_COLOR, YOUGLISH_BASE, YOUGLISH_LANGUAGE, STATUS_UNKNOWN,
-  LABEL_CLEAR_STREAK, QUIZ_FLUSH_EVERY,
-} from './config.js';
+import { DEFAULT_COLOR, QUIZ_FLUSH_EVERY } from './config.js';
 import { getWords, getWord, recordAnswer, flush, isLocalOnly } from './store.js';
 import { isRetryable } from './api.js';
 import { wordsInScope } from './view.js';
 import { currentTick, pickNext, preview, schedule, summarise, isNew } from './scheduler.js';
+import { wordLinks } from './links.js';
 import { toast } from './toast.js';
 
 const homeElement = document.getElementById('quiz-home');
@@ -75,8 +73,9 @@ export function renderQuizHome() {
   const counts = summarise(words, tickNow());
 
   readyElement.textContent = String(counts.ready);
-  unknownElement.textContent = counts.labelled ? counts.labelled + ' labelled' : '';
-  unknownElement.hidden = !counts.labelled;
+  // The "don't know this" label still drives the schedule, but it is not
+  // something the reader is told about; see js/config.js.
+  unknownElement.hidden = true;
   newElement.textContent = counts.fresh ? counts.fresh + ' new' : '';
   newElement.hidden = !counts.fresh;
 
@@ -102,37 +101,12 @@ export function readyCount() {
 
 /* --- The card ------------------------------------------------------------- */
 
-function youglish(word) {
-  const link = document.createElement('a');
-  link.className = 'youglish flashcard__youglish';
-  link.href = YOUGLISH_BASE + encodeURIComponent(word.word) + '/' + YOUGLISH_LANGUAGE;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.setAttribute('aria-label', 'Hear “' + word.word + '” on YouGlish');
-
-  const label = document.createElement('span');
-  label.textContent = 'youglish';
-  link.appendChild(label);
-
-  const chevron = document.createElementNS(SVG_NS, 'svg');
-  chevron.setAttribute('viewBox', '0 0 24 24');
-  chevron.setAttribute('class', 'youglish__chevron');
-  chevron.setAttribute('aria-hidden', 'true');
-  chevron.setAttribute('focusable', 'false');
-  const path = document.createElementNS(SVG_NS, 'path');
-  path.setAttribute('d', 'M9 6l6 6-6 6');
-  chevron.appendChild(path);
-  link.appendChild(chevron);
-
-  return link;
-}
-
 function block(label, text) {
   const section = document.createElement('section');
   section.className = 'detail__block';
 
   const heading = document.createElement('h4');
-  heading.className = 'detail__label';
+  heading.className = 'detail__heading';
   heading.textContent = label;
 
   const body = document.createElement('p');
@@ -142,24 +116,6 @@ function block(label, text) {
   section.appendChild(heading);
   section.appendChild(body);
   return section;
-}
-
-/** The label, with a circle for each right answer still needed to clear it. */
-function labelChip(word) {
-  const chip = document.createElement('span');
-  chip.className = 'quiz-label';
-
-  const text = document.createElement('span');
-  text.textContent = 'Don’t know this';
-  chip.appendChild(text);
-
-  const done = Math.min(LABEL_CLEAR_STREAK, word.labelStreak || 0);
-  const dots = document.createElement('span');
-  dots.className = 'detail__dots';
-  dots.textContent = '●'.repeat(done) + '○'.repeat(LABEL_CLEAR_STREAK - done);
-  chip.appendChild(dots);
-
-  return chip;
 }
 
 function buildCard(word) {
@@ -179,24 +135,20 @@ function buildCard(word) {
   heading.dataset.color = word.color || DEFAULT_COLOR;
   heading.textContent = word.word;
   front.appendChild(heading);
-  front.appendChild(youglish(word));
+  front.appendChild(wordLinks(word));
 
   const back = document.createElement('div');
   back.className = 'flashcard__face flashcard__face--back';
 
-  const tags = document.createElement('div');
-  tags.className = 'flashcard__tags';
+  const body = document.createElement('div');
+  body.className = 'flashcard__body';
+
   if (word.pos) {
     const pos = document.createElement('p');
     pos.className = 'detail__pos';
     pos.textContent = word.pos;
-    tags.appendChild(pos);
+    body.appendChild(pos);
   }
-  if (word.status === STATUS_UNKNOWN) tags.appendChild(labelChip(word));
-
-  const body = document.createElement('div');
-  body.className = 'flashcard__body';
-  body.appendChild(tags);
 
   const title = document.createElement('h3');
   title.className = 'flashcard__title';
@@ -214,7 +166,7 @@ function buildCard(word) {
   }
 
   back.appendChild(body);
-  back.appendChild(youglish(word));
+  back.appendChild(wordLinks(word));
 
   card.appendChild(front);
   card.appendChild(back);
@@ -229,9 +181,7 @@ function currentCard() {
 function paintHints(word) {
   const outlook = preview(word, tickNow());
   missedHint.textContent = 'again in ' + outlook.missed.fields.gap;
-  gotHint.textContent = outlook.correct.labelCleared
-    ? 'clears the label'
-    : 'in ' + outlook.correct.fields.gap;
+  gotHint.textContent = 'in ' + outlook.correct.fields.gap;
 }
 
 function showFace(card, showBack) {
@@ -240,8 +190,8 @@ function showFace(card, showBack) {
   const [front, back] = card.querySelectorAll('.flashcard__face');
   front.setAttribute('aria-hidden', showBack ? 'true' : 'false');
   back.setAttribute('aria-hidden', showBack ? 'false' : 'true');
-  front.querySelector('a').tabIndex = showBack ? -1 : 0;
-  back.querySelector('a').tabIndex = showBack ? 0 : -1;
+  front.querySelectorAll('a').forEach((link) => { link.tabIndex = showBack ? -1 : 0; });
+  back.querySelectorAll('a').forEach((link) => { link.tabIndex = showBack ? 0 : -1; });
 
   // Grading only makes sense once the answer has been seen.
   actionsElement.hidden = !showBack;
@@ -319,11 +269,7 @@ async function grade(correct) {
 
   session.answered += 1;
   if (correct) session.correct += 1;
-  if (outcome.labelAdded) session.labelled += 1;
-  if (outcome.labelCleared) {
-    session.cleared += 1;
-    toast('“' + word.word + '” — label cleared.');
-  }
+  else session.missed += 1;
   session.lastId = word.id;
   paintCounter();
 
@@ -357,11 +303,10 @@ function finish() {
   summaryAnswered.textContent = answered + (answered === 1 ? ' answer' : ' answers')
     + ' · ' + percent + '% right';
 
-  const parts = [];
-  if (session.labelled) parts.push(session.labelled + ' labelled');
-  if (session.cleared) parts.push(session.cleared + ' cleared');
-  summaryLabels.textContent = parts.join(' · ');
-  summaryLabels.hidden = !parts.length;
+  summaryLabels.textContent = session.missed
+    ? session.missed + (session.missed === 1 ? ' to see again' : ' to see again')
+    : '';
+  summaryLabels.hidden = !session.missed;
 
   stageElement.hidden = true;
   actionsElement.hidden = true;
@@ -386,8 +331,7 @@ export function startQuiz() {
     sinceNew: 0,
     answered: 0,
     correct: 0,
-    labelled: 0,
-    cleared: 0,
+    missed: 0,
     flipped: false,
   };
 

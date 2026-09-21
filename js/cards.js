@@ -19,8 +19,9 @@
  */
 
 import { visibleWords, paintEmpty } from './list.js';
-import { getFilter, selectionLabel } from './view.js';
-import { DEFAULT_COLOR, YOUGLISH_BASE, YOUGLISH_LANGUAGE } from './config.js';
+import { isArchivedFilter, selectionLabel } from './view.js';
+import { wordLinks } from './links.js';
+import { DEFAULT_COLOR } from './config.js';
 
 const cardsElement = document.getElementById('cards');
 
@@ -60,37 +61,12 @@ export function shuffleCards() {
   cardsElement.scrollTop = 0;
 }
 
-function youglish(word) {
-  const link = document.createElement('a');
-  link.className = 'youglish flashcard__youglish';
-  link.href = YOUGLISH_BASE + encodeURIComponent(word.word) + '/' + YOUGLISH_LANGUAGE;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.setAttribute('aria-label', 'Hear “' + word.word + '” on YouGlish');
-
-  const label = document.createElement('span');
-  label.textContent = 'youglish';
-  link.appendChild(label);
-
-  const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  chevron.setAttribute('viewBox', '0 0 24 24');
-  chevron.setAttribute('class', 'youglish__chevron');
-  chevron.setAttribute('aria-hidden', 'true');
-  chevron.setAttribute('focusable', 'false');
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', 'M9 6l6 6-6 6');
-  chevron.appendChild(path);
-  link.appendChild(chevron);
-
-  return link;
-}
-
 function block(label, text) {
   const section = document.createElement('section');
   section.className = 'detail__block';
 
   const heading = document.createElement('h4');
-  heading.className = 'detail__label';
+  heading.className = 'detail__heading';
   heading.textContent = label;
 
   const body = document.createElement('p');
@@ -116,7 +92,6 @@ function buildCard(word) {
   const card = document.createElement('div');
   card.className = 'flashcard';
   card.dataset.id = word.id;
-  card.dataset.status = word.status || '';
   card.setAttribute('role', 'button');
   card.setAttribute('tabindex', '0');
 
@@ -130,7 +105,7 @@ function buildCard(word) {
   heading.dataset.color = word.color || DEFAULT_COLOR;
   heading.textContent = word.word;
   front.appendChild(heading);
-  front.appendChild(youglish(word));
+  front.appendChild(wordLinks(word));
 
   // Back: everything else, laid out like the detail card.
   const back = document.createElement('div');
@@ -163,7 +138,7 @@ function buildCard(word) {
   }
 
   back.appendChild(body);
-  back.appendChild(youglish(word));
+  back.appendChild(wordLinks(word));
 
   card.appendChild(front);
   card.appendChild(back);
@@ -182,8 +157,8 @@ function paintSide(card, showBack) {
   front.setAttribute('aria-hidden', showBack ? 'true' : 'false');
   back.setAttribute('aria-hidden', showBack ? 'false' : 'true');
   // Links on the hidden face must not be reachable by Tab either.
-  front.querySelector('a').tabIndex = showBack ? -1 : 0;
-  back.querySelector('a').tabIndex = showBack ? 0 : -1;
+  front.querySelectorAll('a').forEach((link) => { link.tabIndex = showBack ? -1 : 0; });
+  back.querySelectorAll('a').forEach((link) => { link.tabIndex = showBack ? 0 : -1; });
 }
 
 function flip(card) {
@@ -217,9 +192,9 @@ function prime(event) {
 }
 
 function signatureOf(words) {
-  return selectionLabel() + '\n' + getFilter() + '\n' + words
+  return selectionLabel() + '\n' + String(isArchivedFilter()) + '\n' + words
     .map((word) => [
-      word.id, word.word, word.pos, word.definition, word.note, word.color, word.status || '',
+      word.id, word.word, word.pos, word.definition, word.note, word.color,
     ].join('\t'))
     .join('\n');
 }
@@ -227,7 +202,7 @@ function signatureOf(words) {
 export function renderCards() {
   const words = visibleWords();
   const byId = new Map(words.map((word) => [word.id, word]));
-  cardsElement.dataset.filter = getFilter();
+  cardsElement.dataset.filter = isArchivedFilter() ? 'archived' : 'all';
 
   // Keep the dealt order, but drop anything that left and append anything
   // new rather than reshuffling under the reader's thumb.

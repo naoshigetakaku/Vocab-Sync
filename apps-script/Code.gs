@@ -49,8 +49,10 @@ var PASSPHRASE = 'change-me-to-something-long-and-random';
  *   7  status (known / unknown); all sixteen colours; folders retired
  *   8  folders return; status is only the "don't know this" label; quiz
  *      scheduling columns; updateMany for saving quiz answers in one go
+ *   9  archived is a column of its own rather than a status, so a word can be
+ *      archived and labelled at the same time; lapses counts missed answers
  */
-var BACKEND_VERSION = 8;
+var BACKEND_VERSION = 9;
 
 var SHEET_NAME = 'Words';
 var FOLDER_SHEET_NAME = 'Folders';
@@ -59,9 +61,9 @@ var FOLDER_SHEET_NAME = 'Folders';
  * Column order. New fields go on the END of this list — inserting one in the
  * middle would shift every existing row's data into the wrong column.
  *
- * archivedFrom belongs to the retired archive. It stays in the list so that
- * rewriting a row carries its value through untouched: a column missing from
- * here would be blanked on every update.
+ * archivedFrom is the folder a word sat in when it was archived. Restoring
+ * reads folder, which is never cleared, so archivedFrom only matters when that
+ * folder has since been deleted.
  *
  * reviews … dueTick are the quiz schedule; see js/scheduler.js. They count
  * answers rather than days, so there are no dates among them.
@@ -69,7 +71,8 @@ var FOLDER_SHEET_NAME = 'Folders';
 var HEADERS = [
   'id', 'word', 'pos', 'definition', 'note',
   'createdAt', 'updatedAt', 'color', 'folder', 'archivedFrom', 'status',
-  'reviews', 'streak', 'labelStreak', 'gap', 'ease', 'dueTick'
+  'reviews', 'streak', 'labelStreak', 'gap', 'ease', 'dueTick',
+  'archived', 'lapses'
 ];
 
 /** The photo column is kept so existing rows stay aligned; nothing reads it. */
@@ -90,6 +93,9 @@ var WORD_COLORS = [
  * status in v7 and now means the same as blank — setup() clears it out.
  */
 var STATUSES = ['', 'unknown'];
+
+/** The archived flag, as stored. Blank is a word in the ordinary list. */
+var ARCHIVED_ON = '1';
 
 var DEFAULT_EASE = 2.5;
 var MIN_EASE = 1.3;
@@ -324,6 +330,9 @@ function rowToWord_(row, map) {
     // Retired with the archive, carried through so a rewrite does not lose it.
     archivedFrom: read('archivedFrom'),
     status: STATUSES.indexOf(status) === -1 ? '' : status,
+    // A column of its own, so archiving never disturbs the quiz label.
+    archived: read('archived') === ARCHIVED_ON ? ARCHIVED_ON : '',
+    lapses: toInt_(read('lapses'), 0),
     // Blank on every row written before the quiz existed: a word never asked.
     reviews: toInt_(read('reviews'), 0),
     streak: toInt_(read('streak'), 0),
@@ -365,6 +374,7 @@ function validate_(input) {
   var archivedFrom = String(input.archivedFrom || '').trim();
   var status = String(input.status || '').trim();
   if (status === 'known') status = '';
+  var archived = String(input.archived || '').trim() === ARCHIVED_ON ? ARCHIVED_ON : '';
 
   if (!word) fail_('BAD_REQUEST', 'Word is required.');
   if (word.length > MAX_WORD_LENGTH) fail_('BAD_REQUEST', 'Word is too long.');
@@ -382,6 +392,8 @@ function validate_(input) {
   return {
     word: word, pos: pos, definition: definition, note: note,
     color: color, folder: folder, archivedFrom: archivedFrom, status: status,
+    archived: archived,
+    lapses: count_(input.lapses, 'lapses'),
     reviews: count_(input.reviews, 'reviews'),
     streak: count_(input.streak, 'streak'),
     labelStreak: count_(input.labelStreak, 'labelStreak'),

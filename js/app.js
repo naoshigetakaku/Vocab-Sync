@@ -4,14 +4,14 @@
 
 import { hasCredentials } from './auth.js';
 import { isRetryable, isBackendStale, getBackendVersion } from './api.js';
-import { subscribe, refresh, reset, getWord, setLabel, flush } from './store.js';
-import { FILTERS, STATUS_UNKNOWN } from './config.js';
+import { subscribe, refresh, reset, getWord, setArchived, isArchived, flush } from './store.js';
+import { FILTERS } from './config.js';
 import {
   subscribeView, getFilter, setFilter, getTab, setTab, setSelection,
   selectionLabel, isSelected, FOLDER,
 } from './view.js';
 import {
-  initList, render as renderList, highlightNew, animateNextReflow, flashRow, hideEmpty,
+  initList, render as renderList, highlightNew, animateNextReflow, hideEmpty,
 } from './list.js';
 import { initFolderMenu, renderFolderMenu, isFolderMenuOpen, closeFolderMenu } from './folder-menu.js';
 import { initFolderForm, openRenameFolder } from './folder-form.js';
@@ -23,7 +23,7 @@ import { initSetup, openSetup } from './setup.js';
 import { initInstallHint } from './install-hint.js';
 import { initSort, cycleSort, getSortLabel } from './sort.js';
 import { initPicker } from './picker.js';
-import { initConfirm } from './confirm.js';
+import { initConfirm, confirmArchive } from './confirm.js';
 import { enableRowSwipe, LEFT } from './swipe-row.js';
 import { toast } from './toast.js';
 
@@ -178,35 +178,45 @@ function renderCurrent() {
   }
 }
 
-/* --- The label ------------------------------------------------------------ */
+/* --- Archiving ------------------------------------------------------------ */
 
-/** Only the swipe that would change something is offered. */
+/**
+ * Left archives, right restores. Only the swipe that would change something
+ * is offered, so a word already archived cannot be archived again.
+ */
 function allowsSwipe(id, direction) {
   const word = getWord(id);
   if (!word) return false;
-  const labelled = word.status === STATUS_UNKNOWN;
-  return direction === LEFT ? !labelled : labelled;
+  return direction === LEFT ? !isArchived(word) : isArchived(word);
 }
 
-/** Under All the word is still on screen afterwards; under Unknown it leaves. */
+/** Either way the word leaves the tab it was on, so the rows close up. */
 function staysAfterSwipe() {
-  return getFilter() !== STATUS_UNKNOWN;
+  return false;
 }
 
 async function performSwipe(id, direction) {
-  const label = direction === LEFT;
-  const stays = staysAfterSwipe();
+  const archiving = direction === LEFT;
+  const word = getWord(id);
+  if (!word) return;
 
-  // Either the row takes its new colour where it is, or the rows after it
-  // glide up into the gap it leaves.
-  if (stays) flashRow(id, label);
-  else animateNextReflow();
+  // Archiving takes a word off three screens at once, so it asks first.
+  // Restoring only undoes that.
+  if (archiving && !(await confirmArchive(word))) {
+    // Nothing changed, so nothing re-renders on its own; put the row back.
+    renderCurrent();
+    return;
+  }
+
+  // The rows after it glide up into the gap it leaves.
+  animateNextReflow();
 
   try {
-    await setLabel(id, label);
-    if (!stays) toast('Label cleared.');
+    await setArchived(id, archiving);
+    toast(archiving ? 'Archived.' : 'Restored.');
   } catch (error) {
     toast(error.message);
+    renderCurrent();
   }
 }
 
@@ -325,8 +335,7 @@ function wireUi() {
     setTab(wanted);
   });
 
-  // Left marks a word "don't know this", right takes the label off. Only the
-  // list has rows to swipe.
+  // Left puts a word aside, right brings it back. Only the list has rows.
   enableRowSwipe(wordListElement, {
     canSwipe: () => getTab() === 'list' && !isFolderMenuOpen(),
     allows: allowsSwipe,

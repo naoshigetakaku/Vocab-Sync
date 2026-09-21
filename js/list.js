@@ -2,13 +2,13 @@
  * list.js — the home screen: the words in the open folder.
  *
  * Deliberately shows the word and nothing else; every other field lives behind
- * the detail dialog. Under All, a small red mark picks out the words labelled
- * "don't know this".
+ * the detail dialog. Under All these are the folder's live words; under
+ * Archived, the ones put aside.
  */
 
 import { sortWords } from './sort.js';
-import { getFilter, wordsInScope, selectionLabel } from './view.js';
-import { DEFAULT_COLOR, STATUS_UNKNOWN } from './config.js';
+import { wordsInScope, archivedInScope, isArchivedFilter, selectionLabel } from './view.js';
+import { DEFAULT_COLOR } from './config.js';
 
 const listElement = document.getElementById('word-list');
 const emptyElement = document.getElementById('empty-state');
@@ -16,22 +16,18 @@ const emptyTitle = document.getElementById('empty-title');
 const emptyHint = document.getElementById('empty-hint');
 
 /** The two labels a swipe uncovers; see action(). */
-const CLEAR = 'clear';
-const LABEL = 'label';
+const RESTORE = 'restore';
+const ARCHIVE = 'archive';
 
 let staggerDone = false;
 let staggerTimer;
 let newestId = null;
-/** { id, kind, start } while a row is washing in colour; see flashRow. */
-let flash = null;
 let reflowNext = false;
 let reflowUntil = 0;
 let lastSignature = '';
 
 /** Must match .word-item.is-reflowing in layout.css. */
 const REFLOW_MS = 260;
-/** Must match the flash animations in animations.css. */
-const FLASH_MS = 700;
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -47,20 +43,22 @@ function icon(path) {
 }
 
 /**
- * The label a swipe uncovers. "Clear" sits on the left, under a row dragged
- * right; "Don't know" on the right, under a row dragged left.
+ * The label a swipe uncovers. "Restore" sits on the left, under a row dragged
+ * right; "Archive" on the right, under a row dragged left.
  */
 function action(kind) {
-  const clear = kind === CLEAR;
+  const restore = kind === RESTORE;
   const element = document.createElement('span');
   element.className = 'word-item__action word-item__action--' + kind;
   element.setAttribute('aria-hidden', 'true');
 
   const label = document.createElement('span');
-  label.textContent = clear ? 'Clear label' : 'Don\u2019t know';
-  const glyph = icon(clear ? 'M5 12.5l4.5 4.5L19 7.5' : 'M9.2 9a3 3 0 1 1 4.3 2.7c-.9.5-1.5 1.2-1.5 2.3M12 17.5h.01');
+  label.textContent = restore ? 'Restore' : 'Archive';
+  const glyph = icon(restore
+    ? 'M4 12a8 8 0 1 1 2.3 5.6M4 18v-5h5'
+    : 'M4 5.5h16v3H4zM5.5 8.5v10a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-10M10 12.5h4');
 
-  if (clear) {
+  if (restore) {
     element.appendChild(glyph);
     element.appendChild(label);
   } else {
@@ -71,32 +69,20 @@ function action(kind) {
 }
 
 function buildRow(word) {
-  const status = word.status || '';
-
   const item = document.createElement('li');
   item.className = 'word-item';
 
   // Both sit behind the row and are uncovered as it slides; see
   // js/swipe-row.js. Only the one for the direction of travel is shown.
-  item.appendChild(action(CLEAR));
-  item.appendChild(action(LABEL));
+  item.appendChild(action(RESTORE));
+  item.appendChild(action(ARCHIVE));
 
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'word-row';
   if (word.pending) button.classList.add('word-row--pending');
   if (word.id === newestId) button.classList.add('is-new');
-  if (flash && word.id === flash.id) {
-    const elapsed = performance.now() - flash.start;
-    if (elapsed < FLASH_MS) {
-      button.classList.add('is-flash-' + flash.kind);
-      // A rebuild part-way through — the server confirming the change is
-      // enough — picks the wash up where it was instead of starting it again.
-      if (elapsed > 16) button.style.animationDelay = -Math.round(elapsed) + 'ms';
-    }
-  }
   button.dataset.id = word.id;
-  button.dataset.status = status;
   // The colour is applied through the attribute so the stylesheet keeps
   // control of the actual shade in each theme.
   button.dataset.color = word.color || DEFAULT_COLOR;
@@ -107,24 +93,13 @@ function buildRow(word) {
   text.textContent = word.word;
   button.appendChild(text);
 
-  const mark = document.createElement('span');
-  mark.className = 'word-row__mark';
-  mark.setAttribute('aria-hidden', 'true');
-  button.appendChild(mark);
-
-  if (status === STATUS_UNKNOWN) button.setAttribute('aria-label', word.word + ', marked don\u2019t know');
-
   item.appendChild(button);
   return item;
 }
 
 /** The open folder's words under the current tab, in the current sort order. */
 export function visibleWords() {
-  const filter = getFilter();
-  const words = wordsInScope();
-  return sortWords(filter === STATUS_UNKNOWN
-    ? words.filter((word) => word.status === STATUS_UNKNOWN)
-    : words);
+  return sortWords(isArchivedFilter() ? archivedInScope() : wordsInScope());
 }
 
 /** True in the wide browser layout, where the list is a grid of cells. */
@@ -183,16 +158,16 @@ function playReflow(before) {
 
 /** Everything a row shows, so an identical render can be recognised. */
 function signatureOf(words) {
-  return selectionLabel() + '\n' + getFilter() + '\n' + words
-    .map((word) => [word.id, word.word, word.color, word.status || '', word.pending ? 1 : 0].join('\t'))
+  return selectionLabel() + '\n' + String(isArchivedFilter()) + '\n' + words
+    .map((word) => [word.id, word.word, word.color, word.pending ? 1 : 0].join('\t'))
     .join('\n');
 }
 
 /** Shared with the card deck, which shows the same message. */
 export function paintEmpty(count) {
-  if (getFilter() === STATUS_UNKNOWN) {
-    emptyTitle.textContent = 'Nothing marked \u201cdon\u2019t know\u201d';
-    emptyHint.textContent = 'Swipe a word left to mark it.';
+  if (isArchivedFilter()) {
+    emptyTitle.textContent = 'Nothing archived in ' + selectionLabel();
+    emptyHint.textContent = 'Swipe a word left to put it here.';
   } else {
     emptyTitle.textContent = 'No words in ' + selectionLabel();
     emptyHint.textContent = 'Tap + to add one.';
@@ -207,16 +182,14 @@ export function hideEmpty() {
 
 export function render() {
   const words = visibleWords();
-  listElement.dataset.filter = getFilter();
+  listElement.dataset.filter = isArchivedFilter() ? 'archived' : 'all';
 
   // The store notifies on every change anywhere — the server confirming a
   // word that has just left this tab, a background sync that found nothing
   // new. Rebuilding for those would restart whatever the rows are doing: a
   // slide into a new cell, a swipe under the finger.
   const signature = signatureOf(words);
-  const flashWaiting = flash !== null && flash.start === null;
-  if (signature === lastSignature && newestId === null && !flashWaiting
-      && listElement.childElementCount) {
+  if (signature === lastSignature && newestId === null && listElement.childElementCount) {
     paintEmpty(words.length);
     reflowNext = false;
     return;
@@ -230,8 +203,6 @@ export function render() {
   const sliding = performance.now() < reflowUntil;
   const before = (reflowNext || sliding) && isMultiColumn() ? measureRows() : null;
   reflowNext = false;
-
-  if (flashWaiting) flash.start = performance.now();
 
   const fragment = document.createDocumentFragment();
   words.forEach((word) => fragment.appendChild(buildRow(word)));
@@ -250,7 +221,6 @@ export function render() {
   }
 
   newestId = null;
-  if (flash && performance.now() - flash.start >= FLASH_MS) flash = null;
 }
 
 /** Called before a row is moved out, so the rest glide into its place. */
@@ -261,14 +231,6 @@ export function animateNextReflow() {
 /** Called after a create so the new row animates in on its own. */
 export function highlightNew(id) {
   newestId = id;
-}
-
-/**
- * Called before a word gains or loses its label on a tab where it stays in
- * view, so the row washes briefly red (labelled) or green (cleared).
- */
-export function flashRow(id, labelled) {
-  flash = { id, kind: labelled ? LABEL : CLEAR, start: null };
 }
 
 export function initList(onSelect) {

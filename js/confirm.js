@@ -55,3 +55,17 @@ export function askConfirm(config) {
     openDialog(dialog);
   });
 }
+
+/**
+ * The one warning archiving shows, worded the same wherever it is asked from.
+ * Restoring never asks: it only undoes this.
+ */
+export function confirmArchive(word) {
+  return askConfirm({
+    title: 'Archive \u201c' + word.word + '\u201d?',
+    text: 'It leaves the list, the cards and the quiz, and waits under '
+      + 'Archived. Restoring puts it back where it came from.',
+    accept: 'Archive',
+    tone: 'normal',
+  });
+}

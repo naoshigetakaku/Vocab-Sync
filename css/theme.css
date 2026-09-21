@@ -63,6 +63,11 @@
   --unknown:      #D42A2A;
   --unknown-tint: rgba(212, 42, 42, 0.11);
 
+  /* Archived is deliberately grey. Putting a word aside is housekeeping, not
+     a verdict on it, and red would read as one. */
+  --archived:      #6E6E6E;
+  --archived-tint: rgba(110, 110, 110, 0.13);
+
   /* The All / Known / Unknown control. */
   --on-badge:       #FFFFFF;
 
@@ -153,6 +158,9 @@
     --known-tint:   rgba(79, 217, 139, 0.16);
     --unknown:      #FF8080;
     --unknown-tint: rgba(255, 128, 128, 0.15);
+
+    --archived:      #A8A8A8;
+    --archived-tint: rgba(168, 168, 168, 0.16);
 
     --on-badge:       #202020;
 

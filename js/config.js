@@ -43,6 +43,9 @@ export const DEFAULT_COLOR = 'default';
 export const YOUGLISH_BASE = 'https://youglish.com/pronounce/';
 export const YOUGLISH_LANGUAGE = 'english';
 
+/** Everything else about a word: definitions, usage, images. */
+export const DUCKDUCKGO_BASE = 'https://duckduckgo.com/?q=';
+
 export const STORAGE_KEYS = {
   credentials: 'vocabsync.credentials.v1',
   words: 'vocabsync.words.v1',
@@ -58,13 +61,30 @@ export const STORAGE_KEYS = {
 /**
  * The "don't know this" label, as stored in the sheet's status column. A
  * word without it has a blank status.
+ *
+ * Nothing on screen shows this. It survives as the input to the scheduler: a
+ * missed word is labelled, a labelled word comes round at a fraction of its
+ * usual gap, and LABEL_CLEAR_STREAK right answers clear it. Keeping it out of
+ * sight is deliberate — it is a detail of how often a word is asked, not a
+ * verdict on the reader.
  */
 export const STATUS_UNKNOWN = 'unknown';
 
-/** The tabs on the list. 'all' is a view, never a stored status. */
+/**
+ * Archived, as stored in the sheet's own archived column. It is deliberately
+ * not a status: a word can be archived and still carry the quiz label.
+ *
+ * Archiving never touches the folder column, so restoring a word puts it back
+ * where it came from without anything having to remember where that was.
+ */
+export const ARCHIVED_ON = '1';
+
+/** The tabs on the list. 'all' is a view, never anything stored. */
+export const FILTER_ARCHIVED = 'archived';
+
 export const FILTERS = [
   { value: 'all', label: 'All' },
-  { value: STATUS_UNKNOWN, label: 'Unknown' },
+  { value: FILTER_ARCHIVED, label: 'Archived' },
 ];
 
 /** The menu entry for words that are in no folder at all. */
@@ -89,7 +109,7 @@ export const QUIZ_FLUSH_EVERY = 5;
  * predates a feature the app is already using — quiz progress, for instance,
  * gets written nowhere.
  */
-export const REQUIRED_BACKEND_VERSION = 8;
+export const REQUIRED_BACKEND_VERSION = 9;
 
 /**
  * Apps Script is slow to wake and slow to write. A cold start alone can take

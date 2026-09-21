@@ -6,14 +6,14 @@ list appears on every device. No server of your own, no build step, no fees.
 The home screen is the open folder's words, by themselves; tap one for its
 part of speech, definition and note, or tap the folder name at the top to
 switch folders and make new ones. Words in no folder gather under Unsorted,
-which appears in that menu only when something is in it. Swipe a word **left** to label it *don't know
-this* and **right** to take the label off; the **All / Unknown** tabs show
-everything or only the labelled words.
+which appears in that menu only when something is in it. Swipe a word **left**
+to archive it and **right** to bring it back; the **All / Archived** tabs show
+the folder's live words or the ones put aside.
 
 Along the bottom: **List**, **Cards** — the same words one screen at a time,
 shuffled, a tap turning each card over — and **Quiz**, which asks about them on
-a spacing that widens each time you get one right. A labelled word comes round
-several times as often, and three right answers in a row take its label off.
+a spacing that widens each time you get one right. Every word carries a
+YouGlish and a DuckDuckGo link, for how it is said and for everything else.
 
 ## How it fits together
 
@@ -99,7 +99,7 @@ One row per word, in a tab called `Words`:
 | G | `updatedAt` | ISO 8601 |
 | H | `color` | `default` or one of fifteen hues; see below |
 | I | `folder` | Folder name, or blank for unsorted |
-| J | `archivedFrom` | Retired with the archive — kept, never shown |
+| J | `archivedFrom` | The folder a word was archived out of |
 | K | `status` | `unknown` for a labelled word, else blank |
 | L | `reviews` | Answers given about this word, ever |
 | M | `streak` | Right answers in a row |
@@ -107,6 +107,8 @@ One row per word, in a tab called `Words`:
 | O | `gap` | Answers to wait before asking again |
 | P | `ease` | How fast the gap grows for this word |
 | Q | `dueTick` | The answer count at which it is due again |
+| R | `archived` | `1` for an archived word, else blank |
+| S | `lapses` | Answers missed about this word, ever |
 
 `color` is one of sixteen keys — `default` plus fifteen hues. The key is what
 is stored, never a hex value, so the same word picks the shade pitched for the
@@ -126,25 +128,41 @@ existing sheet without touching a row; words saved before a column existed read
 back with its default — no colour, no label, nothing asked yet. It also clears
 the `known` status a previous version wrote, which no longer means anything.
 
-**The label.** Swiping a word left marks it *don't know this*; so does missing
-it in the quiz, and so does the chip on its detail card. It comes off by
-swiping right, by tapping that chip, or by answering it correctly three times
-in a row in the quiz. Only the swipe that would change something is available.
-Under Unknown the row slides out and the gap closes; under All it springs back
-and washes red or green. There is no confirmation, because the change is one
-swipe from being undone.
+**Archiving.** `archived` is a column of its own rather than a value of
+`status`, so a word can be archived without losing the quiz label that governs
+how often it is asked. Archiving never touches `folder`: restoring a word just
+clears the flag and it reappears where it always was, with its schedule
+intact. `archivedFrom` records that folder anyway, for the one case the folder
+column cannot cover — the folder being deleted while the word is away.
 
-**The quiz.** Spacing is counted in answers, not days: the clock is the total
-number of answers ever given (`reviews` summed over every word), and each word
-records the count at which it is due again. Right answers push that out —
-5, 15, 38, 95, 238 — a miss pulls it back to 3, and a labelled word comes round
-at 0.4× its gap and never more than 10 answers away, ahead of anything else
-due. Nothing is due yet? A word never asked is let in, at most one in every
-four questions while a backlog is waiting. Counting answers rather than days
-means a week away leaves no pile of overdue cards, and a long sitting never
-runs out. Answers are applied locally at once and sent to the sheet five at a
-time through `updateMany`, so no card ever waits on the network — and nothing
-is lost if the app is closed mid-session.
+Swiping left archives, swiping right restores, and only the swipe that would
+change something is offered. Archiving asks first, because it takes a word off
+the list, the cards and the quiz at once; restoring does not, because it only
+undoes that. Archived is grey rather than red throughout: putting a word aside
+is housekeeping, not a verdict on it.
+
+**The label.** `status` is shown nowhere. It survives as the input to the
+scheduler: missing a word in the quiz labels it, a labelled word comes round at
+0.4× its gap — never more than 10 answers away, and never sooner than the
+learning step — ahead of anything else due, and three right answers in a row
+clear it.
+
+**The quiz.** The intervals follow Anki's, with answers in place of days: the
+clock is the total number of answers ever given (`reviews` summed over every
+word), and each word records the count at which it is due again. A new word
+comes back after 2 answers, graduates to 10 on the next right answer, and from
+there multiplies by its own `ease` — 2.5 to begin with, dropping 0.2 on every
+miss and never below 1.3, so an easy word runs 2, 10, 25, 63, 158, 395. A miss
+is a lapse: it drops the word back onto the 2-answer step, and the next right
+answers walk it out again. Every gap is fuzzed ±5%, so words learnt together do
+not stay bunched. Misses are counted in `lapses`.
+
+Nothing due yet? A word never asked is let in, at most one in every four
+questions while a backlog is waiting. Counting answers rather than days means a
+week away leaves no pile of overdue cards, and a long sitting never runs out.
+Answers are applied locally at once and sent to the sheet five at a time
+through `updateMany`, so no card ever waits on the network — and nothing is
+lost if the app is closed mid-session.
 
 The colour changes the word's own type only — never the definition, the note,
 or the part-of-speech badge — and the stored value is the key rather than a hex
@@ -206,14 +224,15 @@ all. Filling it in trades that for one less field during setup.
 | `js/confirm.js` | Centred confirmation popup. |
 | `js/toast.js` | Transient messages. |
 | `js/sort.js` | List ordering and its picker. |
-| `js/view.js` | Open folder, All / Unknown tab, and which tab bar section. |
+| `js/links.js` | The YouGlish and DuckDuckGo pair, shared by three screens. |
+| `js/view.js` | Open folder, All / Archived tab, and which tab bar section. |
 | `js/list.js` | The word list. |
 | `js/folder-menu.js` | The panel under the header: pick, make, rename, delete. |
 | `js/folder-form.js` | Renaming a folder. |
 | `js/cards.js` | Cards, shuffled; tap to turn one over. |
 | `js/quiz.js` | The quiz: what is waiting, and the session. |
 | `js/scheduler.js` | When a word comes back, counted in answers. |
-| `js/swipe-row.js` | Drag a word left to label it, right to clear it. |
+| `js/swipe-row.js` | Drag a word left to archive it, right to restore it. |
 | `js/detail.js` | Detail dialog. |
 | `js/form.js` | Add / edit form. |
 | `js/setup.js` | First-run connection sheet. |

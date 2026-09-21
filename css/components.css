@@ -231,37 +231,33 @@
   color: var(--text-dim);
 }
 
-/* The label on the detail card doubles as the control for it. */
-.detail__label {
+/* Puts the word aside, or brings it back. Metrically identical to
+   .detail__pos above, so the two sit on one baseline: same padding, same
+   border width, same type. */
+.detail__archive {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border: 1px dashed var(--line-strong);
+  padding: 3px 9px;
+  border: 1px solid var(--line-strong);
   border-radius: 999px;
   background: transparent;
-  color: var(--text-faint);
+  color: var(--text-dim);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
   transition: transform var(--dur-fast) var(--ease-spring);
 }
 
-.detail__label:active { transform: scale(0.95); }
+.detail__archive:active { transform: scale(0.95); }
 
-.detail__label[data-status="unknown"] {
-  border-style: solid;
+/* Already archived: filled, and grey rather than red — putting a word aside
+   is housekeeping, not a verdict on it. */
+.detail__archive[data-archived="1"] {
   border-color: transparent;
-  background: var(--unknown-tint);
-  color: var(--unknown);
-}
-
-/* Filled for right answers so far, hollow for the ones still to go. */
-.detail__dots {
-  letter-spacing: 1px;
-  font-size: 9px;
+  background: var(--archived-tint);
+  color: var(--archived);
 }
 
 .detail__headline {
@@ -280,6 +276,16 @@
   line-height: 1.15;
   letter-spacing: -0.03em;
   overflow-wrap: anywhere;
+}
+
+/* YouGlish and DuckDuckGo, one above the other. Side by side they crowd the
+   word they belong to, and the second would have to lose its label to fit. */
+.wordlinks {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .youglish {
@@ -307,13 +313,17 @@
 
 .detail__block + .detail__block { margin-top: 20px; }
 
-.detail__label {
+/* The section headings on the detail card and on the back of every card.
+   This used to share a class with the label control above, and so inherited
+   its dashed pill outline — which is where the dotted boxes around
+   "Definition" and "Note" came from. */
+.detail__heading {
+  margin-bottom: 5px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin-bottom: 5px;
 }
 
 .detail__text {
@@ -802,12 +812,6 @@
   text-align: left;
 }
 
-.flashcard__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
 .flashcard__title {
   margin: 10px 0 18px;
   font-size: 26px;
@@ -822,24 +826,17 @@
   color: var(--text-faint);
 }
 
-.flashcard__youglish {
+/* On the front they follow the word, centred; on the back they close the
+   card off under the last block. */
+.flashcard .wordlinks {
   align-self: center;
+  align-items: center;
   margin-top: 14px;
 }
 
-.flashcard__face--back .flashcard__youglish { align-self: flex-end; }
-
-/* The label, as it appears on the back of a card. */
-.quiz-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--unknown-tint);
-  color: var(--unknown);
-  font-size: 11px;
-  font-weight: 650;
+.flashcard__face--back .wordlinks {
+  align-self: flex-end;
+  align-items: flex-end;
 }
 
 /* A browser window has the room for larger type; see the note on wide

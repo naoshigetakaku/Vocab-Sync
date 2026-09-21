@@ -1,10 +1,16 @@
 /**
  * scheduler.js — when a word comes back in the quiz.
  *
- * Spaced repetition measured in answers rather than days. The clock is the
- * total number of answers ever given, across every word (`tick`); each word
- * records the tick at which it is due again. A right answer pushes that point
- * further out each time, a wrong one pulls it back to a few questions away.
+ * Spaced repetition measured in answers rather than days, shaped like Anki's
+ * SM-2. The clock is the total number of answers ever given, across every
+ * word (`tick`); each word records the tick at which it is due again.
+ *
+ * Anki's day intervals map onto answer counts: its two learning steps become
+ * LEARNING_GAP, its graduating interval GRADUATING_GAP, and from there a
+ * right answer multiplies the gap by the word's ease. A miss is a lapse: the
+ * ease drops, the word goes back to the relearning step, and the next two
+ * right answers walk it out to the graduating interval again — which is what
+ * Anki's "new interval 0%, minimum interval 1 day" does.
  *
  * Counting answers instead of days means a week off leaves no backlog, and a
  * long sitting never runs dry. The trade-off is that real forgetting happens
@@ -26,10 +32,16 @@ export const DEFAULT_EASE = 2.5;
 const MIN_EASE = 1.3;
 const EASE_PENALTY = 0.2;
 
-/** Gaps, in answers. */
-const MISSED_GAP = 3;
-const FIRST_GAP = 5;
-const SECOND_GAP = 15;
+/**
+ * Gaps, in answers.
+ *
+ * LEARNING_GAP stands in for Anki's second learning step and for its
+ * relearning step — a word just missed, or just met, comes back very soon.
+ * GRADUATING_GAP is the interval a word leaves the learning phase on, and the
+ * floor every later gap is multiplied up from.
+ */
+const LEARNING_GAP = 2;
+const GRADUATING_GAP = 10;
 const MAX_GAP = 5000;
 
 /** A labelled word's gap is scaled down by this, and never longer than the cap. */
@@ -68,12 +80,13 @@ export function stageOf(word) {
   return 'solid';
 }
 
-function nextGap(word, correct, streak, labelled) {
-  if (!correct) return MISSED_GAP;
-  if (streak === 1) return FIRST_GAP;
-  if (streak === 2) return SECOND_GAP;
+function nextGap(word, correct, streak) {
+  // A lapse drops the word onto the relearning step, whatever it had reached.
+  if (!correct) return LEARNING_GAP;
+  if (streak === 1) return LEARNING_GAP;
+  if (streak === 2) return GRADUATING_GAP;
   const ease = Number(word.ease) || DEFAULT_EASE;
-  return Math.max(word.gap || 0, SECOND_GAP) * ease;
+  return Math.max(word.gap || 0, GRADUATING_GAP) * ease;
 }
 
 /**
@@ -107,11 +120,17 @@ export function schedule(word, correct, tick, random = Math.random) {
     ease = Math.max(MIN_EASE, ease - EASE_PENALTY);
   }
 
-  let gap = nextGap(Object.assign({}, word, { ease }), correct, streak, labelled);
+  let gap = nextGap(Object.assign({}, word, { ease }), correct, streak);
   // A labelled word comes round at a fraction of its gap. Only after a right
   // answer: a miss already puts it a few questions away, and scaling that
   // down again would ask it almost immediately.
-  if (labelled && correct) gap = Math.min(LABEL_MAX_GAP, gap * LABEL_FACTOR);
+  //
+  // Never below the learning step, though. Anki's intervals start small, so
+  // scaling one of those down lands on 1 — the very next question — which
+  // reads as the app not having heard the right answer at all.
+  if (labelled && correct) {
+    gap = Math.max(LEARNING_GAP, Math.min(LABEL_MAX_GAP, gap * LABEL_FACTOR));
+  }
   gap = Math.max(1, Math.min(MAX_GAP, Math.round(gap * (0.95 + random() * 0.1))));
 
   // This answer is itself a tick, so "due in 3" means three other answers
@@ -121,6 +140,8 @@ export function schedule(word, correct, tick, random = Math.random) {
   return {
     fields: {
       reviews: (word.reviews || 0) + 1,
+      // Every miss is counted, whether or not anything on screen says so.
+      lapses: (word.lapses || 0) + (correct ? 0 : 1),
       streak,
       labelStreak,
       gap,

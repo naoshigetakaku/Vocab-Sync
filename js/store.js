@@ -6,7 +6,7 @@
  */
 
 import { api, ApiError, isRetryable, getKnownBackendVersion } from './api.js';
-import { STORAGE_KEYS, STATUS_UNKNOWN } from './config.js';
+import { STORAGE_KEYS, ARCHIVED_ON } from './config.js';
 import { readJson, writeJson, remove } from './storage.js';
 
 let words = readJson(STORAGE_KEYS.words, []);
@@ -19,12 +19,12 @@ remove('vocabsync.folders.v1');
 /**
  * Every field the sheet stores for a word. An update rewrites the whole row,
  * so anything a caller leaves out has to be filled from what is already
- * known — including archivedFrom, which no screen shows any more but which
- * still holds the user's data, and the quiz schedule, which no form edits.
+ * known — including the quiz schedule, which no form edits.
  */
 const STORED_FIELDS = [
   'word', 'pos', 'definition', 'note', 'color', 'folder', 'archivedFrom', 'status',
   'reviews', 'streak', 'labelStreak', 'gap', 'ease', 'dueTick',
+  'archived', 'lapses',
 ];
 
 /** Must not exceed MAX_BATCH in Code.gs. */
@@ -77,11 +77,24 @@ export function findFolderByName(name) {
   return folders.find((folder) => folder.name === name) || null;
 }
 
+export function isArchived(word) {
+  return word.archived === ARCHIVED_ON;
+}
+
 /**
- * Words in one folder. Passing null gathers the unsorted ones: no folder at
- * all, or a folder that has since been deleted.
+ * Words in one folder, archived ones left out. Passing null gathers the
+ * unsorted ones: no folder at all, or a folder that has since been deleted.
  */
 export function getWordsInFolder(name) {
+  return everythingIn(name).filter((word) => !isArchived(word));
+}
+
+/** The archived words of one folder. */
+export function getArchivedInFolder(name) {
+  return everythingIn(name).filter(isArchived);
+}
+
+function everythingIn(name) {
   if (name === null) {
     const names = new Set(folders.map((folder) => folder.name));
     return words.filter((word) => !word.folder || !names.has(word.folder));
@@ -405,15 +418,24 @@ export async function updateWord(changes) {
 }
 
 /**
- * Puts the "don't know this" label on, or takes it off, by hand. Either way
- * the count towards clearing it starts again.
+ * Archives a word, or puts it back.
+ *
+ * The folder column is never touched, so restoring needs no bookkeeping at
+ * all: the word simply reappears where it always was, with its quiz schedule
+ * and its hidden label intact. archivedFrom is written alongside as a record
+ * of that folder, for the one case the folder column cannot cover — the
+ * folder being deleted while the word is away.
  */
-export function setLabel(id, on) {
+export function setArchived(id, on) {
   const word = getWord(id);
   if (!word) return Promise.resolve(null);
-  const status = on ? STATUS_UNKNOWN : '';
-  if ((word.status || '') === status) return Promise.resolve(word);
-  return updateWord({ id, status, labelStreak: 0 });
+
+  const archived = on ? ARCHIVED_ON : '';
+  if ((word.archived || '') === archived) return Promise.resolve(word);
+
+  const changes = { id, archived };
+  if (on) changes.archivedFrom = word.folder || '';
+  return updateWord(changes);
 }
 
 /**
