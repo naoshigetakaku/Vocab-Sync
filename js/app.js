@@ -193,6 +193,18 @@ function staysAfterSwipe() {
   return false;
 }
 
+/**
+ * Archives or restores one word.
+ *
+ * Returns as soon as the change is on screen, not when the sheet has it. The
+ * store applies it locally and commits before it sends, so the row has
+ * already gone by then; waiting for the network would only mean the next row
+ * could not be swiped until this one came back. Several can now be on their
+ * way at once, which is what the outbox was for.
+ *
+ * The confirmation is the one thing still waited on — two of those at once
+ * would be two dialogs over each other.
+ */
 async function performSwipe(id, direction) {
   const archiving = direction === LEFT;
   const word = getWord(id);
@@ -209,13 +221,14 @@ async function performSwipe(id, direction) {
   // The rows after it glide up into the gap it leaves.
   animateNextReflow();
 
-  try {
-    await setArchived(id, archiving);
-    toast(archiving ? 'Archived.' : 'Restored.');
-  } catch (error) {
-    toast(error.message);
-    renderCurrent();
-  }
+  setArchived(id, archiving)
+    .then(() => toast(archiving ? 'Archived.' : 'Restored.'))
+    .catch((error) => {
+      // The store has already put the word back where it was; the list just
+      // has to be told.
+      toast(error.message);
+      renderCurrent();
+    });
 }
 
 /* --- Service worker ------------------------------------------------------- */

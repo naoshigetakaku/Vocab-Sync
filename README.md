@@ -143,6 +143,19 @@ the list, the cards and the quiz at once; restoring does not, because it only
 undoes that. Archived is grey rather than red throughout: putting a word aside
 is housekeeping, not a verdict on it.
 
+None of this waits on the sheet. The change is applied locally and committed
+before it is sent, so the row has already gone by the time the request leaves
+— and the next word can be swiped straight away, with several changes on their
+way at once. A dimmed row is one the sheet has not confirmed yet; the only
+thing still waited on is the confirmation itself, since two of those would be
+two dialogs over each other.
+
+Changes that overlap are settled by which was made last, not by which is
+answered first. Each request supersedes whatever was outstanding for that
+word, and a reply that has been superseded is dropped: it describes a state
+the app has already moved past. The same token stops a late reply putting back
+a word that has since been deleted.
+
 **The label.** `status` is shown nowhere. It survives as the input to the
 scheduler: missing a word in the quiz labels it, a labelled word comes round at
 0.4× its gap — never more than 10 answers away, and never sooner than the
