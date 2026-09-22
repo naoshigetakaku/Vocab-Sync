@@ -822,12 +822,17 @@
    above the two links. It leaves the flow to do that — otherwise the links
    push it up by half their height, and a card with them reads as a card whose
    word has slipped. Not clickable, so the links underneath stay reachable
-   even where a very long word runs over them. */
+   even where a very long word runs over them.
+
+   The extra 32px at the foot is the optical correction: 26px is the face's
+   own padding, and the rest lifts the word 16px above the geometric centre.
+   The links below carry weight the empty space above them does not, so dead
+   centre reads low — this is where the eye expects it. */
 .flashcard__face--front .flashcard__word {
   position: absolute;
   inset: 0;
   margin: 0;
-  padding: 26px 22px;
+  padding: 26px 22px calc(26px + 32px);
   display: flex;
   align-items: center;
   justify-content: center;
