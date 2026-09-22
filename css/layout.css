@@ -203,22 +203,6 @@
 .tabbar__tab.is-active { color: var(--text); }
 .tabbar__tab:active { transform: scale(0.96); }
 
-/* How many words the quiz has waiting in the open folder. */
-.tabbar__badge {
-  position: absolute;
-  top: 3px;
-  left: calc(50% + 7px);
-  min-width: 17px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--unknown);
-  color: var(--on-badge);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 17px;
-  text-align: center;
-}
-
 /* Behind the folder menu, over everything else the header does not cover. */
 .scrim {
   position: fixed;

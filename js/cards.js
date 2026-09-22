@@ -13,7 +13,7 @@
  *
  * On a keyboard, Enter and Space turn whichever card is on screen, without
  * having to Tab to it first — with one card to a screen there is never any
- * doubt about which one is meant.
+ * doubt about which one is meant. Up and down move through the deck.
  *
  * A card turns back to its front as soon as it leaves the screen, so coming
  * back to one always asks the question again rather than showing the answer
@@ -31,6 +31,8 @@ const cardsElement = document.getElementById('cards');
 
 /** Must match the .flashcard transition in components.css. */
 const FLIP_MS = 520;
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 let order = [];
 let lastSignature = '';
@@ -267,20 +269,57 @@ function cardInView() {
   return best;
 }
 
-/** Enter or Space turns the card on screen; see the note at the top. */
+/** Somewhere text is being entered, where every key means itself. */
+function isTyping(element) {
+  if (!element) return false;
+  const tag = element.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+    || element.isContentEditable;
+}
+
+/**
+ * Moves one card up or down the deck.
+ *
+ * Scrolls rather than jumping, and lets the deck's own scroll snapping settle
+ * the landing — so a keypress and a flick end in exactly the same place.
+ */
+function step(delta) {
+  const slots = Array.from(cardsElement.querySelectorAll('.card-slot'));
+  if (!slots.length) return;
+
+  const card = cardInView();
+  const at = card ? slots.indexOf(card.closest('.card-slot')) : 0;
+  const to = Math.max(0, Math.min(slots.length - 1, at + delta));
+  if (to === at) return;
+
+  const slot = slots[to];
+  const top = slot.getBoundingClientRect().top
+    - cardsElement.getBoundingClientRect().top + cardsElement.scrollTop;
+  cardsElement.scrollTo({ top, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+}
+
+/** Enter or Space turns the card on screen; up and down move; see the top. */
 function onKey(event) {
   if (cardsElement.hidden) return;
-  if (event.key !== 'Enter' && event.key !== ' ') return;
   if (event.metaKey || event.ctrlKey || event.altKey) return;
   // A dialog is in front, and its own controls own the keyboard.
   if (document.querySelector('dialog[open]')) return;
 
+  const active = document.activeElement;
+  if (isTyping(active)) return;
+
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    step(event.key === 'ArrowDown' ? 1 : -1);
+    return;
+  }
+
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+
   // Anything focusable already means something by Enter — a link opens, a
   // button presses. Only take the key when nothing has claimed it.
-  const active = document.activeElement;
   const focused = active && active.closest && active.closest('.flashcard');
-  if (active && !focused && active !== document.body
-      && active.closest('a, button, input, textarea, select')) {
+  if (active && !focused && active !== document.body && active.closest('a, button')) {
     return;
   }
 

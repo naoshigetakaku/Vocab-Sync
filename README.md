@@ -168,10 +168,22 @@ lost if the app is closed mid-session.
 
 **The keyboard.** On the cards and in the quiz, Enter or Space turns whichever
 card is on screen and turns it back, without having to Tab to it first — with
-one card to a screen there is never any doubt about which one is meant. In the
-quiz, once a card is turned, the left and right arrows answer it: left for
-Missed, right for Got it, matching where the two buttons sit. Before the turn
-the arrows do nothing, for the same reason the buttons are not there yet.
+one card to a screen there is never any doubt about which one is meant. On the
+cards, up and down move through the deck. In the quiz, S or Enter starts a
+session and E ends one; once a card is turned, the left and right arrows
+answer it — left for Missed, right for Got it, matching where the two buttons
+sit. Before the turn the arrows do nothing, for the same reason the buttons
+are not there yet.
+
+Ending a session goes straight back to the quiz home. The result — how many
+answers, what share of them right, how many to see again — arrives as a toast
+on the way out, rather than as a screen with a button to leave it, which was
+one more tap that said nothing the counter in the corner had not already
+said.
+
+The progress bar's three stages are one red deepening left to right: barely
+met, working on it, known. Each figure under it carries its own stop and a dot
+of it, so the bar can be read without counting along from the left.
 
 The colour changes the word's own type only — never the definition, the note,
 or the part-of-speech badge — and the stored value is the key rather than a hex
