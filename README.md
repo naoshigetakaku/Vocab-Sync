@@ -79,16 +79,12 @@ full screen with no browser chrome, and gets its own icon.
 Deleting the icon deletes the local cache with it. Nothing is lost — the words
 are in the spreadsheet — but the app has to be connected again.
 
-A screen 700px or wider (iPad or Mac, installed or in a browser) gets a layout
-that spreads out with the window: the word list becomes two columns, and three
-once there is room, and the cards grow. Never four — past three the cells are
-narrower than the longest expressions in them.
-
-It goes on width alone. It used to be gated on `display-mode: browser` as well,
-to keep the installed app phone-shaped, but that also froze the installed app
-on an iPad, where the whole point of the screen is that there is room. A phone
-never reaches 700px in either mode, so the fixed layout that gate was
-protecting is protected by the width already.
+The installed app always keeps the fixed, phone-shaped layout. In a browser
+window 700px or wider (iPad or Mac) the layout spreads out instead: the word
+list becomes two columns, and three once there is room, and the cards grow.
+Never four — past three the cells are narrower than the longest expressions in
+them. The switch is the `display-mode: browser` media query in
+`css/layout.css`.
 
 ## What is in the sheet
 

@@ -394,17 +394,13 @@ body.is-quizzing .fab { display: none; }
   .filter { max-width: 380px; }
 }
 
-/* --- A wide screen ----------------------------------------------------------
-   iPad and Mac get a layout that spreads out with the window.
+/* --- Browser on a wide screen ----------------------------------------------
+   iPad and Mac browsers get a layout that spreads out with the window. The
+   installed app is left exactly as it is: it reports display-mode standalone,
+   so none of this applies there, and an engine that does not understand the
+   query at all falls back to the fixed layout rather than the wide one. */
 
-   On width alone, deliberately. This used to be gated on
-   display-mode: browser as well, to keep the installed app phone-shaped —
-   but that also froze the installed app on an iPad, where the whole point of
-   the screen is that there is room. A phone never reaches 700px in either
-   mode, so the fixed layout it was protecting is protected by the width
-   already. */
-
-@media (min-width: 700px) {
+@media (display-mode: browser) and (min-width: 700px) {
   :root {
     --page-pad: 28px;
     --content-max: 1180px;

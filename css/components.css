@@ -206,7 +206,7 @@
   .sheet--tall { height: auto; max-height: 80dvh; }
 }
 
-@media (min-width: 960px) {
+@media (display-mode: browser) and (min-width: 960px) {
   .sheet--tall { max-width: 600px; }
   .sheet--tall .detail__word { font-size: 40px; }
 }
@@ -867,9 +867,9 @@
   align-items: flex-end;
 }
 
-/* A wide screen has the room for larger type; see the note on wide screens
-   in layout.css, which explains why this goes on width alone. */
-@media (min-width: 700px) {
+/* A browser window has the room for larger type; see the note on wide
+   screens in layout.css. */
+@media (display-mode: browser) and (min-width: 700px) {
   .flashcard { max-width: 640px; }
   .flashcard__word { font-size: 52px; }
   .quiz__bar, .quiz__foot { max-width: 640px; margin-inline: auto; width: 100%; }
