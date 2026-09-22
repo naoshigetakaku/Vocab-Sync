@@ -84,13 +84,6 @@ function block(label, text) {
   return section;
 }
 
-function mark() {
-  const element = document.createElement('span');
-  element.className = 'flashcard__mark';
-  element.setAttribute('aria-hidden', 'true');
-  return element;
-}
-
 function buildCard(word) {
   const slot = document.createElement('article');
   slot.className = 'card-slot';
@@ -104,7 +97,6 @@ function buildCard(word) {
   // Front: the word, alone.
   const front = document.createElement('div');
   front.className = 'flashcard__face flashcard__face--front';
-  front.appendChild(mark());
 
   const heading = document.createElement('h2');
   heading.className = 'flashcard__word';
@@ -116,7 +108,6 @@ function buildCard(word) {
   // Back: everything else, laid out like the detail card.
   const back = document.createElement('div');
   back.className = 'flashcard__face flashcard__face--back';
-  back.appendChild(mark());
 
   const body = document.createElement('div');
   body.className = 'flashcard__body';

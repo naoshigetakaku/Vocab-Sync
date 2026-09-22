@@ -738,22 +738,6 @@
   perspective: 1600px;
 }
 
-/* Which words are labelled, as in the list: only under All. */
-.flashcard__mark {
-  display: none;
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.cards[data-filter="all"] .flashcard[data-status="unknown"] .flashcard__mark {
-  display: block;
-  background: var(--unknown);
-}
-
 /* --- Flash card ------------------------------------------------------------ */
 /* Both faces share one grid cell, so the card is exactly as tall as its
    taller face and neither face ever has to scroll on its own — a scrolling
@@ -834,6 +818,22 @@
   overflow-wrap: anywhere;
 }
 
+/* On the front the word is centred on the card itself, not on the space left
+   above the two links. It leaves the flow to do that — otherwise the links
+   push it up by half their height, and a card with them reads as a card whose
+   word has slipped. Not clickable, so the links underneath stay reachable
+   even where a very long word runs over them. */
+.flashcard__face--front .flashcard__word {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 26px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .flashcard__body {
   flex: 1 1 auto;
   min-height: 0;
@@ -854,13 +854,15 @@
   color: var(--text-faint);
 }
 
-/* On the front they follow the word, centred; on the back they close the
-   card off under the last block. */
+/* On the front they sit at the foot, under the centred word; on the back
+   they close the card off below the last block. */
 .flashcard .wordlinks {
   align-self: center;
   align-items: center;
   margin-top: 14px;
 }
+
+.flashcard__face--front .wordlinks { margin-top: auto; }
 
 .flashcard__face--back .wordlinks {
   align-self: flex-end;
