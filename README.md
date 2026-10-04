@@ -257,7 +257,7 @@ all. Filling it in trades that for one less field during setup.
 | `js/picker.js` | The app's own option list, replacing `<select>`. |
 | `js/confirm.js` | Centred confirmation popup. |
 | `js/toast.js` | Transient messages. |
-| `js/sort.js` | List ordering and its picker. |
+| `js/sort.js` | List ordering: New–Old and Old–New, cycled from the tab. |
 | `js/links.js` | The YouGlish and DuckDuckGo pair, shared by three screens. |
 | `js/view.js` | Open folder, All / Archived tab, and which tab bar section. |
 | `js/list.js` | The word list. |
