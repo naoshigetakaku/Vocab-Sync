@@ -2,7 +2,7 @@
      role="img" aria-label="VocabSync">
   <title>VocabSync</title>
   <!-- Solid ground so the mark reads on any wallpaper. -->
-  <rect width="512" height="512" rx="112" ry="112" fill="#000000"/>
+  <rect width="512" height="512" rx="112" ry="112" fill="#E3184B"/>
   <!-- A letterform over a writing rule: the whole idea of the app in two strokes. -->
   <g fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
     <path d="M177 323 L256 138 L335 323"/>
