@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Glossary triage</title>
+<style>
+  :root{
+    --bg:#ffffff; --text:#0b0b0b; --dim:#6e6e6e; --faint:#9a9a9a;
+    --line:#e6e6e6; --known:#0E8A45; --known-tint:rgba(14,138,69,.13);
+    --missed:#D42A2A; --missed-tint:rgba(212,42,42,.11); --card:#ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#202020; --text:#f2f2f2; --dim:#a8a8a8; --faint:#777;
+      --line:#333; --known:#4FC98A; --known-tint:rgba(79,201,138,.16);
+      --missed:#FF8080; --missed-tint:rgba(255,128,128,.15); --card:#2a2a2a; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    display:flex;flex-direction:column;min-height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  header{display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;border-bottom:1px solid var(--line);font-size:13px;color:var(--faint)}
+  .bar{height:3px;background:var(--line);border-radius:999px;overflow:hidden;flex:1;margin:0 14px}
+  .bar i{display:block;height:100%;background:var(--text);width:0;transition:width .2s}
+  main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:24px;text-align:center;gap:18px}
+  .word{font-size:clamp(32px,9vw,56px);font-weight:700;letter-spacing:-.03em;
+    overflow-wrap:anywhere;margin:0}
+  .pos{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .gloss{min-height:74px;display:flex;flex-direction:column;gap:4px;justify-content:center}
+  .ja{font-size:24px;font-weight:600}
+  .ro{font-size:15px;color:var(--dim)}
+  .hint{font-size:13px;color:var(--faint)}
+  .warn{font-size:12px;color:var(--faint);max-width:30em}
+  footer{padding:14px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+  .acts{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:560px;margin:0 auto}
+  button{font:inherit;border:0;border-radius:12px;height:58px;cursor:pointer;
+    font-weight:650;font-size:16px;transition:transform .12s}
+  button:active{transform:scale(.97)}
+  .missed{background:var(--missed-tint);color:var(--missed)}
+  .got{background:var(--known-tint);color:var(--known)}
+  .ghost{background:transparent;color:var(--dim);border:1px solid var(--line);height:44px;font-size:14px}
+  .row{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .done{padding:24px;max-width:760px;margin:0 auto;width:100%}
+  .done h1{font-size:26px;margin:0 0 6px}
+  .done p{color:var(--dim);margin:0 0 18px}
+  textarea{width:100%;height:280px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .stat{display:flex;gap:22px;margin-bottom:18px;font-size:15px}
+  .stat b{font-size:26px;display:block;font-weight:700}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <span id="count">0 / 0</span>
+  <span class="bar"><i id="fill"></i></span>
+  <button class="ghost" id="restart" style="height:30px;padding:0 12px">Restart</button>
+</header>
+
+<main id="card">
+  <span class="pos" id="pos"></span>
+  <h1 class="word" id="word"></h1>
+  <div class="gloss">
+    <div id="gloss" class="hidden">
+      <div class="ja" id="ja"></div>
+      <div class="ro" id="ro"></div>
+    </div>
+    <div class="hint" id="hint">Tap or press Enter to see the Japanese</div>
+  </div>
+  <p class="warn">The Japanese is read off the scan automatically and is wrong
+     here and there. Judge by the English.</p>
+</main>
+
+<footer>
+  <div class="acts">
+    <button class="missed" id="bMissed">Missed &nbsp;&larr;</button>
+    <button class="got" id="bGot">&rarr;&nbsp; Got it</button>
+  </div>
+  <div class="row"><button class="ghost" id="bBack">Undo last</button></div>
+</footer>
+
+<section class="done hidden" id="done">
+  <h1>Done</h1>
+  <p id="summary"></p>
+  <div class="stat">
+    <span>Missed<b id="nMissed">0</b></span>
+    <span>Got it<b id="nGot">0</b></span>
+  </div>
+  <p>Paste this into the <b>Inbox</b> tab of the VocabSync spreadsheet (cell A1),
+     then run <code>previewInbox()</code> in the Apps Script editor.</p>
+  <div class="row" style="justify-content:flex-start;margin:0 0 10px">
+    <button class="ghost" id="bCopy">Copy</button>
+    <button class="ghost" id="bAgain">Go through the missed ones again</button>
+    <button class="ghost" id="bReset">Start over</button>
+  </div>
+  <textarea id="out" readonly></textarea>
+</section>
+
+<script>
+const WORDS = [{"w":"algorithm","j":"アルゴリズム","r":"arugorizumu","p":"Noun","g":"p1"},{"w":"all","j":"すべての","r":"subete no","p":"Adj","g":"p1"},{"w":"almost","j":"ほとんど","r":"hotondo","p":"Noun","g":"p1"},{"w":"approximate","j":"近似","r":"kinji","p":"Noun","g":"p1"},{"w":"axiom","j":"公理","r":"köri","p":"Noun","g":"p1"},{"w":"back","j":"後ろ","r":"ushiro","p":"Noun","g":"p1"},{"w":"bottom","j":"厎","r":"soko","p":"Noun","g":"p1"},{"w":"but","j":"しかし","r":"shikashi","p":"Noun","g":"p1"},{"w":"calculate","j":"計算","r":"keisan","p":"Noun","g":"p1"},{"w":"canonical","j":"標準的な","r":"hyojunteki na","p":"Adj","g":"p1"},{"w":"certain","j":"特定の","r":"tokutei no","p":"Adj","g":"p1"},{"w":"characteristic","j":"特性な","r":"tokuseiteki na","p":"Adj","g":"p1"},{"w":"compare","j":"比べる","r":"kuraberu","p":"Noun","g":"p1"},{"w":"complete","j":"完備","r":"kanbi","p":"Noun","g":"p1"},{"w":"computer program","j":"コンピュータプログラム","r":"konpyuta puroguramu","p":"Noun","g":"p1"},{"w":"contradiction","j":"矛盾","r":"mujun","p":"Noun","g":"p1"},{"w":"corollary","j":"系","r":"kei","p":"Noun","g":"p1"},{"w":"criterion","j":"判定条件","r":"hanteijoken","p":"Noun","g":"p1"},{"w":"critical","j":"臨界","r":"rinkai","p":"Noun","g":"p1"},{"w":"deduce","j":"減らす","r":"herasu","p":"Noun","g":"p1"},{"w":"definite","j":"-定の","r":"ittei no","p":"Adj","g":"p1"},{"w":"definition","j":"定義","r":"teigi","p":"Noun","g":"p1"},{"w":"degenerate","j":"退化の","r":"taika no","p":"Adj","g":"p1"},{"w":"diagram","j":"図形","r":"zukei","p":"Noun","g":"p1"},{"w":"distinct","j":"毘なろ","r":"kotonaru","p":"Noun","g":"p1"},{"w":"elementary","j":"初等な","r":"shotöteki na","p":"Adj","g":"p1"},{"w":"equality","j":"","r":"toshiki","p":"Noun","g":"p1"},{"w":"equation","j":"方程式","r":"höteishiki","p":"Noun","g":"p1"},{"w":"error","j":"ラ","r":"era","p":"Noun","g":"p1"},{"w":"every","j":"それぞれ","r":"sorezore","p":"Noun","g":"p1"},{"w":"everywhere","j":"どこでも","r":"dokodemo","p":"Noun","g":"p1"},{"w":"exact","j":"完全な","r":"kanzen na","p":"Adj","g":"p1"},{"w":"exercise","j":"練習","r":"renshu","p":"Noun","g":"p1"},{"w":"explain","j":"説明","r":"setsumei","p":"Noun","g":"p1"},{"w":"explicit","j":"明白な","r":"meihaku na","p":"Adj","g":"p1"},{"w":"false","j":"偽","r":"gi","p":"Noun","g":"p1"},{"w":"far","j":"遠殆結ま流例）い","r":"tõi","p":"Noun","g":"p1"},{"w":"few","j":"どない","r":"hotondonai","p":"Noun","g":"p1"},{"w":"finally","j":"","r":"kekkyoku","p":"Noun","g":"p1"},{"w":"first of all","j":"ま","r":"mazu","p":"Expression","g":"p1"},{"w":"flowchart","j":"流れ図","r":"nagarezu","p":"Noun","g":"p1"},{"w":"for example","j":"例","r":"tatoeba","p":"Noun","g":"p1"},{"w":"formal","j":"形式な","r":"keishikiteki na","p":"Adj","g":"p1"},{"w":"from now on","j":"今から","r":"imakara","p":"Expression","g":"p1"},{"w":"front","j":"前","r":"mae","p":"Noun","g":"p1"},{"w":"fundamental","j":"基本な","r":"kihonteki na","p":"Adj","g":"p1"},{"w":"game","j":"ゲーム","r":"gēmu","p":"Noun","g":"p1"},{"w":"generalize","j":"一般化","r":"ippanka","p":"Noun","g":"p1"},{"w":"global","j":"大昌的な","r":"taikyokuteki na","p":"Adj","g":"p1"},{"w":"hypothesis","j":"定","r":"katei","p":"Noun","g":"p1"},{"w":"i. e.","j":"なわち","r":"sunawachi","p":"Noun","g":"p1"},{"w":"identity","j":"単位元","r":"","p":"Noun","g":"p1"},{"w":"important","j":"重要","r":"jüyo","p":"Noun","g":"p1"},{"w":"in order to","j":"のために","r":"no tameni","p":"Expression","g":"p1"},{"w":"inequality","j":"不等式","r":"futöshiki","p":"Noun","g":"p1"},{"w":"introduce","j":"導入","r":"donyu","p":"Noun","g":"p1"},{"w":"invariant","j":"不変重","r":"fuhenryo","p":"Noun","g":"p1"},{"w":"inverse","j":"逆","r":"gyaku","p":"Noun","g":"p1"},{"w":"investigate","j":"調べる","r":"shiraberu","p":"Noun","g":"p1"},{"w":"large","j":"大きい","r":"oki i","p":"Noun","g":"p1"},{"w":"left","j":"左","r":"hidari","p":"Noun","g":"p1"},{"w":"lemma","j":"補助定理","r":"hojoteiri","p":"Noun","g":"p1"},{"w":"less","j":"より少ない","r":"yorisukunai","p":"Noun","g":"p1"},{"w":"let","j":"・・・とおく","r":"• • • to oku","p":"Noun","g":"p1"},{"w":"local","j":"县所的な","r":"kyokushoteki na","p":"Adj","g":"p1"},{"w":"lower","j":"下側","r":"shitagawa","p":"Noun","g":"p1"},{"w":"many","j":"多くの","r":"okuno","p":"Noun","g":"p1"},{"w":"more","j":"より多い","r":"yorioi","p":"Noun","g":"p1"},{"w":"multiple","j":"倍数","r":"baisu","p":"Noun","g":"p1"},{"w":"narrow","j":"狭い","r":"semai","p":"Noun","g":"p1"},{"w":"natural","j":"自然な","r":"shizen na","p":"Adj","g":"p1"},{"w":"near","j":"近い","r":"chikai","p":"Noun","g":"p1"},{"w":"necessary","j":"必要","r":"hitsuyo","p":"Noun","g":"p1"},{"w":"observe","j":"観察する","r":"kansatsusuru","p":"Noun","g":"p1"},{"w":"obvious","j":"明らか","r":"akiraka","p":"Noun","g":"p1"},{"w":"opposite","j":"反对","r":"hantai","p":"Noun","g":"p1"},{"w":"partial","j":"部分","r":"bubunteki","p":"Noun","g":"p1"},{"w":"perhaps","j":"たぶん","r":"tabun","p":"Noun","g":"p1"},{"w":"permit","j":"許す","r":"yurusu","p":"Noun","g":"p1"},{"w":"(im) possible","j":"（不）可能","r":"(fu) kano","p":"Noun","g":"p1"},{"w":"primitive","j":"原始の","r":"genshi no","p":"Adj","g":"p1"},{"w":"problem","j":"問題","r":"mondai","p":"Noun","g":"p1"},{"w":"proof","j":"証明","r":"shomei","p":"Noun","g":"p1"},{"w":"proposition","j":"命題","r":"meidai","p":"Noun","g":"p1"},{"w":"QED","j":"証明終了","r":"shomei shuryo","p":"Noun","g":"p1"},{"w":"rapid","j":"速い","r":"hayai","p":"Noun","g":"p1"},{"w":"(ir) reducible","j":"（非）可約な","r":"(hi) kayaku na","p":"Adj","g":"p1"},{"w":"regular","j":"正目の","r":"seisoku no","p":"Adj","g":"p1"},{"w":"result","j":"","r":"kekka","p":"Noun","g":"p1"},{"w":"right","j":"じ足すあ異いさくく別定いに称い理論っ","r":"migi","p":"Noun","g":"p1"},{"w":"same","j":"コ1一","r":"onaji","p":"Noun","g":"p1"},{"w":"satisfy","j":"［満","r":"manzoku","p":"Noun","g":"p1"},{"w":"show","j":"示す","r":"shimesu","p":"Noun","g":"p1"},{"w":"since","j":"るから","r":"dearukara","p":"Noun","g":"p1"},{"w":"singular","j":"な","r":"tokui na","p":"Adj","g":"p1"},{"w":"slow","j":"","r":"OS01","p":"Noun","g":"p1"},{"w":"small","j":"小さい","r":"chisai","p":"Noun","g":"p1"},{"w":"solve","j":"","r":"toku","p":"Noun","g":"p1"},{"w":"some","j":"つか","r":"ikutsuka","p":"Noun","g":"p1"},{"w":"special","j":"特別","r":"tokubetsu","p":"Noun","g":"p1"},{"w":"stable","j":"な","r":"antei na","p":"Adj","g":"p1"},{"w":"strong","j":"","r":"tsuyoi","p":"Noun","g":"p1"},{"w":"suppose","j":"仮に","r":"karini","p":"Noun","g":"p1"},{"w":"symmetric","j":"対称","r":"taisho","p":"Noun","g":"p1"},{"w":"tall","j":"","r":"takai","p":"Noun","g":"p1"},{"w":"theorem","j":"定理","r":"teiri","p":"Noun","g":"p1"},{"w":"theory","j":"論","r":"riron","p":"Noun","g":"p1"},{"w":"therefore","j":"従：って","r":"shitagatte","p":"Noun","g":"p1"},{"w":"top","j":"T","r":"ue","p":"Noun","g":"p1"},{"w":"true","j":"","r":"shin","p":"Noun","g":"p1"},{"w":"upper","j":"","r":"uegawa","p":"Noun","g":"p1"},{"w":"useful","j":"有田","r":"yuyo na","p":"Adj","g":"p1"},{"w":"weak","j":"弱い","r":"yowai","p":"Noun","g":"p1"},{"w":"wide","j":"広い","r":"hiroi","p":"Noun","g":"p1"},{"w":"without","j":"以外","r":"igai","p":"Noun","g":"p1"},{"w":"2","j":"","r":"ni","p":"Noun","g":"p1"},{"w":"10","j":"｜十","r":"ju","p":"Noun","g":"p1"},{"w":"100","j":"","r":"hyaku","p":"Noun","g":"p1"},{"w":"1000","j":"千","r":"sen","p":"Noun","g":"p2"},{"w":"10000","j":"（一","r":"(ichi)man","p":"Noun","g":"p2"},{"w":"100000","j":"十万","r":"juman","p":"Noun","g":"p2"},{"w":"1000000","j":"","r":"hyakuman","p":"Noun","g":"p2"},{"w":"20","j":"","r":"niju","p":"Noun","g":"p2"},{"w":"37","j":"","r":"sanjushichi","p":"Noun","g":"p2"},{"w":"absolute value","j":"対","r":"zettaichi","p":"Noun","g":"p2"},{"w":"add","j":"加え","r":"kuwaeru","p":"Noun","g":"p2"},{"w":"algebraic","j":"代数的な","r":"daisuteki na","p":"Adj","g":"p2"},{"w":"average","j":"平均","r":"heikin","p":"Noun","g":"p2"},{"w":"complex","j":"","r":"fukuso","p":"Noun","g":"p2"},{"w":"conjugate","j":"#","r":"kyõeki","p":"Noun","g":"p2"},{"w":"denominator","j":"","r":"bunbo","p":"Noun","g":"p2"},{"w":"difference","j":"差","r":"sa","p":"Noun","g":"p2"},{"w":"divide","j":"割乃","r":"waru","p":"Noun","g":"p2"},{"w":"equal","j":"等しい","r":"hitoshii","p":"Noun","g":"p2"},{"w":"exponent","j":"指数の","r":"shisu no","p":"Adj","g":"p2"},{"w":"first","j":"最初の","r":"saisho no","p":"Adj","g":"p2"},{"w":"fraction","j":"ぃ","r":"bunsu","p":"Noun","g":"p2"},{"w":"greater","j":"大きい","r":"öki i","p":"Noun","g":"p2"},{"w":"half","j":"4","r":"hanbun","p":"Noun","g":"p2"},{"w":"imaginary","j":"•虚","r":"kyO","p":"Noun","g":"p2"},{"w":"integer","j":"整数","r":"seisü","p":"Noun","g":"p2"},{"w":"irrational","j":"無理性","r":"murisei","p":"Noun","g":"p2"},{"w":"last","j":"","r":"saigo","p":"Noun","g":"p2"},{"w":"minus","j":"マイナス","r":"mainasu","p":"Noun","g":"p2"},{"w":"multiply","j":"掛ける","r":"kakeru","p":"Noun","g":"p2"},{"w":"negative","j":"（負","r":"fu","p":"Noun","g":"p2"},{"w":"numerator","j":"分子","r":"bunshi","p":"Noun","g":"p2"},{"w":"plus","j":"たす","r":"tasu","p":"Noun","g":"p2"},{"w":"positive","j":"正","r":"sei","p":"Noun","g":"p2"},{"w":"power","j":"累乗","r":"ruijõ","p":"Noun","g":"p2"},{"w":"product","j":"積","r":"seki","p":"Noun","g":"p2"},{"w":"quaternion","j":"四元数","r":"yogensu","p":"Noun","g":"p2"},{"w":"quotient","j":"此","r":"hi","p":"Noun","g":"p2"},{"w":"rational","j":"有理件","r":"yurisei","p":"Noun","g":"p2"},{"w":"real","j":"実","r":"jitu","p":"Noun","g":"p2"},{"w":"second","j":"番目","r":"ni banme","p":"Noun","g":"p2"},{"w":"square","j":"自乗","r":"jijo","p":"Noun","g":"p2"},{"w":"square root","j":"平方根","r":"heihökon","p":"Noun","g":"p2"},{"w":"subtract","j":"引く","r":"hiku","p":"Noun","g":"p2"},{"w":"sum","j":"和","r":"wa","p":"Noun","g":"p2"},{"w":"transcendetal","j":"超越な","r":"chöetsuteki na","p":"Adj","g":"p2"},{"w":"Number Theory","j":"ory","r":"","p":"Noun","g":"p2"},{"w":"adele","j":"アデール","r":"aderu","p":"Noun","g":"p2"},{"w":"automorphic form","j":"保型形式","r":"hokeikeishiki","p":"Noun","g":"p2"},{"w":"base","j":"底","r":"tei","p":"Noun","g":"p2"},{"w":"binary","j":"二項の","r":"niko no","p":"Adj","g":"p2"},{"w":"binomial coefficient","j":"二項係数","r":"nikökeisü","p":"Noun","g":"p2"},{"w":"class field theory","j":"類纇体論","r":"ruitairon","p":"Expression","g":"p2"},{"w":"composite","j":"合成の","r":"gôsei no","p":"Adj","g":"p2"},{"w":"congruence","j":"同値","r":"dochi","p":"Noun","g":"p2"},{"w":"continued fraction","j":"連仔数","r":"renbunsu","p":"Noun","g":"p2"},{"w":"cyclotomic","j":"円分の","r":"enbun no","p":"Adj","g":"p2"},{"w":"decimal","j":"十進法","r":"jusshinho","p":"Noun","g":"p2"},{"w":"even number","j":"奇数","r":"kisu","p":"Noun","g":"p2"},{"w":"factorial","j":"階乗の","r":"kaijo no","p":"Adj","g":"p2"},{"w":"Galois group","j":"ガロア群","r":"garoagun","p":"Noun","g":"p2"},{"w":"(greatest common) divisor","j":"（最大小）約数","r":"(saidaikö) yakusu","p":"Expression","g":"p2"},{"w":"idele","j":"イデール","r":"ideru","p":"Noun","g":"p2"},{"w":"(least common) multiple","j":"（最小公）倍数","r":"(saishoko) baisu","p":"Expression","g":"p2"},{"w":"L-series","j":"L-級数","r":"L-kyüsü","p":"Noun","g":"p2"},{"w":"modular form","j":"モジュラ形式","r":"mojyurakeishiki","p":"Noun","g":"p2"},{"w":"modulo n","j":"を法として","r":"n o hotoshite","p":"Noun","g":"p2"},{"w":"modulus","j":"法","r":"hõ","p":"Noun","g":"p2"},{"w":"normal number","j":"正規数","r":"seikisu","p":"Noun","g":"p2"},{"w":"odd number","j":"偶数","r":"gũsũ","p":"Noun","g":"p2"},{"w":"p-adic number","j":"進数","r":"p-shinsü","p":"Noun","g":"p2"},{"w":"prime number","j":"素数","r":"sosu","p":"Noun","g":"p2"},{"w":"prome number theorem","j":"素数定理","r":"sosúteiri","p":"Expression","g":"p2"},{"w":"ramified","j":"分岐した","r":"bunkishita","p":"Noun","g":"p2"},{"w":"reciprocity","j":"相反","r":"sohan","p":"Noun","g":"p2"},{"w":"residue","j":"剰余","r":"jõyo","p":"Noun","g":"p2"},{"w":"sieve","j":"ふるい","r":"furui","p":"Noun","g":"p2"},{"w":"split","j":"分裂する","r":"bunretsu suru","p":"Noun","g":"p2"},{"w":"tame","j":"見山の","r":"jun no","p":"Adj","g":"p2"},{"w":"wild","j":"野性的な","r":"yaseiteki na","p":"Adj","g":"p2"},{"w":"zeta function","j":"ゼーター関数","r":"zētakansu","p":"Noun","g":"p2"},{"w":"abelian","j":"アーベル","r":"aberu","p":"Noun","g":"p2"},{"w":"abelian group","j":"アーベル群","r":"aberu-gun","p":"Noun","g":"p2"},{"w":"abelian integral","j":"アーベル積分","r":"aberu-sekibun","p":"Noun","g":"p2"},{"w":"adjoint","j":"陏伴式","r":"zuihanshiki","p":"Noun","g":"p2"},{"w":"algebra","j":"","r":"daisu","p":"Noun","g":"p2"},{"w":"associative","j":"","r":"ketsugo","p":"Noun","g":"p2"},{"w":"associative low","j":"結合法目","r":"ketsugöhosoku","p":"Noun","g":"p2"},{"w":"character","j":"指（標","r":"shihyo","p":"Noun","g":"p2"},{"w":"column","j":"列","r":"retsu","p":"Noun","g":"p2"},{"w":"commutative","j":"可換","r":"kakan","p":"Noun","g":"p2"},{"w":"component","j":"成分","r":"seibun","p":"Noun","g":"p2"},{"w":"conductor","j":"体","r":"dotai","p":"Noun","g":"p2"},{"w":"coset","j":"剰余類","r":"jyoyorui","p":"Noun","g":"p2"},{"w":"cyclic","j":"可な","r":"junkaiteki na","p":"Adj","g":"p2"},{"w":"cyclic extension","j":"可I","r":"junkaikakudai","p":"Noun","g":"p2"},{"w":"cyclic group","j":"","r":"junkaigun","p":"Noun","g":"p2"},{"w":"degree","j":"次数","r":"jisu","p":"Noun","g":"p2"},{"w":"determinant","j":"行列式","r":"györetsushiki","p":"Noun","g":"p2"},{"w":"dimension","j":"次元","r":"jigen","p":"Noun","g":"p2"},{"w":"discriminant","j":"州別式","r":"hanbetsushiki","p":"Noun","g":"p2"},{"w":"dual","j":"","r":"sotsui no","p":"Adj","g":"p2"},{"w":"eigenvalue","j":"固有值","r":"koyüchi","p":"Noun","g":"p2"},{"w":"exact sequence","j":"完全系列","r":"kanzenkeiretsu","p":"Noun","g":"p2"},{"w":"field","j":"","r":"tai","p":"Noun","g":"p2"},{"w":"form","j":"形式","r":"keishiki","p":"Noun","g":"p2"},{"w":"generator","j":"生成元","r":"seiseigen","p":"Noun","g":"p2"},{"w":"group","j":"","r":"gun","p":"Noun","g":"p2"},{"w":"homogeneous","j":"同次","r":"doji","p":"Noun","g":"p2"},{"w":"ideal","j":"イデアル","r":"idearu","p":"Noun","g":"p2"},{"w":"index","j":"指数","r":"shisü","p":"Noun","g":"p2"},{"w":"induced","j":"誘導された","r":"yudo sareta","p":"Noun","g":"p2"},{"w":"representation","j":"1on","r":"","p":"Noun","g":"p2"},{"w":"inner product","j":"内積","r":"naiseki","p":"Noun","g":"p2"},{"w":"kernel","j":"核","r":"kaku","p":"Noun","g":"p2"},{"w":"Lie algebra","j":"リー代数","r":"ridaisü","p":"Noun","g":"p2"},{"w":"lattice","j":"東","r":"soku","p":"Noun","g":"p2"},{"w":"linear","j":"線形","r":"senkei","p":"Noun","g":"p2"},{"w":"lineary dependence","j":"線形従属","r":"senkeijüzoku","p":"Noun","g":"p2"},{"w":"lineary independent","j":"線形独立","r":"senkeidokuritsu","p":"Noun","g":"p2"},{"w":"matrix","j":"行列","r":"györetsu","p":"Noun","g":"p2"},{"w":"module","j":"加群","r":"kagun","p":"Noun","g":"p2"},{"w":"norm","j":"ノルム","r":"norumu","p":"Noun","g":"p2"},{"w":"normal subgroup","j":"）UD正規部分群","r":"seikibubungun","p":"Noun","g":"p2"},{"w":"order","j":"位数","r":"isũ","p":"Noun","g":"p2"},{"w":"75","j":"","r":"","p":"Noun","g":"p2"},{"w":"orthogonal","j":"直交","r":"chokko","p":"Noun","g":"p3"},{"w":"orthogonal matrix","j":"直交行列","r":"chokkogyöretsu","p":"Noun","g":"p3"},{"w":"polynomial","j":"多項式","r":"takoshiki","p":"Noun","g":"p3"},{"w":"quadratic","j":"二次","r":"niji","p":"Noun","g":"p3"},{"w":"rank","j":"階数","r":"kaisü","p":"Noun","g":"p3"},{"w":"relation","j":"関係","r":"kankei","p":"Noun","g":"p3"},{"w":"ring","j":"環","r":"kan","p":"Noun","g":"p3"},{"w":"root","j":"根","r":"kon","p":"Noun","g":"p3"},{"w":"rOw","j":"行","r":"","p":"Noun","g":"p3"},{"w":"scalar product","j":"スカラー積","r":"sukarāseki","p":"Noun","g":"p3"},{"w":"spectrum","j":"スペクトル","r":"supekutoru","p":"Noun","g":"p3"},{"w":"subfield","j":"部分体","r":"bubuntai","p":"Noun","g":"p3"},{"w":"subgroup","j":"部分群","r":"bubungun","p":"Noun","g":"p3"},{"w":"subring","j":"部分環","r":"bubunkan","p":"Noun","g":"p3"},{"w":"tensor","j":"テンソル","r":"tensoru","p":"Noun","g":"p3"},{"w":"trace","j":"跡","r":"ato","p":"Noun","g":"p3"},{"w":"transpose","j":"転置","r":"tenchi","p":"Noun","g":"p3"},{"w":"unit","j":"単位","r":"tan-i","p":"Noun","g":"p3"},{"w":"vector","j":"ベクトル","r":"bekutoru","p":"Noun","g":"p3"},{"w":"weight","j":"重さ","r":"omosa","p":"Noun","g":"p3"},{"w":"analysis","j":"解析学","r":"kaisekigaku","p":"Noun","g":"p3"},{"w":"analytic","j":"解 約","r":"kaisekiteki","p":"Noun","g":"p3"},{"w":"asymptotic","j":"漸沂的な","r":"zenkinteki na","p":"Adj","g":"p3"},{"w":"axis","j":"軸","r":"jiku","p":"Noun","g":"p3"},{"w":"boundary conditions","j":"境界值条件","r":"kyökaichi jöken","p":"Noun","g":"p3"},{"w":"calculus","j":"微分積分","r":"bibunsekibun","p":"Noun","g":"p3"},{"w":"calculus of variations","j":"变分法","r":"henbunho","p":"Expression","g":"p3"},{"w":"coefficient","j":"係数","r":"keisü","p":"Noun","g":"p3"},{"w":"converge","j":"ATI","r":"shüsoku.","p":"Noun","g":"p3"},{"w":"coordinate","j":"座標","r":"zahyo","p":"Noun","g":"p3"},{"w":"cosine","j":"余弦","r":"yogen","p":"Noun","g":"p3"},{"w":"derivative","j":"微分","r":"bibun","p":"Noun","g":"p3"},{"w":"differential equation","j":"微分方程式","r":"bibunhoteishiki","p":"Noun","g":"p3"},{"w":"differentiate","j":"微分する","r":"bibunsuru","p":"Noun","g":"p3"},{"w":"elliptic function","j":"ドン","r":"daenkansu","p":"Noun","g":"p3"},{"w":"ergodic","j":"エルゴード","r":"erugödoteki na","p":"Adj","g":"p3"},{"w":"exponential function","j":"指数関数","r":"shisükansü","p":"Noun","g":"p3"},{"w":"Fourier expansion","j":"フーリェ展開","r":"furietenkai","p":"Noun","g":"p3"},{"w":"function","j":"関数","r":"kansu","p":"Noun","g":"p3"},{"w":"gamma function","j":"ガンマ関数","r":"ganmakansu","p":"Noun","g":"p3"},{"w":"graph","j":"グラフ","r":"gurafu","p":"Noun","g":"p3"},{"w":"heat equation","j":"熱方程式","r":"netsuhöteishiki","p":"Noun","g":"p3"},{"w":"holomorphic","j":"正則な","r":"seisoku na","p":"Adj","g":"p3"},{"w":"hypergeometric function","j":"超幾何関数","r":"chökikakansu","p":"Noun","g":"p3"},{"w":"infimum","j":"下限","r":"kagen","p":"Noun","g":"p3"},{"w":"integral","j":"積分","r":"sekibun","p":"Noun","g":"p3"},{"w":"integral equation","j":"積分方程式","r":"sekibun höteishiki","p":"Noun","g":"p3"},{"w":"integrate","j":"積分する","r":"sekibunsuru","p":"Noun","g":"p3"},{"w":"interval","j":"幅","r":"haba","p":"Noun","g":"p3"},{"w":"limit","j":"極限","r":"kyokugen","p":"Noun","g":"p3"},{"w":"logarithm","j":"対以数","r":"taisu","p":"Noun","g":"p3"},{"w":"maximum","j":"最大","r":"saidai","p":"Noun","g":"p3"},{"w":"measure","j":"測度","r":"sokudo","p":"Noun","g":"p3"},{"w":"meromorphic","j":"有理形の","r":"yũrikei no","p":"Adj","g":"p3"},{"w":"minimum","j":"最小","r":"saisho","p":"Noun","g":"p3"},{"w":"operator","j":"作用素","r":"sayoso","p":"Noun","g":"p3"},{"w":"parameter","j":"媒介変数","r":"baikaihensü","p":"Noun","g":"p3"},{"w":"periodic","j":"周煎的六","r":"shükiteki na","p":"Adj","g":"p3"},{"w":"pole","j":"極","r":"kyoku","p":"Noun","g":"p3"},{"w":"resolvent","j":"解核","r":"kaikaku","p":"Noun","g":"p3"},{"w":"sequence","j":"数列","r":"suretsu","p":"Noun","g":"p3"},{"w":"sine","j":"正弦","r":"seigen","p":"Noun","g":"p3"},{"w":"special function","j":"特砕関粉","r":"tokushukansü","p":"Noun","g":"p3"},{"w":"support","j":"台","r":"dai","p":"Noun","g":"p3"},{"w":"supremum","j":"上限","r":"jögen","p":"Noun","g":"p3"},{"w":"tangent","j":"正接","r":"seisetsu","p":"Noun","g":"p3"},{"w":"(Taylor) series","j":"（テーラー）红米","r":"(těra) kyusu","p":"Noun","g":"p3"},{"w":"trajectory","j":"","r":"kido","p":"Noun","g":"p3"},{"w":"trigonometry","j":"雇角法","r":"sankakuho","p":"Noun","g":"p3"},{"w":"value","j":"値","r":"atai","p":"Noun","g":"p3"},{"w":"variable","j":"変数","r":"hensü","p":"Noun","g":"p3"},{"w":"wave equation","j":"波動方程式","r":"hadöhoteishiki","p":"Noun","g":"p3"},{"w":"Set Theory, Category Theory, and Logic","j":"Category Theory,","r":"","p":"Expression","g":"p3"},{"w":"belongs to","j":"・・・に属する","r":"•• • ni zokusuru","p":"Noun","g":"p3"},{"w":"bijective","j":"全単射","r":"zentansha","p":"Noun","g":"p3"},{"w":"cardinality","j":"位数","r":"isü","p":"Noun","g":"p3"},{"w":"category","j":"カテゴリー","r":"kategori","p":"Noun","g":"p3"},{"w":"category theory","j":"カテゴリー","r":"kategorTriron","p":"Noun","g":"p3"},{"w":"class","j":"粨","r":"rui","p":"Noun","g":"p3"},{"w":"complement","j":"補集合","r":"hoshugo","p":"Noun","g":"p3"},{"w":"composition","j":"合成","r":"gõsei","p":"Noun","g":"p3"},{"w":"contains","j":"含む","r":"fukumu","p":"Noun","g":"p3"},{"w":"correspond","j":"対応","r":"taiõ","p":"Noun","g":"p3"},{"w":"countable","j":"可算","r":"kasan","p":"Noun","g":"p3"},{"w":"element","j":"要系","r":"YOSO","p":"Noun","g":"p3"},{"w":"empty","j":"空","r":"","p":"Noun","g":"p3"},{"w":"(equivalence) relation","j":"（同值）関係","r":"(döchi) kankei","p":"Noun","g":"p3"},{"w":"finite","j":"有限","r":"yügen","p":"Noun","g":"p3"},{"w":"first-order","j":"一階","r":"ikkai","p":"Noun","g":"p3"},{"w":"for all","j":"全ての・・・に対して","r":"subete no•••","p":"Noun","g":"p3"},{"w":"functor","j":"関手","r":"kanshu","p":"Noun","g":"p3"},{"w":"Godel incomplete-","j":"D+Dーーテルのス","r":"gēteru no fu","p":"Noun","g":"p3"},{"w":"ness theorem","j":"宗全灶定理","r":"kanzenseiteiri","p":"Noun","g":"p3"},{"w":"image","j":"像","r":"zÕ","p":"Noun","g":"p3"},{"w":"infinite","j":"無限","r":"mugen","p":"Noun","g":"p3"},{"w":"injective","j":"単射","r":"tansha","p":"Noun","g":"p3"},{"w":"intersection","j":"交わり","r":"majiwari","p":"Noun","g":"p3"},{"w":"involution","j":"累乗","r":"ruijo","p":"Noun","g":"p3"},{"w":"isomorphism","j":"同型写像","r":"dokeishazo","p":"Noun","g":"p3"},{"w":"logic","j":"論理","r":"ronri","p":"Noun","g":"p3"},{"w":"map","j":"写像","r":"shazo","p":"Noun","g":"p3"},{"w":"morphism","j":"射","r":"","p":"Noun","g":"p3"},{"w":"n-tuple","j":"重","r":"n-ju","p":"Noun","g":"p3"},{"w":"operation","j":"演算","r":"enzan","p":"Noun","g":"p3"},{"w":"ordered set","j":"順序集合","r":"junjoshugõ","p":"Noun","g":"p3"},{"w":"partition","j":"分割","r":"bunkatsu","p":"Noun","g":"p3"},{"w":"permutation","j":"順列","r":"junretsu","p":"Noun","g":"p3"},{"w":"predicate","j":"述語","r":"jutsugo","p":"Noun","g":"p3"},{"w":"quantifier","j":"限定記号","r":"genteikigõ","p":"Noun","g":"p3"},{"w":"set","j":"集合","r":"shũgõ","p":"Noun","g":"p3"},{"w":"set Theory","j":"集合論","r":"shügöron","p":"Noun","g":"p3"},{"w":"subset","j":"部分集合","r":"bubunshügo","p":"Noun","g":"p3"},{"w":"surjective","j":"全射","r":"zensha","p":"Noun","g":"p3"},{"w":"there exists","j":"・・・が存在する","r":"•• • ga sonzaisuru","p":"Noun","g":"p3"},{"w":"transformation","j":"変換","r":"henkan","p":"Noun","g":"p3"},{"w":"union","j":"和集合","r":"washugo","p":"Noun","g":"p3"},{"w":"abelian variety","j":"•yアーベル多様体","r":"aberutayotai","p":"Noun","g":"p4"},{"w":"affine","j":"アフィンな","r":"afinteki na","p":"Adj","g":"p4"},{"w":"(right) angle","j":"（直）角","r":"(choku) kaku","p":"Noun","g":"p4"},{"w":"area","j":"","r":"menseki","p":"Noun","g":"p4"},{"w":"circle","j":"","r":"en","p":"Noun","g":"p4"},{"w":"cone","j":"","r":"sui","p":"Noun","g":"p4"},{"w":"connection","j":"","r":"setsuzoku","p":"Noun","g":"p4"},{"w":"convex","j":"の","r":"totsu no","p":"Adj","g":"p4"},{"w":"cube","j":"立方体","r":"rippotai","p":"Noun","g":"p4"},{"w":"curvature","j":"","r":"kyokuritsu","p":"Noun","g":"p4"},{"w":"curve","j":"曲線","r":"kyokusen","p":"Noun","g":"p4"},{"w":"cusp","j":"尖点","r":"senten","p":"Noun","g":"p4"},{"w":"diameter","j":"","r":"chokkei","p":"Noun","g":"p4"},{"w":"differential","j":"","r":"bibun","p":"Noun","g":"p4"},{"w":"(3-) dimensional","j":"（3-）次元（の）","r":"(san) jigen (no)","p":"Noun","g":"p4"},{"w":"dynamical system","j":"力学系","r":"rikigakukei","p":"Noun","g":"p4"},{"w":"ellipse","j":"楕円","r":"daen","p":"Noun","g":"p4"},{"w":"envelope","j":"","r":"hörakusen","p":"Noun","g":"p4"},{"w":"equilateral","j":"","r":"tohen no","p":"Adj","g":"p4"},{"w":"genus","j":"種数","r":"shusu","p":"Noun","g":"p4"},{"w":"geodetic","j":"","r":"sokuchisen","p":"Noun","g":"p4"},{"w":"geometry","j":"","r":"kikagaku","p":"Noun","g":"p4"},{"w":"hull","j":"","r":"heihõ","p":"Noun","g":"p4"},{"w":"hyperbola","j":"","r":"sokyokusen","p":"Noun","g":"p4"},{"w":"hypersurface","j":"招曲面","r":"chokyokumen","p":"Noun","g":"p4"},{"w":"isometry","j":"像","r":"tochõshazo","p":"Noun","g":"p4"},{"w":"Jacobian","j":"コビ行列式","r":"yakobi györetsushiki","p":"Noun","g":"p4"},{"w":"length","j":"長さ","r":"nagasa","p":"Noun","g":"p4"},{"w":"line","j":"有）號","r":"(choku) sen","p":"Noun","g":"p4"},{"w":"line bundle","j":"","r":"chokusensoku","p":"Noun","g":"p4"},{"w":"node","j":"","r":"kessetuten","p":"Noun","g":"p4"},{"w":"parabola","j":"放蛳維","r":"hobutsusen","p":"Noun","g":"p4"},{"w":"parallel","j":"行","r":"heiko na","p":"Adj","g":"p4"},{"w":"perpendicular","j":"赤店の","r":"suichoku no","p":"Adj","g":"p4"},{"w":"plane","j":"一面","r":"heimen","p":"Noun","g":"p4"},{"w":"point","j":"•上","r":"ten","p":"Noun","g":"p4"},{"w":"polygon","j":"多角形","r":"takakkei","p":"Noun","g":"p4"},{"w":"polyhedron","j":"多百体","r":"tamentai","p":"Noun","g":"p4"},{"w":"projective space","j":"財影空問","r":"shaeikukan","p":"Noun","g":"p4"},{"w":"Riemann surface","j":"ン面マ","r":"rimanmen","p":"Noun","g":"p4"},{"w":"radius","j":"半径","r":"hankei","p":"Noun","g":"p4"},{"w":"rectangle","j":"•直","r":"chokkaku","p":"Noun","g":"p4"},{"w":"reflection","j":"反","r":"hanten","p":"Noun","g":"p4"},{"w":"rigid","j":"している","r":"kotei shiteiru","p":"Noun","g":"p4"},{"w":"rotation","j":"","r":"kaiten","p":"Noun","g":"p4"},{"w":"scheme","j":"概形","r":"gaikei","p":"Noun","g":"p4"},{"w":"sheaf","j":"","r":"sÕ","p":"Noun","g":"p4"},{"w":"singularity","j":"特毘仕","r":"tokuisei","p":"Noun","g":"p4"},{"w":"skew","j":"捩れ","r":"nejire","p":"Noun","g":"p4"},{"w":"space","j":"空間","r":"kukan","p":"Noun","g":"p4"},{"w":"sphere","j":"球面","r":"kyumen","p":"Noun","g":"p4"},{"w":"surface","j":"表面","r":"hyomen","p":"Noun","g":"p4"},{"w":"torus","j":"トーラス","r":"torasu","p":"Noun","g":"p4"},{"w":"translation","j":"平行移動","r":"heikoido","p":"Noun","g":"p4"},{"w":"triangle","j":"三角形","r":"sankakkei","p":"Noun","g":"p4"},{"w":"variety","j":"多様体","r":"tayotai","p":"Noun","g":"p4"},{"w":"volume","j":"体積","r":"taiseki","p":"Noun","g":"p4"},{"w":"arc","j":"孤","r":"ko","p":"Noun","g":"p4"},{"w":"boundary","j":"境界","r":"kyokai","p":"Noun","g":"p4"},{"w":"branch","j":"分岐","r":"bunki","p":"Noun","g":"p4"},{"w":"chain","j":"鎖","r":"kusari","p":"Noun","g":"p4"},{"w":"closed","j":"閉じた","r":"tojita","p":"Noun","g":"p4"},{"w":"closure","j":"閉包","r":"heiho","p":"Noun","g":"p4"},{"w":"cohomology","j":"コホモロジー","r":"kohomoroji","p":"Noun","g":"p4"},{"w":"compact","j":"コンパクト","r":"konpakuto","p":"Noun","g":"p4"},{"w":"completion","j":"完備","r":"kanbi","p":"Noun","g":"p4"},{"w":"connected","j":"連結した","r":"renketsushita","p":"Noun","g":"p4"},{"w":"continuous","j":"連続","r":"renzoku","p":"Noun","g":"p4"},{"w":"contraction","j":"縮小","r":"shukusho","p":"Noun","g":"p4"},{"w":"covering","j":"被覆","r":"hifuku","p":"Noun","g":"p4"},{"w":"cycle","j":"輪体","r":"rintai","p":"Noun","g":"p4"},{"w":"dense","j":"稠密な","r":"chomitsu na","p":"Adj","g":"p4"},{"w":"discrete","j":"離散","r":"risan","p":"Noun","g":"p4"},{"w":"distance","j":"距離","r":"kyori","p":"Noun","g":"p4"},{"w":"domain","j":"領域","r":"ryoiki","p":"Noun","g":"p4"},{"w":"embedding","j":"埋め込み","r":"umekomi","p":"Noun","g":"p4"},{"w":"fiber bundle","j":"ファイバー束","r":"faiba soku","p":"Noun","g":"p4"},{"w":"fixed point","j":"不動点","r":"fudo ten","p":"Noun","g":"p4"},{"w":"fundamental group","j":"其木群","r":"kihongun","p":"Noun","g":"p4"},{"w":"homeomorphism","j":"準同型写像","r":"jundökei shazo","p":"Noun","g":"p4"},{"w":"homology","j":"ホモロジー","r":"homoroji","p":"Noun","g":"p4"},{"w":"homotopy","j":"ホモトピー","r":"homotopi","p":"Noun","g":"p4"},{"w":"immersion","j":"はめ込み","r":"hamekomi","p":"Noun","g":"p4"},{"w":"interior","j":"内部","r":"naibu","p":"Noun","g":"p4"},{"w":"knot","j":"結び目","r":"musubime","p":"Noun","g":"p4"},{"w":"manifold","j":"多様体","r":"tayotai","p":"Noun","g":"p4"},{"w":"metric space","j":"距離空間","r":"kyorikükan","p":"Noun","g":"p4"},{"w":"obstraction","j":"障害","r":"shogai","p":"Noun","g":"p4"},{"w":"open","j":"開いた","r":"hiraita","p":"Noun","g":"p4"},{"w":"orientation","j":"方向づけ","r":"hökozuke","p":"Noun","g":"p4"},{"w":"path","j":"道","r":"michi","p":"Noun","g":"p4"},{"w":"simplex","j":"単体","r":"tantai","p":"Noun","g":"p4"},{"w":"skeleton","j":"肯格","r":"kokkaku","p":"Noun","g":"p4"},{"w":"smooth","j":"滑らか","r":"nameraka","p":"Noun","g":"p4"},{"w":"surgery","j":"手術","r":"shujutsu","p":"Noun","g":"p4"},{"w":"topological space","j":"位相空間","r":"isökükan","p":"Noun","g":"p4"},{"w":"topology","j":"位相幾何学","r":"isokikagagu","p":"Noun","g":"p4"},{"w":"Applied Mathematics","j":"he","r":"","p":"Noun","g":"p4"},{"w":"Applied","j":"応用数学","r":"örösugaku","p":"Noun","g":"p4"},{"w":"Mathematical","j":"数理物理","r":"süributsuri","p":"Noun","g":"p4"},{"w":"Numerical Analysis EtAFfF","j":"粉估绍","r":"süchikaiseki","p":"Expression","g":"p4"},{"w":"Probability","j":"在 玄门","r":"kakuritsu","p":"Noun","g":"p4"},{"w":"Statistics","j":"統計","r":"tokei","p":"Noun","g":"p4"},{"w":"77","j":"","r":"","p":"Noun","g":"p4"}];
+const KEY = 'glossary-triage.v1';
+
+let state = load();
+
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.queue) && s.total === WORDS.length) return s;
+  }catch(e){}
+  return fresh(WORDS.map((_, i) => i));
+}
+function fresh(queue){
+  return { total: WORDS.length, queue, at: 0, missed: [], got: [], log: [] };
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+const $ = (id) => document.getElementById(id);
+let revealed = false;
+
+function render(){
+  const left = state.queue.length - state.at;
+  if (left <= 0) return finish();
+
+  $('done').classList.add('hidden');
+  $('card').style.display = '';
+  document.querySelector('footer').style.display = '';
+  document.querySelector('header').style.display = '';
+
+  const w = WORDS[state.queue[state.at]];
+  $('word').textContent = w.w;
+  $('pos').textContent = w.p;
+  $('ja').textContent = w.j || '—';
+  $('ro').textContent = w.r || '';
+  revealed = false;
+  $('gloss').classList.add('hidden');
+  $('hint').classList.remove('hidden');
+
+  $('count').textContent = (state.at + 1) + ' / ' + state.queue.length;
+  $('fill').style.width = (state.at / state.queue.length * 100) + '%';
+  $('bBack').disabled = state.log.length === 0;
+}
+
+function reveal(){
+  revealed = true;
+  $('gloss').classList.remove('hidden');
+  $('hint').classList.add('hidden');
+}
+
+function answer(ok){
+  const idx = state.queue[state.at];
+  (ok ? state.got : state.missed).push(idx);
+  state.log.push([idx, ok]);
+  state.at += 1;
+  save();
+  render();
+}
+
+function undo(){
+  if (!state.log.length) return;
+  const [idx, ok] = state.log.pop();
+  const pile = ok ? state.got : state.missed;
+  const at = pile.lastIndexOf(idx);
+  if (at !== -1) pile.splice(at, 1);
+  state.at = Math.max(0, state.at - 1);
+  save();
+  render();
+}
+
+function tsv(){
+  const rows = state.missed.map((i) => {
+    const w = WORDS[i];
+    const def = [w.j, w.r ? '(' + w.r + ')' : ''].filter(Boolean).join(' ');
+    return [w.w, w.p, def, ''].join('\t');
+  });
+  return rows.join('\n');
+}
+
+function finish(){
+  $('card').style.display = 'none';
+  document.querySelector('footer').style.display = 'none';
+  document.querySelector('header').style.display = 'none';
+  $('done').classList.remove('hidden');
+  $('nMissed').textContent = state.missed.length;
+  $('nGot').textContent = state.got.length;
+  const pct = state.queue.length ? Math.round(state.got.length / state.queue.length * 100) : 0;
+  $('summary').textContent = state.queue.length + ' words · ' + pct + '% known';
+  $('out').value = tsv();
+}
+
+$('bGot').onclick = () => answer(true);
+$('bMissed').onclick = () => answer(false);
+$('bBack').onclick = undo;
+$('card').onclick = (e) => { if (!e.target.closest('button')) reveal(); };
+$('restart').onclick = () => { if (confirm('Start over from the first word?')) { state = fresh(WORDS.map((_,i)=>i)); save(); render(); } };
+$('bReset').onclick = () => { state = fresh(WORDS.map((_,i)=>i)); save(); render(); };
+$('bAgain').onclick = () => {
+  if (!state.missed.length) return;
+  state = fresh(state.missed.slice());
+  save(); render();
+};
+$('bCopy').onclick = async () => {
+  const t = $('out');
+  try{ await navigator.clipboard.writeText(t.value); $('bCopy').textContent = 'Copied'; }
+  catch(e){ t.select(); document.execCommand('copy'); $('bCopy').textContent = 'Copied'; }
+  setTimeout(() => { $('bCopy').textContent = 'Copy'; }, 1400);
+};
+
+document.addEventListener('keydown', (e) => {
+  if (!$('done').classList.contains('hidden')) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); answer(true); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); answer(false); }
+  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); revealed ? answer(true) : reveal(); }
+  else if (e.key === 'Backspace') { e.preventDefault(); undo(); }
+});
+
+render();
+</script>
+</body>
+</html>
