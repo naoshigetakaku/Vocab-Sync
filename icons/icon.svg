@@ -3,26 +3,33 @@
   <title>VocabSync</title>
 
   <defs>
-    <!-- A messaging-app green, deep overhead and pooling light at the foot. -->
+    <!-- The body: deep overhead, light pooling at the foot. -->
     <linearGradient id="body" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#0A6E2C"/>
       <stop offset="0.45" stop-color="#1FBE49"/>
       <stop offset="1" stop-color="#86F2A4"/>
     </linearGradient>
 
-    <!-- Glass, kept faint on purpose: a sheen bright enough to notice is one
-         bright enough to turn the deep top pale, which would undo the point
-         of running the gradient upside down. -->
-    <radialGradient id="sheen" cx="256" cy="-82" r="300" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
+    <!-- Gloss, in the Aqua manner. The sweep is an ellipse hanging off the
+         top whose underside is the hard line that reads as glass. It stops
+         at 128 — above the letter's apex at 138 — because a sweep that
+         reaches the apex takes the mark's contrast with it, and contrast is
+         all there is left at home-screen size. -->
+    <linearGradient id="sweep" x1="256" y1="0" x2="256" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.24"/>
+    </linearGradient>
+
+    <!-- Light bounced back up off the foot. -->
+    <radialGradient id="bounce" cx="256" cy="512" r="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.42"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- The bright line where a curved surface turns away from you. -->
-    <linearGradient id="rim" x1="0" y1="0" x2="512" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
-      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    <!-- A lit rim just inside the edge, brightest across the top. -->
+    <linearGradient id="rim" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.62"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.14"/>
     </linearGradient>
 
     <clipPath id="shape">
@@ -32,8 +39,10 @@
 
   <g clip-path="url(#shape)">
     <rect width="512" height="512" fill="url(#body)"/>
-    <ellipse cx="256" cy="-82" rx="360" ry="300" fill="url(#sheen)"/>
-    <rect x="0" y="2" width="512" height="3" fill="url(#rim)"/>
+    <ellipse cx="256" cy="-125" rx="420" ry="253" fill="url(#sweep)"/>
+    <ellipse cx="256" cy="512" rx="246" ry="154" fill="url(#bounce)"/>
+    <rect x="3" y="3" width="506" height="506" rx="109" ry="109"
+          fill="none" stroke="url(#rim)" stroke-width="6"/>
   </g>
 
   <!-- A letterform over a writing rule: the whole idea of the app in two strokes. -->
