@@ -6,15 +6,10 @@ import { hasCredentials } from './auth.js';
 import { isRetryable, isBackendStale, getBackendVersion } from './api.js';
 import { subscribe, refresh, reset, getWord, setArchived, isArchived, flush } from './store.js';
 import { FILTERS } from './config.js';
-import {
-  subscribeView, getFilter, setFilter, getTab, setTab, setSelection,
-  selectionLabel, isSelected, FOLDER,
-} from './view.js';
+import { subscribeView, getFilter, setFilter, getTab, setTab } from './view.js';
 import {
   initList, render as renderList, highlightNew, animateNextReflow, hideEmpty,
 } from './list.js';
-import { initFolderMenu, renderFolderMenu, isFolderMenuOpen, closeFolderMenu } from './folder-menu.js';
-import { initFolderForm, openRenameFolder } from './folder-form.js';
 import { initCards, renderCards, shuffleCards } from './cards.js';
 import { initQuiz, renderQuizHome, isQuizRunning } from './quiz.js';
 import { initDetail, openDetail, syncDetail } from './detail.js';
@@ -30,7 +25,6 @@ import { toast } from './toast.js';
 const addButton = document.getElementById('add-button');
 const settingsButton = document.getElementById('settings-button');
 const sortLabel = document.getElementById('tab-list-label');
-const folderName = document.getElementById('folder-name');
 const wordListElement = document.getElementById('word-list');
 const cardsElement = document.getElementById('cards');
 const quizHomeElement = document.getElementById('quiz-home');
@@ -42,10 +36,8 @@ const VIEW_ANIMATION_MS = 420;
 
 let syncing = false;
 let staleWarningShown = false;
-let renamingOpenFolder = false;
 let previousFilter = getFilter();
 let previousTab = getTab();
-let previousFolder = selectionLabel();
 
 /**
  * Saving Code.gs in the editor is not the same as deploying it, and a stale
@@ -96,7 +88,6 @@ function paintHeader() {
   const tab = getTab();
   const quiz = tab === 'quiz';
 
-  folderName.textContent = selectionLabel();
   filterElement.hidden = quiz;
 
   // The List tab's label is the order the list is in; see js/sort.js.
@@ -133,19 +124,16 @@ function animateView(element, kind) {
 function renderCurrent() {
   const tab = getTab();
   const filter = getFilter();
-  const folder = selectionLabel();
-
-  // A different tab or folder is a different screen: start it at the top,
+  // A different tab is a different screen: start it at the top,
   // and enter it from the side of the control that was tapped.
   let entrance = null;
-  if (folder !== previousFolder || tab !== previousTab) {
+  if (tab !== previousTab) {
     entrance = 'fade';
   } else if (filter !== previousFilter) {
     entrance = filterIndex(filter) > filterIndex(previousFilter) ? 'forward' : 'back';
   }
   previousFilter = filter;
   previousTab = tab;
-  previousFolder = folder;
 
   wordListElement.hidden = tab !== 'list';
   cardsElement.hidden = tab !== 'cards';
@@ -165,7 +153,6 @@ function renderCurrent() {
     renderList();
   }
 
-  if (isFolderMenuOpen()) renderFolderMenu();
   paintHeader();
 
   if (entrance) {
@@ -290,21 +277,6 @@ function wireUi() {
       syncDetail();
     },
   });
-  initFolderMenu({
-    onRename: (folder) => {
-      renamingOpenFolder = isSelected({ kind: FOLDER, name: folder.name });
-      openRenameFolder(folder);
-    },
-  });
-  initFolderForm({
-    afterSave: (saved) => {
-      // The view holds the folder by name, so it has to follow the rename or
-      // it points at nothing.
-      if (renamingOpenFolder) setSelection({ kind: FOLDER, name: saved.name });
-      renamingOpenFolder = false;
-      renderCurrent();
-    },
-  });
   initSetup({
     onConnected: () => {
       toast('Connected.');
@@ -327,7 +299,6 @@ function wireUi() {
   tabbarElement.addEventListener('click', (event) => {
     const tab = event.target.closest('.tabbar__tab');
     if (!tab) return;
-    closeFolderMenu();
 
     const wanted = tab.dataset.tab;
     const already = getTab() === wanted;
@@ -348,7 +319,7 @@ function wireUi() {
 
   // Left puts a word aside, right brings it back. Only the list has rows.
   enableRowSwipe(wordListElement, {
-    canSwipe: () => getTab() === 'list' && !isFolderMenuOpen(),
+    canSwipe: () => getTab() === 'list',
     allows: allowsSwipe,
     stays: staysAfterSwipe,
     perform: performSwipe,

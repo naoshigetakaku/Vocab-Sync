@@ -1,13 +1,13 @@
 /**
- * list.js — the home screen: the words in the open folder.
+ * list.js — the home screen: every word, by itself.
  *
  * Deliberately shows the word and nothing else; every other field lives behind
- * the detail dialog. Under All these are the folder's live words; under
+ * the detail dialog. Under All these are the words in circulation; under
  * Archived, the ones put aside.
  */
 
 import { sortWords } from './sort.js';
-import { wordsInScope, archivedInScope, isArchivedFilter, selectionLabel } from './view.js';
+import { wordsInScope, archivedInScope, isArchivedFilter } from './view.js';
 import { DEFAULT_COLOR } from './config.js';
 
 const listElement = document.getElementById('word-list');
@@ -97,7 +97,7 @@ function buildRow(word) {
   return item;
 }
 
-/** The open folder's words under the current tab, in the current sort order. */
+/** The words of the current tab, in the current sort order. */
 export function visibleWords() {
   return sortWords(isArchivedFilter() ? archivedInScope() : wordsInScope());
 }
@@ -158,7 +158,7 @@ function playReflow(before) {
 
 /** Everything a row shows, so an identical render can be recognised. */
 function signatureOf(words) {
-  return selectionLabel() + '\n' + String(isArchivedFilter()) + '\n' + words
+  return String(isArchivedFilter()) + '\n' + words
     .map((word) => [word.id, word.word, word.color, word.pending ? 1 : 0].join('\t'))
     .join('\n');
 }
@@ -166,10 +166,10 @@ function signatureOf(words) {
 /** Shared with the card deck, which shows the same message. */
 export function paintEmpty(count) {
   if (isArchivedFilter()) {
-    emptyTitle.textContent = 'Nothing archived in ' + selectionLabel();
+    emptyTitle.textContent = 'Nothing archived';
     emptyHint.textContent = 'Swipe a word left to put it here.';
   } else {
-    emptyTitle.textContent = 'No words in ' + selectionLabel();
+    emptyTitle.textContent = 'No words yet';
     emptyHint.textContent = 'Tap + to add one.';
   }
   emptyElement.hidden = count !== 0;

@@ -59,7 +59,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 let session = null;
 let onChange = () => {};
 
-/** Words this quiz may ask: the open folder, minus anything not saved yet. */
+/** Words this quiz may ask: everything, minus anything not saved yet. */
 function pool() {
   return wordsInScope().filter((word) => !isLocalOnly(word));
 }

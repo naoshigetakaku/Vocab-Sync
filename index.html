@@ -36,15 +36,8 @@
 
   <header class="app-header">
     <div class="app-header__inner">
-      <div class="app-header__anchor">
       <div class="app-header__bar">
-        <!-- The folder that is open, and the way to change it. -->
-        <button class="app-header__title" id="folder-button" type="button" aria-expanded="false">
-          <span id="folder-name">Vocabulary</span>
-          <svg class="app-header__chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
+        <h1 class="app-header__title">VocabSync</h1>
 
         <div class="app-header__tools">
           <button class="header-action" id="settings-button" type="button" aria-label="Connection settings">
@@ -57,27 +50,7 @@
         </div>
       </div>
 
-      <!-- Hangs off the bottom of the title bar and covers whatever is under
-           it; see js/folder-menu.js. -->
-      <div class="folder-menu" id="folder-menu" hidden>
-        <div class="folder-menu__head">
-          <span class="folder-menu__title">Folders</span>
-          <button class="folder-menu__edit" id="folder-edit" type="button" aria-pressed="false">Edit</button>
-        </div>
-
-        <ul class="folder-menu__list" id="folder-list"></ul>
-
-        <form class="folder-menu__new" id="folder-create">
-          <input class="field__input" id="field-new-folder" type="text" placeholder="New folder name"
-                 autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="60">
-          <button class="button" id="folder-create-submit" type="submit">Create</button>
-        </form>
-
-        <p class="form__error folder-menu__error" id="folder-menu-error" hidden></p>
-      </div>
-      </div>
-
-      <!-- Every live word in the folder, or the ones put aside. The pill
+      <!-- Every live word, or the ones put aside. The pill
            behind the selected tab slides between them. -->
       <div class="filter" id="filter" role="tablist" aria-label="Show">
         <span class="filter__indicator" aria-hidden="true"></span>
@@ -86,8 +59,6 @@
       </div>
     </div>
   </header>
-
-  <div class="scrim" id="folder-scrim" hidden></div>
 
   <main class="app-main">
     <ul class="word-list" id="word-list" aria-label="Saved words"></ul>
@@ -107,7 +78,7 @@
       <button class="button quiz-home__start" id="quiz-start" type="button">Start quiz</button>
 
       <div class="quiz-home__progress" id="quiz-progress">
-        <p class="quiz-home__caption">Progress in this folder</p>
+        <p class="quiz-home__caption">Progress</p>
         <div class="bar" id="quiz-bar">
           <span class="bar__part bar__part--new" id="bar-new"></span>
           <span class="bar__part bar__part--learning" id="bar-learning"></span>
@@ -279,17 +250,6 @@
         <div class="swatches" id="field-color" role="radiogroup" aria-labelledby="color-label"></div>
       </div>
 
-      <div class="field">
-        <span class="field__label" id="word-folder-label">Folder</span>
-        <button class="field__input field__trigger" id="field-folder" type="button"
-                aria-labelledby="word-folder-label" aria-haspopup="listbox">
-          <span class="field__value" id="field-folder-value"></span>
-          <svg class="field__chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-      </div>
-
       <p class="form__error" id="form-error" hidden></p>
 
       <div class="sheet__actions">
@@ -317,29 +277,6 @@
     </div>
   </dialog>
 
-  <!-- Folder name, for renaming; new folders are made in the folder menu. -->
-  <dialog class="sheet" id="folder-dialog" aria-labelledby="folder-form-title">
-    <div class="sheet__grip" aria-hidden="true"><span class="sheet__handle"></span></div>
-
-    <form class="sheet__body form" id="folder-form" novalidate>
-      <h2 class="sheet__title" id="folder-form-title">Rename folder</h2>
-
-      <label class="field">
-        <span class="field__label">Name</span>
-        <input class="field__input" id="field-folder-name" name="name" type="text" required
-               autocomplete="off" autocapitalize="words" spellcheck="false">
-      </label>
-
-      <p class="form__error" id="folder-error" hidden></p>
-
-      <div class="sheet__actions">
-        <button class="button button--ghost" id="folder-cancel" type="button">Cancel</button>
-        <button class="button" id="folder-submit" type="submit">Rename</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- Centred confirmation. Tapping outside cancels. -->
   <dialog class="alert" id="confirm-dialog" aria-labelledby="confirm-title">
     <div class="alert__body">
       <h2 class="alert__title" id="confirm-title"></h2>

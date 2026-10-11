@@ -53,8 +53,6 @@ export const STORAGE_KEYS = {
   installHint: 'vocabsync.install-hint.v1',
   sort: 'vocabsync.sort.v1',
   filter: 'vocabsync.filter.v2',
-  folder: 'vocabsync.folder.v1',
-  folders: 'vocabsync.folders.v2',
   backendVersion: 'vocabsync.backend-version.v1',
 };
 
@@ -86,11 +84,6 @@ export const FILTERS = [
   { value: 'all', label: 'All' },
   { value: FILTER_ARCHIVED, label: 'Archived' },
 ];
-
-/** The menu entry for words that are in no folder at all. */
-export const UNSORTED_LABEL = 'Unsorted';
-
-export const MAX_FOLDER_NAME_LENGTH = 60;
 
 /** Correct answers in a row that take the "don't know this" label off. */
 export const LABEL_CLEAR_STREAK = 3;

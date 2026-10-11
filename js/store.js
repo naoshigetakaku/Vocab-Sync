@@ -1,5 +1,5 @@
 /**
- * store.js — word and folder state, offline cache and the outbox.
+ * store.js — word state, offline cache and the outbox.
  *
  * The spreadsheet is the source of truth. Everything here is a cache in front
  * of it, plus a queue of changes that have not reached it yet.
@@ -10,16 +10,21 @@ import { STORAGE_KEYS, ARCHIVED_ON } from './config.js';
 import { readJson, writeJson, remove } from './storage.js';
 
 let words = readJson(STORAGE_KEYS.words, []);
-let folders = readJson(STORAGE_KEYS.folders, []);
 let outbox = readJson(STORAGE_KEYS.outbox, []);
 
-// The first folder cache carried photo data URLs, tens of kilobytes each.
+// Folders are gone. Both caches of them are dead weight on every device that
+// ever ran a version with them, and the first one carried photo data URLs at
+// tens of kilobytes each.
 remove('vocabsync.folders.v1');
+remove('vocabsync.folders.v2');
 
 /**
  * Every field the sheet stores for a word. An update rewrites the whole row,
  * so anything a caller leaves out has to be filled from what is already
- * known — including the quiz schedule, which no form edits.
+ * known — including the quiz schedule, which no form edits, and `folder`,
+ * which nothing shows any more. It is carried through rather than dropped
+ * because the column still says which subject a word came from, and an edit
+ * that silently blanked that would be throwing away someone's filing.
  */
 const STORED_FIELDS = [
   'word', 'pos', 'definition', 'note', 'color', 'folder', 'archivedFrom', 'status',
@@ -63,54 +68,24 @@ export function isPending(id) {
   return Boolean(word && word.pending);
 }
 
-/** Creation order, so a folder keeps the same place in the menu for good. */
-export function getFolders() {
-  return folders.slice().sort((a, b) =>
-    String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
-}
-
-export function getFolder(id) {
-  return folders.find((folder) => folder.id === id) || null;
-}
-
-export function findFolderByName(name) {
-  return folders.find((folder) => folder.name === name) || null;
-}
-
 export function isArchived(word) {
   return word.archived === ARCHIVED_ON;
 }
 
-/**
- * Words in one folder, archived ones left out. Passing null gathers the
- * unsorted ones: no folder at all, or a folder that has since been deleted.
- */
-export function getWordsInFolder(name) {
-  return everythingIn(name).filter((word) => !isArchived(word));
+/** Everything in circulation: the list, the deck and the quiz all use this. */
+export function getLiveWords() {
+  return words.filter((word) => !isArchived(word));
 }
 
-/** The archived words of one folder. */
-export function getArchivedInFolder(name) {
-  return everythingIn(name).filter(isArchived);
-}
-
-function everythingIn(name) {
-  if (name === null) {
-    const names = new Set(folders.map((folder) => folder.name));
-    return words.filter((word) => !word.folder || !names.has(word.folder));
-  }
-  return words.filter((word) => word.folder === name);
-}
-
-export function countUnsorted() {
-  return getWordsInFolder(null).length;
+/** Everything put aside. */
+export function getArchivedWords() {
+  return words.filter(isArchived);
 }
 
 /* --- Persistence ---------------------------------------------------------- */
 
 function persist() {
   writeJson(STORAGE_KEYS.words, words);
-  writeJson(STORAGE_KEYS.folders, folders);
   writeJson(STORAGE_KEYS.outbox, outbox);
 }
 
@@ -326,7 +301,8 @@ function mergeRemote(remote) {
 export async function refresh() {
   await flushOutbox();
   const snapshot = await api.list();
-  folders = snapshot.folders;
+  // snapshot.folders is ignored: the sheet still keeps them, and the one-off
+  // job that moves words out still reads them, but nothing on screen does.
   mergeRemote(snapshot.words);
   commit();
 }
@@ -339,45 +315,6 @@ export async function flush() {
   } finally {
     commit();
   }
-}
-
-/* --- Folders --------------------------------------------------------------
-   No outbox here. A folder change is rare and deliberate, and replaying one
-   offline against a name another device may have taken in the meantime is a
-   conflict worth refusing rather than guessing at. */
-
-export async function createFolder(name) {
-  const saved = await api.createFolder(name);
-  folders = folders.concat([saved]);
-  commit();
-  return saved;
-}
-
-export async function renameFolder(id, name) {
-  const previous = getFolder(id);
-  const saved = await api.renameFolder(id, name);
-
-  folders = folders.map((folder) => (folder.id === id ? saved : folder));
-  // Words point at the folder by name, so they follow the rename locally too.
-  if (previous && previous.name !== saved.name) {
-    words = words.map((word) =>
-      (word.folder === previous.name ? Object.assign({}, word, { folder: saved.name }) : word));
-  }
-  commit();
-  return saved;
-}
-
-export async function deleteFolder(id) {
-  const previous = getFolder(id);
-  await api.removeFolder(id);
-
-  folders = folders.filter((folder) => folder.id !== id);
-  // The words survive as unsorted.
-  if (previous) {
-    words = words.map((word) =>
-      (word.folder === previous.name ? Object.assign({}, word, { folder: '' }) : word));
-  }
-  commit();
 }
 
 /* --- Words ---------------------------------------------------------------- */
@@ -526,7 +463,6 @@ export async function deleteWord(id) {
 /** Drop every cached record — used when the credentials are replaced. */
 export function reset() {
   words = [];
-  folders = [];
   outbox = [];
   // Nothing still in the air belongs to this account any more.
   latest.clear();

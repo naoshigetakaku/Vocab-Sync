@@ -23,7 +23,7 @@
  */
 
 import { visibleWords, paintEmpty } from './list.js';
-import { isArchivedFilter, selectionLabel } from './view.js';
+import { isArchivedFilter } from './view.js';
 import { wordLinks } from './links.js';
 import { DEFAULT_COLOR } from './config.js';
 
@@ -46,7 +46,7 @@ let watcher = null;
 /**
  * Sets up the 3D turn only on cards on screen or a screen away from it.
  * Each face with a 3D transform is a screen-sized compositing layer, and iOS
- * refuses a few hundred of them — a large folder's deck would not open.
+ * refuses a few hundred of them — a large deck would not open at all.
  */
 let nearby = null;
 
@@ -189,7 +189,7 @@ function prime(event) {
 }
 
 function signatureOf(words) {
-  return selectionLabel() + '\n' + String(isArchivedFilter()) + '\n' + words
+  return String(isArchivedFilter()) + '\n' + words
     .map((word) => [
       word.id, word.word, word.pos, word.definition, word.note, word.color,
     ].join('\t'))
@@ -335,8 +335,8 @@ function watch() {
 /**
  * How much taller the header is than the tab bar, for centring on the whole
  * screen rather than on what is left between the two bars. Measured rather
- * than assumed, because both change with the safe areas, the folder name and
- * the window size.
+ * than assumed, because both change with the safe areas and the window
+ * size.
  *
  * Set on the root so the quiz home can centre the same way; see .card-slot
  * and .quiz-home.

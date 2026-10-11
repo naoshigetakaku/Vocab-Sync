@@ -3,17 +3,21 @@
 A minimal vocabulary notebook. Words live in a Google Spreadsheet, so the same
 list appears on every device. No server of your own, no build step, no fees.
 
-The home screen is the open folder's words, by themselves; tap one for its
-part of speech, definition and note, or tap the folder name at the top to
-switch folders and make new ones. Words in no folder gather under Unsorted,
-which appears in that menu only when something is in it. Swipe a word **left**
-to archive it and **right** to bring it back; the **All / Archived** tabs show
-the folder's live words or the ones put aside.
+The home screen is every word you have, by itself; tap one for its part of
+speech, definition and note. Swipe a word **left** to archive it and **right**
+to bring it back; the **All / Archived** tabs show the words in circulation or
+the ones put aside.
 
 Along the bottom: **List**, **Cards** — the same words one screen at a time,
-shuffled, a tap turning each card over — and **Quiz**, which asks about them on
-a spacing that widens each time you get one right. Every word carries a
+shuffled, a tap turning each card over — and **Quiz**, which asks about them
+on a spacing that widens each time you get one right. Every word carries a
 YouGlish and a DuckDuckGo link, for how it is said and for everything else.
+
+There are no folders. There were, and the column is still in the sheet with
+every word's old folder in it — nothing in the app writes to it, and an edit
+carries it through untouched, so the record of which subject a word came from
+survives even though no screen shows it. `apps-script/MoveFoldersOut.gs` is
+what reads it.
 
 ## How it fits together
 
