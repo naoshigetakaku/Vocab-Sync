@@ -1,0 +1,300 @@
+axiom	Noun	公理。A statement taken as true without proof, from which everything else is derived.	The axioms of a group are closure, associativity, identity and inverse. State the axioms you are using.
+canonical	Adj	標準的な。In the standard or natural form, chosen once and for all.	Write the equation of the ellipse in canonical form. There is a canonical choice of basis here.
+corollary	Noun	系。A result that follows immediately from a theorem just proved.	As a corollary, the sum of the roots is −b/a. Deduce the following corollary.
+criterion	Noun	判定条件。A test that decides whether something holds.	Use the ratio test as a criterion for convergence. The discriminant gives a criterion for real roots.
+degenerate	Adj	退化した。A special case that has collapsed into something simpler.	When k = 0 the conic degenerates into a pair of straight lines. Exclude the degenerate case x = y.
+elementary	Adj	初等的な。Using only basic methods, with no advanced machinery.	Give an elementary proof that √2 is irrational. This follows by elementary row operations.
+explicit	Adj	明示的な。Written out in full, rather than implied.	Find an explicit formula for the nth term. Give your answer in explicit form, not implicitly.
+flowchart	Noun	流れ図。A diagram of the steps of a procedure.	Draw a flowchart for the Newton–Raphson iteration. The flowchart shows where the loop terminates.
+generalize	Verb	一般化する。To extend a result to a wider class of cases.	Generalize this result to n dimensions. The argument generalizes to any polynomial of odd degree.
+i.e.	Expression	すなわち。That is; in other words.	The function is even, i.e. f(−x) = f(x). Three roots are real, i.e. the discriminant is positive.
+invariant	Noun	不変量。A quantity that does not change under a given transformation.	The determinant is invariant under a change of basis. Show that this expression is invariant under rotation.
+lemma	Noun	補助定理。A smaller result proved on the way to a bigger one.	We first prove a lemma about the parity of n. By the lemma above, the sequence is bounded.
+narrow	Adj	狭い。Small in width; also, restricted in scope.	The interval is too narrow to contain a root. This result holds only in a narrow range of values.
+partial	Adj	部分的な。Relating to one part only; of a derivative, with respect to one variable.	Find the partial derivative of f with respect to x. Give the partial fractions decomposition.
+permit	Verb	許す。To allow.	The conditions permit exactly two solutions. Round only where the question permits it.
+primitive	Adj	原始的な。The most basic version; of a root, one that generates all the others.	Find a primitive root modulo 7. The primitive period of the function is 2π.
+proposition	Noun	命題。A statement to be proved, usually smaller than a theorem.	Prove the proposition by induction. The proposition fails when n = 1.
+reducible	Adj	可約な。Able to be factorized or broken into simpler parts.	The polynomial is reducible over the reals. Show that x² + 1 is irreducible over ℝ.
+regular	Adj	正則な。Well behaved; of a polygon, having equal sides and angles.	Find the interior angle of a regular hexagon. The matrix is regular, so its inverse exists.
+theorem	Noun	定理。A statement that has been proved.	State and prove the remainder theorem. By the factor theorem, (x − 2) is a factor.
+theory	Noun	理論。An organized body of mathematical results.	This follows from the theory of linear differential equations. The theory predicts a unique solution.
+algebraic	Adj	代数的な。Done by manipulating symbols rather than by drawing or measuring.	Give an algebraic proof rather than a graphical one. Solve the equation by algebraic means.
+conjugate	Noun	共役。The partner obtained by changing the sign of the surd or imaginary part.	Multiply numerator and denominator by the conjugate. The complex roots occur in conjugate pairs.
+denominator	Noun	分母。The bottom of a fraction.	Rationalize the denominator. Write the expression over a common denominator.
+exponent	Noun	指数。The power to which a number is raised.	Use the laws of exponents to simplify. The exponent here is a negative fraction.
+fraction	Noun	分数。A number written as one integer over another.	Express your answer as a fraction in its lowest terms. Split into partial fractions.
+integer	Noun	整数。A whole number, positive, negative or zero.	Find all integer solutions of the equation. Show that n² + n is an even integer for all n.
+numerator	Noun	分子。The top of a fraction.	The numerator and denominator share a factor of 3. Differentiate using the quotient rule, numerator first.
+quaternion	Noun	四元数。A four-part extension of the complex numbers.	Quaternions are used to describe rotations in three dimensions. Multiplication of quaternions is not commutative.
+transcendental	Adj	超越的な。Not the root of any polynomial with rational coefficients.	π and e are transcendental numbers. No transcendental number is algebraic.
+number theory	Noun	数論。The study of the integers and their properties.	This is a standard result in elementary number theory. Number theory tells us there are infinitely many primes.
+adele	Noun	アデール。An object combining all the completions of a number field at once.	The adeles package the real and p-adic information together. Adeles are standard in modern number theory.
+automorphic form	Noun	保型形式。A function with a strong symmetry under a group of transformations.	Modular forms are the simplest automorphic forms. The coefficients of an automorphic form carry arithmetic data.
+base	Noun	底。The number a logarithm or power system is built on; also the bottom of a shape.	Change the base of the logarithm to e. The triangle has base 6 cm and height 4 cm.
+binary	Adj	二項の。Involving two things; of a number system, base 2.	Addition is a binary operation on the reals. Write 13 in binary.
+binomial coefficient	Noun	二項係数。The number nCr appearing in the binomial expansion.	Find the binomial coefficient of x³ in the expansion. The binomial coefficients form Pascal's triangle.
+class field theory	Expression	類体論。The theory describing abelian extensions of number fields.	Class field theory explains which primes split. The reciprocity law is the heart of class field theory.
+composite	Adj	合成の。Made up of parts; of a number, not prime.	15 is a composite number. Differentiate the composite function using the chain rule.
+congruence	Noun	合同。The relation of leaving the same remainder; also, having the same shape and size.	Solve the congruence 3x ≡ 1 (mod 7). The two triangles are in congruence.
+continued fraction	Noun	連分数。A fraction built up in nested steps.	Express √2 as a continued fraction. The continued fraction expansion terminates for rationals.
+cyclotomic	Adj	円分の。Relating to the roots of unity.	The cyclotomic polynomial has the primitive roots of unity as its roots. Cyclotomic fields are generated by roots of unity.
+decimal	Noun	十進法。Base ten; also a number written with a decimal point.	Give your answer to three decimal places. Convert the fraction to a recurring decimal.
+even number	Noun	偶数。An integer divisible by 2.	Show that the sum of two even numbers is even. Let n be an even number, so n = 2k.
+factorial	Noun	階乗。The product of all whole numbers up to n, written n!.	Evaluate 5 factorial. The factorial appears in the denominator of the Taylor series.
+Galois group	Noun	ガロア群。The group of symmetries of the roots of a polynomial.	The Galois group of this quartic is S₄. A polynomial is soluble by radicals if its Galois group is soluble.
+greatest common divisor	Expression	最大公約数。The largest number dividing both.	Find the greatest common divisor of 84 and 126. Use the Euclidean algorithm to obtain the greatest common divisor.
+idele	Noun	イデール。The multiplicative counterpart of an adele.	The idele class group appears in class field theory. Ideles record unit information at every place.
+least common multiple	Expression	最小公倍数。The smallest number both divide into.	Find the least common multiple of 6 and 8. Use the least common multiple to add the fractions.
+L-series	Noun	L級数。A series attached to an arithmetic object, encoding its properties.	The L-series of an elliptic curve converges for large s. Much of number theory concerns the zeros of L-series.
+modular form	Noun	モジュラー形式。A highly symmetric function on the upper half plane.	Modular forms have a Fourier expansion at infinity. The discriminant is a modular form of weight 12.
+modulo n	Expression	nを法として。Working with remainders after division by n.	Work modulo 9 to check the arithmetic. Show that 2¹⁰ ≡ 1 modulo 11.
+modulus	Noun	絶対値、法。The size of a number, ignoring sign or direction; also the n in modular arithmetic.	Find the modulus and argument of the complex number. Sketch the graph of y = |x − 2|, the modulus function.
+normal number	Noun	正規数。A number whose digits appear with equal frequency.	Almost every real number is normal. It is not known whether π is a normal number.
+p-adic number	Noun	p進数。A number system built on divisibility by a prime p.	The p-adic numbers complete the rationals in a different way. Convergence is easier in the p-adic numbers.
+prime number theorem	Expression	素数定理。The statement that the number of primes below x is about x/ln x.	The prime number theorem describes how primes thin out. Estimate the number of primes below 1000 using the prime number theorem.
+ramified	Adj	分岐した。Branching, where a prime fails to stay separate in an extension.	The prime 2 is ramified in this extension. Only finitely many primes are ramified.
+reciprocity	Noun	相互法則。A law relating two quantities symmetrically.	Quadratic reciprocity relates the solubility of two congruences. The reciprocity law is one of the deepest in number theory.
+residue	Noun	剰余、留数。The remainder after division; in complex analysis, the coefficient controlling a pole.	Find the residue of 7 modulo 3. Evaluate the integral using the residue at z = i.
+sieve	Noun	ふるい。A method of filtering out unwanted numbers.	Use the sieve of Eratosthenes to list the primes below 50. Sieve methods estimate how many numbers survive.
+split	Verb	分裂する。To break into separate parts.	The prime 5 splits into two factors in this field. Split the expression into partial fractions.
+tame	Adj	順な。Well behaved, with no awkward branching.	The extension is tamely ramified. Tame cases are much easier to handle.
+wild	Adj	野生的な。Badly behaved, with awkward branching.	Wild ramification occurs only when p divides the index. The wild case needs a separate argument.
+zeta function	Noun	ゼータ関数。The function ζ(s) = Σ 1/nˢ and its relatives.	The Riemann zeta function has a pole at s = 1. The zeros of the zeta function control the primes.
+abelian	Adj	アーベルの、可換な。Commutative: the order of the operation does not matter.	Every cyclic group is abelian. Show that the group of rotations is abelian.
+abelian group	Noun	アーベル群。A group whose operation is commutative.	The integers under addition form an abelian group. Prove that this abelian group has order 12.
+abelian integral	Noun	アーベル積分。An integral of an algebraic function along a curve.	Abelian integrals generalize the elliptic integrals. The periods of an abelian integral form a lattice.
+adjoint	Noun	随伴。The matrix of cofactors, used to build the inverse.	Find the adjoint of the 3 × 3 matrix. The inverse is the adjoint divided by the determinant.
+algebra	Noun	代数。The branch of mathematics using symbols for numbers.	This question tests algebra rather than calculus. Simplify the expression using basic algebra.
+associative	Adj	結合的な。Grouping does not change the result: (ab)c = a(bc).	Matrix multiplication is associative but not commutative. Verify that the operation is associative.
+associative law	Expression	結合法則。The rule that (ab)c = a(bc).	State the associative law for multiplication. The associative law fails for subtraction.
+character	Noun	指標。A function recording how a group acts, often as a trace.	The character of the representation is 3 at the identity. Characters of abelian groups are easy to list.
+column	Noun	列。A vertical line of entries in a matrix.	Add twice the first column to the second. The matrix has three rows and two columns.
+commutative	Adj	可換な。The order of the operation does not matter: ab = ba.	Addition is commutative, subtraction is not. Show that the two matrices are commutative.
+component	Noun	成分。One coordinate or part of a vector or quantity.	Resolve the force into horizontal and vertical components. Write down the i component of the vector.
+conductor	Noun	導手。A number measuring how far an object is from being well behaved.	The conductor of the elliptic curve is 37. Primes dividing the conductor need special treatment.
+coset	Noun	剰余類。A shifted copy of a subgroup inside a group.	The cosets of H partition G. List the left cosets of the subgroup.
+cyclic	Adj	巡回的な。Generated by repeatedly applying one element.	The group is cyclic of order 6. Show that every cyclic group is abelian.
+cyclic extension	Noun	巡回拡大。A field extension whose Galois group is cyclic.	This is a cyclic extension of degree 5. Cyclic extensions are the easiest case of Galois theory.
+cyclic group	Noun	巡回群。A group generated by a single element.	The rotations of a square form a cyclic group of order 4. Every cyclic group is isomorphic to ℤ or ℤₙ.
+determinant	Noun	行列式。The number telling you whether a matrix is invertible, and by how much it scales area.	Find the determinant of the 2 × 2 matrix. The matrix is singular, so the determinant is zero.
+dimension	Noun	次元。The number of independent directions in a space.	The plane has dimension 2. Find the dimension of the solution space.
+dual	Adj	双対の。The paired or opposite version of an object.	The dual space consists of linear maps to the reals. Each statement has a dual obtained by swapping the roles.
+eigenvalue	Noun	固有値。A scalar λ with Ax = λx for some non-zero x.	Find the eigenvalues of the matrix. The eigenvalues are the roots of the characteristic equation.
+exact sequence	Noun	完全系列。A chain of maps where the image of one is exactly the kernel of the next.	Write down the short exact sequence. Exactness at the middle term is what must be checked.
+field	Noun	体。A set where you can add, subtract, multiply and divide.	The rationals form a field, the integers do not. Work over the field of complex numbers.
+form	Noun	形式。An expression of a particular shape, often homogeneous.	Write the quadratic form as a matrix product. Give your answer in the form a + b√2.
+generator	Noun	生成元。An element from which the whole group can be built.	Find a generator of the cyclic group. The group has two generators of order 6.
+group	Noun	群。A set with one operation satisfying four axioms.	Show that the set forms a group under addition. The group has order 8.
+homogeneous	Adj	同次の。Every term has the same degree; or the equation equals zero.	Solve the homogeneous differential equation first. The expression is homogeneous of degree 3.
+ideal	Noun	イデアル。A subset of a ring closed under multiplication by anything in the ring.	The ideal generated by 2 and x. Every ideal in ℤ is principal.
+index	Noun	指数。A power; also the number of cosets of a subgroup.	The subgroup has index 3 in the group. Use the laws of indices to simplify.
+induced	Adj	誘導された。Brought about by a related structure.	The induced metric on the surface. The map induced on the quotient is well defined.
+induced representation	Noun	誘導表現。A representation built up from one of a subgroup.	Compute the character of the induced representation. Induction and restriction are adjoint operations.
+inner product	Noun	内積。The scalar product of two vectors.	Find the inner product of a and b. The vectors are perpendicular when the inner product is zero.
+kernel	Noun	核。The set of elements mapped to zero.	Find the kernel of the linear map. The map is injective exactly when the kernel is trivial.
+Lie algebra	Noun	リー代数。The linearization of a continuous group at the identity.	The Lie algebra captures the infinitesimal symmetries. Its Lie algebra has dimension 3.
+lattice	Noun	束、格子。A regular grid of points; also an ordered set with meets and joins.	The lattice points are those with integer coordinates. The periods of the function form a lattice in the plane.
+linear dependence	Noun	線形従属。One vector being a combination of the others.	Test the three vectors for linear dependence. Linear dependence means the determinant is zero.
+linear independence	Noun	線形独立。No vector being a combination of the others.	Show that the vectors are linearly independent. A basis is a linearly independent spanning set.
+matrix	Noun	行列。A rectangular array of numbers.	Find the inverse of the matrix. Write the system of equations in matrix form.
+module	Noun	加群。A vector space over a ring rather than a field.	Every abelian group is a module over ℤ. The module is generated by two elements.
+norm	Noun	ノルム。The length or size of a vector.	Find the norm of the vector. Normalize the vector by dividing by its norm.
+normal subgroup	Noun	正規部分群。A subgroup left unchanged by conjugation.	Show that the kernel is a normal subgroup. Quotient groups exist only for normal subgroups.
+orthogonal	Adj	直交する。At right angles; of vectors, having zero scalar product.	The two vectors are orthogonal. Find a vector orthogonal to both a and b.
+orthogonal matrix	Noun	直交行列。A matrix whose inverse is its transpose.	An orthogonal matrix preserves lengths and angles. Show that the determinant of an orthogonal matrix is ±1.
+polynomial	Noun	多項式。A sum of terms in powers of x.	Factorize the cubic polynomial. The polynomial has degree 4 and leading coefficient 2.
+rank	Noun	階数。The number of independent rows or columns.	Find the rank of the matrix. The rank is 2, so the solution space has dimension 1.
+relation	Noun	関係。A rule linking elements of one set to another.	The relation is reflexive and transitive. Write down the recurrence relation.
+ring	Noun	環。A set with addition and multiplication but not necessarily division.	The integers form a ring. Every field is a ring, but not conversely.
+row	Noun	行。A horizontal line of entries in a matrix.	Use row operations to reduce the matrix. Swap the first and third rows.
+scalar product	Noun	スカラー積、内積。The dot product, giving a number from two vectors.	Find the scalar product of a and b. Use the scalar product to find the angle between them.
+spectrum	Noun	スペクトル。The set of eigenvalues of an operator.	The spectrum of the matrix is {1, 2, 5}. The operator has a continuous spectrum.
+subfield	Noun	部分体。A field sitting inside a larger field.	ℚ is a subfield of ℝ. Find all subfields of this extension.
+subgroup	Noun	部分群。A group sitting inside a larger group.	Show that the set is a subgroup of G. By Lagrange, the order of a subgroup divides the order of the group.
+subring	Noun	部分環。A ring sitting inside a larger ring.	The even integers form a subring without identity. Show that the set is a subring of ℤ.
+tensor	Noun	テンソル。A multi-index generalization of a vector or matrix.	The stress tensor has nine components. Tensors transform in a prescribed way under a change of basis.
+trace	Noun	跡、トレース。The sum of the diagonal entries of a matrix.	Find the trace of the matrix. The trace equals the sum of the eigenvalues.
+transpose	Noun	転置。The matrix obtained by swapping rows and columns.	Write down the transpose of A. The transpose of a product reverses the order.
+unit	Noun	単位。An element with a multiplicative inverse; also a quantity of size one.	The units of ℤ are 1 and −1. Give your answer in units of metres per second.
+vector	Noun	ベクトル。A quantity with both magnitude and direction.	Find the vector equation of the line. The resultant vector has magnitude 5.
+analytic	Adj	解析的な。Differentiable as a complex function; expressible as a power series.	The function is analytic everywhere except at z = 0. An analytic function is determined by its values near a point.
+asymptotic	Adj	漸近的な。Approaching a limit or a line without ever reaching it.	The curve is asymptotic to the x-axis. Find the asymptotic behaviour as x → ∞.
+boundary conditions	Expression	境界条件。The extra information pinning down a particular solution.	Solve the differential equation subject to the boundary conditions. The boundary conditions give y = 0 when x = 1.
+calculus	Noun	微分積分学。The study of rates of change and accumulation.	Use calculus to find the maximum. This part of the question requires calculus, not algebra.
+calculus of variations	Expression	変分法。Finding the function that makes an integral stationary.	The calculus of variations gives the shortest path. The Euler–Lagrange equation comes from the calculus of variations.
+coefficient	Noun	係数。The number multiplying a term.	Find the coefficient of x³ in the expansion. Compare coefficients on both sides.
+converge	Verb	収束する。To approach a finite limit.	Show that the series converges. The iteration converges to the root from any starting value near it.
+coordinate	Noun	座標。A number fixing a position along an axis.	Find the coordinates of the turning point. Write down the x-coordinate of the intersection.
+derivative	Noun	導関数、微分。The rate of change of a function.	Find the derivative of y with respect to x. The second derivative is negative, so this is a maximum.
+differential equation	Noun	微分方程式。An equation relating a function to its derivatives.	Solve the first-order differential equation. Form a differential equation modelling the cooling.
+differentiate	Verb	微分する。To find the derivative.	Differentiate with respect to x. Differentiate implicitly to find dy/dx.
+elliptic function	Noun	楕円関数。A doubly periodic function of a complex variable.	Elliptic functions have two independent periods. The Weierstrass function is the basic elliptic function.
+ergodic	Adj	エルゴード的な。Eventually visiting every part of the space evenly.	The system is ergodic, so time averages equal space averages. Ergodic behaviour rules out periodic orbits.
+exponential function	Noun	指数関数。The function eˣ, or more generally aˣ.	Differentiate the exponential function. The population is modelled by an exponential function.
+Fourier expansion	Noun	フーリエ展開。Writing a periodic function as a sum of sines and cosines.	Find the first three terms of the Fourier expansion. The Fourier expansion converges to the function at points of continuity.
+gamma function	Noun	ガンマ関数。The function extending the factorial to non-integers.	The gamma function satisfies Γ(n + 1) = n!. Evaluate the integral in terms of the gamma function.
+heat equation	Noun	熱方程式。The partial differential equation governing diffusion.	Solve the heat equation by separation of variables. The heat equation smooths out the initial data.
+holomorphic	Adj	正則な。Complex differentiable on an open set.	The function is holomorphic on the whole plane. A holomorphic function satisfies the Cauchy–Riemann equations.
+hypergeometric function	Noun	超幾何関数。A standard function defined by a particular power series.	Many classical functions are special cases of the hypergeometric function. The series defining the hypergeometric function converges for |x| < 1.
+infimum	Noun	下限。The greatest lower bound of a set.	Find the infimum of the set. The infimum need not belong to the set.
+integral	Noun	積分。The area under a curve, or the inverse of differentiation.	Evaluate the definite integral. Find the integral of x² between 0 and 3.
+integral equation	Noun	積分方程式。An equation in which the unknown appears inside an integral.	Convert the differential equation into an integral equation. Integral equations are often solved by iteration.
+integrate	Verb	積分する。To find the integral.	Integrate by parts. Integrate both sides with respect to x.
+interval	Noun	区間。A continuous stretch of the number line.	The function is increasing on the interval [0, 2]. State the interval of convergence.
+limit	Noun	極限。The value a function or sequence approaches.	Find the limit as x tends to zero. The limit does not exist at this point.
+logarithm	Noun	対数。The power to which the base must be raised.	Take logarithms of both sides. The logarithm of a product is the sum of the logarithms.
+meromorphic	Adj	有理型の。Holomorphic apart from isolated poles.	The function is meromorphic with a simple pole at z = 1. Rational functions are meromorphic on the whole plane.
+operator	Noun	作用素、演算子。A map taking functions to functions.	The differential operator d/dx is linear. Apply the operator twice.
+parameter	Noun	媒介変数、パラメータ。A variable used to describe a family of objects or a curve.	Find the Cartesian equation by eliminating the parameter. The curve is given in parametric form with parameter t.
+pole	Noun	極。A point where a function blows up like 1/(z − a)ⁿ.	The function has a simple pole at z = 2. Find the residue at each pole.
+resolvent	Noun	解核、レゾルベント。The inverse operator (A − λI)⁻¹.	The resolvent exists except at the eigenvalues. Study the resolvent to locate the spectrum.
+sequence	Noun	数列。An ordered list of numbers.	Write down the first four terms of the sequence. The sequence converges to 3.
+special function	Noun	特殊関数。One of the standard named functions beyond the elementary ones.	Bessel functions are special functions arising in physics. Express the answer in terms of special functions.
+supremum	Noun	上限。The least upper bound of a set.	Find the supremum of the set. The supremum is attained only if the set has a maximum.
+Taylor series	Noun	テイラー級数。The power series expansion of a function about a point.	Find the Taylor series of eˣ about x = 0. Use the first three terms of the Taylor series to approximate.
+trajectory	Noun	軌道。The path traced out by a moving point.	Sketch the trajectory of the particle. The trajectory is a parabola under constant acceleration.
+wave equation	Noun	波動方程式。The partial differential equation governing waves.	Solve the wave equation with the given initial displacement. The wave equation has solutions travelling in both directions.
+belongs to	Expression	…に属する。Is a member of.	The point belongs to the set S. Every root belongs to the interval [0, 1].
+bijective	Adj	全単射の。Both one-to-one and onto.	Show that the map is bijective. A bijective function has an inverse.
+cardinality	Noun	濃度、要素数。The size of a set.	The set has cardinality 5. Two sets have the same cardinality if a bijection exists.
+category	Noun	圏、カテゴリー。A collection of objects together with maps between them.	Groups and homomorphisms form a category. In this category the objects are vector spaces.
+category theory	Noun	圏論。The study of structures via the maps between them.	Category theory treats the arrows as fundamental. Many constructions are unified by category theory.
+class	Noun	類。A collection, often too large to be a set.	The equivalence classes partition the set. Every element lies in exactly one class.
+complement	Noun	補集合。Everything not in the given set.	Shade the complement of A on the Venn diagram. The complement of A within the universal set.
+composition	Noun	合成。Applying one function after another.	Find the composition fg(x). Composition of functions is associative.
+correspond	Verb	対応する。To match up with.	Each root corresponds to a factor. The values of x correspond one-to-one with the values of y.
+countable	Adj	可算の。Able to be listed as a sequence.	The rationals are countable. Show that the set of integers is countable.
+element	Noun	要素、元。A member of a set.	3 is an element of the set. List the elements of A ∩ B.
+empty	Adj	空の。Containing nothing.	The intersection is the empty set. The equation has no roots, so the solution set is empty.
+equivalence relation	Expression	同値関係。A relation that is reflexive, symmetric and transitive.	Show that congruence modulo n is an equivalence relation. An equivalence relation partitions the set into classes.
+finite	Adj	有限の。Having an end; not infinite.	The sum of a finite geometric series. The set has a finite number of elements.
+first-order	Adj	一階の。Involving only the first derivative, or only quantifiers over elements.	Solve the first-order differential equation. This is a first-order linear equation.
+for all	Expression	すべての…に対して。Holding in every case.	Show that the inequality holds for all real x. The statement is true for all n ≥ 1.
+functor	Noun	関手。A map between categories preserving structure.	The forgetful functor discards the group structure. A functor sends objects to objects and arrows to arrows.
+Gödel incompleteness theorem	Expression	ゲーデルの不完全性定理。The result that any sufficiently strong system has true but unprovable statements.	Gödel's incompleteness theorem limits what axioms can achieve. By the incompleteness theorem, consistency cannot be proved internally.
+image	Noun	像。The set of values a function actually takes.	Find the image of the function. The image of the interval under f is [0, 4].
+infinite	Adj	無限の。Without end.	The series has infinitely many terms. There are infinitely many prime numbers.
+injective	Adj	単射の。One-to-one: different inputs give different outputs.	Show that the function is injective. An injective function has a left inverse.
+intersection	Noun	共通部分、交点。What two sets or curves have in common.	Find the intersection of the two sets. Determine the coordinates of the points of intersection.
+involution	Noun	対合。A map that is its own inverse.	Complex conjugation is an involution. Applying an involution twice gives the identity.
+isomorphism	Noun	同型写像。A structure-preserving bijection.	Show that the two groups are isomorphic. The isomorphism sends generators to generators.
+logic	Noun	論理。The study of valid reasoning.	Set out the logic of the proof clearly. The argument fails on a point of logic.
+map	Noun	写像。A function from one set to another.	The map sends x to x². Define a map from A to B.
+morphism	Noun	射。An arrow between objects in a category.	A morphism of groups is a homomorphism. Compose the two morphisms.
+n-tuple	Noun	n項組。An ordered list of n entries.	A point in ℝⁿ is an n-tuple of real numbers. Write the solution as an ordered n-tuple.
+operation	Noun	演算。A rule combining elements.	Addition is a binary operation. State which operation is being used.
+ordered set	Noun	順序集合。A set with a notion of one element coming before another.	The reals form a totally ordered set. In an ordered set, every pair can be compared.
+partition	Noun	分割。A division of a set into non-overlapping pieces.	The equivalence classes form a partition of the set. Partition the interval into n equal subintervals.
+permutation	Noun	順列。An arrangement of objects in order.	How many permutations of the five letters are there? The permutation swaps the first two elements.
+predicate	Noun	述語。A statement whose truth depends on a variable.	The predicate P(x) is true when x > 0. Quantify the predicate over all real x.
+quantifier	Noun	限定記号、量化子。A symbol such as ∀ or ∃.	The universal quantifier means “for all”. Swapping the quantifiers changes the meaning.
+set	Noun	集合。A collection of distinct objects.	Write down the set of solutions. The set contains three elements.
+set theory	Noun	集合論。The study of sets and their properties.	Basic set theory underlies all of mathematics. Use set theory notation in your answer.
+subset	Noun	部分集合。A set entirely contained in another.	Show that A is a subset of B. List all subsets of {1, 2}.
+surjective	Adj	全射の。Onto: every value in the codomain is hit.	Show that the function is surjective. A surjective map has a right inverse.
+there exists	Expression	…が存在する。At least one case works.	Show that there exists a root between 1 and 2. There exists an integer n such that n² > 100.
+transformation	Noun	変換。A map moving points of a space.	Describe the transformation represented by the matrix. The transformation is a rotation through 90°.
+union	Noun	和集合。Everything in either set.	Find the union of A and B. Shade the union on the Venn diagram.
+abelian variety	Noun	アーベル多様体。A higher-dimensional generalization of an elliptic curve.	An elliptic curve is an abelian variety of dimension one. The points of an abelian variety form a group.
+affine	Adj	アフィンな。Preserving straight lines and ratios, but not necessarily the origin.	An affine transformation maps parallel lines to parallel lines. Write the map in affine form.
+right angle	Noun	直角。An angle of 90°.	The triangle contains a right angle at B. Show that the two lines meet at right angles.
+area	Noun	面積。The amount of surface a shape covers.	Find the area enclosed by the curve and the x-axis. The area of the triangle is 12 cm².
+circle	Noun	円。The set of points a fixed distance from a centre.	Find the equation of the circle with centre (2, 3). The line is a tangent to the circle.
+cone	Noun	錐。A solid tapering from a circular base to a point.	Find the volume of the cone. The cone has base radius 3 cm and height 4 cm.
+connection	Noun	接続。A rule for comparing directions at nearby points.	The connection defines parallel transport on the surface. Curvature measures the failure of the connection to commute.
+convex	Adj	凸の。Curving outwards; any chord lies inside the region.	The region is convex, so the maximum is at a vertex. The curve is convex where the second derivative is positive.
+cube	Noun	立方体。A solid with six square faces; also the third power.	Find the volume of a cube of side 5 cm. The cube of 3 is 27.
+curvature	Noun	曲率。How sharply a curve bends.	Find the radius of curvature at the origin. The curvature is zero where the curve is locally straight.
+curve	Noun	曲線。A line that is not straight.	Sketch the curve y = x³ − 3x. Find the gradient of the curve at that point.
+cusp	Noun	尖点。A sharp point where a curve reverses direction.	The curve has a cusp at the origin. At a cusp the derivative is undefined.
+diameter	Noun	直径。A chord through the centre of a circle.	The diameter of the circle is 10 cm. The angle in a semicircle subtended by a diameter is 90°.
+differential	Noun	微分。An infinitesimal change, written dx or dy.	Separate the variables and integrate the differentials. The differential dy equals f′(x) dx.
+dimensional	Adj	次元の。Having a given number of independent directions.	Work in three-dimensional space. The problem reduces to a two-dimensional one.
+dynamical system	Noun	力学系。A system evolving in time by a fixed rule.	The dynamical system has a stable equilibrium. Study the long-term behaviour of the dynamical system.
+ellipse	Noun	楕円。The curve traced when the sum of distances to two foci is constant.	Find the equation of the ellipse with semi-axes 3 and 2. The orbit is an ellipse with the Sun at one focus.
+envelope	Noun	包絡線。A curve touching every member of a family of curves.	Find the envelope of the family of lines. The envelope is tangent to each curve in the family.
+equilateral	Adj	等辺の。Having all sides equal.	The equilateral triangle has angles of 60°. Show that the triangle is equilateral.
+genus	Noun	種数。The number of holes in a surface.	A torus has genus 1. Curves of genus greater than 1 have finitely many rational points.
+geodesic	Noun	測地線。The shortest path between two points on a surface.	On a sphere the geodesics are great circles. Find the geodesic joining the two points.
+geometry	Noun	幾何学。The study of shape, size and position.	This question is about coordinate geometry. Use the geometry of the circle to find the angle.
+hull	Noun	包。The smallest set of a given type containing a shape.	Find the convex hull of the five points. The convex hull is a pentagon.
+hyperbola	Noun	双曲線。The conic with two separate branches.	Find the asymptotes of the hyperbola. The hyperbola has equation x²/9 − y²/4 = 1.
+hypersurface	Noun	超曲面。A surface in a space of more than three dimensions.	The equation defines a hypersurface in ℝ⁴. A hypersurface has dimension one less than the ambient space.
+isometry	Noun	等長写像。A transformation preserving distances.	Rotations and reflections are isometries of the plane. An isometry preserves lengths and angles.
+Jacobian	Noun	ヤコビ行列式。The determinant of the matrix of partial derivatives.	Use the Jacobian when changing variables in the integral. The Jacobian of the polar substitution is r.
+length	Noun	長さ。How long something is.	Find the length of the arc between the two points. The vector has length 13.
+line	Noun	直線。A straight path extending in both directions.	Find the equation of the line through the two points. The line has gradient 2 and intercept −1.
+line bundle	Noun	直線束。A family of one-dimensional spaces attached to each point.	Sections of the line bundle correspond to functions. The degree of the line bundle controls its sections.
+node	Noun	結節点。A point where a curve crosses itself.	The curve has a node at the origin. At a node two branches meet transversally.
+parabola	Noun	放物線。The conic traced by a point equidistant from a focus and a line.	Find the focus of the parabola y² = 4ax. The path of the projectile is a parabola.
+parallel	Adj	平行な。Always the same distance apart; never meeting.	The two lines are parallel, so there is no solution. Parallel vectors are scalar multiples of each other.
+perpendicular	Adj	垂直な。At right angles.	Find the equation of the perpendicular bisector. The gradients of perpendicular lines multiply to −1.
+plane	Noun	平面。A flat two-dimensional surface.	Find the equation of the plane through the three points. The vector is normal to the plane.
+point	Noun	点。A position with no size.	Find the coordinates of the point of inflection. The point lies on the curve.
+polygon	Noun	多角形。A closed shape with straight sides.	Find the sum of the interior angles of the polygon. A regular polygon has all sides and angles equal.
+polyhedron	Noun	多面体。A solid with flat polygonal faces.	Euler's formula relates the faces, edges and vertices of a polyhedron. The regular polyhedra are the five Platonic solids.
+projective space	Noun	射影空間。The space of lines through the origin, where parallel lines meet.	In projective space any two lines meet. Points at infinity are added to form projective space.
+Riemann surface	Noun	リーマン面。A surface on which a multivalued function becomes single valued.	The square root is single valued on its Riemann surface. The Riemann surface of a cubic has genus 1.
+radius	Noun	半径。The distance from the centre of a circle to its edge.	The circle has radius 5. Find the radius of convergence of the series.
+rectangle	Noun	長方形。A quadrilateral with four right angles.	The rectangle has length 8 cm and width 3 cm. Find the area of the rectangle.
+reflection	Noun	反転、鏡映。A flip in a line or plane.	Describe the reflection in the line y = x. Reflection reverses orientation.
+rigid	Adj	剛体の、固定された。Not deformable; keeping all distances fixed.	A rigid motion preserves distances. Treat the rod as a rigid body.
+rotation	Noun	回転。A turn about a fixed point.	Describe the rotation represented by the matrix. The rotation is through 90° anticlockwise about the origin.
+scheme	Noun	スキーム、概形。A generalized geometric object built from rings.	Schemes allow geometry over any ring. Every variety is a scheme.
+sheaf	Noun	層。A rule assigning data to each open set, consistently.	The sheaf of continuous functions on the space. Sheaf cohomology measures the failure of local data to glue.
+singularity	Noun	特異点。A point where something breaks down.	The function has a singularity at x = 0. Classify the singularity as removable, a pole, or essential.
+skew	Adj	ねじれの。Neither parallel nor intersecting.	The two lines are skew. Skew lines do not lie in a common plane.
+space	Noun	空間。A set with structure in which objects live.	Work in three-dimensional space. The solution space has dimension 2.
+sphere	Noun	球面。The set of points a fixed distance from a centre in space.	Find the surface area of the sphere. The sphere has equation x² + y² + z² = 25.
+surface	Noun	曲面、表面。A two-dimensional shape in space.	Find the surface area of the solid of revolution. The surface is generated by rotating the curve about the x-axis.
+torus	Noun	トーラス。A doughnut-shaped surface.	The torus has genus 1. A torus is the product of two circles.
+translation	Noun	平行移動。A shift with no turning.	Describe the translation taking A to B. The curve is the graph of y = x² after a translation.
+triangle	Noun	三角形。A three-sided polygon.	Find the area of the triangle. Use the cosine rule in triangle ABC.
+variety	Noun	多様体、代数多様体。The solution set of a system of polynomial equations.	The variety is defined by two equations in ℝ³. An algebraic variety may have singular points.
+volume	Noun	体積。The amount of space a solid occupies.	Find the volume of the solid of revolution. The volume of the cylinder is πr²h.
+arc	Noun	弧。Part of the circumference of a circle or of a curve.	Find the length of the arc subtending an angle of 1.2 radians. The arc length is rθ with θ in radians.
+boundary	Noun	境界。The edge of a region.	The boundary of the region is the curve y = x². Check the values on the boundary as well as inside.
+branch	Noun	分枝。One separate piece of a multivalued function or a curve.	Take the principal branch of the logarithm. The hyperbola has two branches.
+chain	Noun	鎖。A formal combination of pieces; also a linked sequence.	Use the chain rule to differentiate. A chain of inclusions gives the filtration.
+closed	Adj	閉じた。Containing its own boundary; also forming a loop.	The interval [0, 1] is closed. Evaluate the integral around the closed curve.
+closure	Noun	閉包。A set together with its boundary points.	The closure of the open interval is [0, 1]. Take the closure to include the limit points.
+cohomology	Noun	コホモロジー。An algebraic invariant measuring holes in a space.	Cohomology distinguishes the torus from the sphere. The first cohomology group vanishes.
+compact	Adj	コンパクトな。Closed and bounded; every cover has a finite subcover.	A continuous function on a compact set attains its bounds. The closed interval is compact.
+completion	Noun	完備化。Filling in the missing limit points.	The reals are the completion of the rationals. Take the completion with respect to this metric.
+connected	Adj	連結な。In one piece.	The region is connected, so the function has constant sign. The graph is connected if there is a path between any two vertices.
+continuous	Adj	連続な。Having no jumps or breaks.	The function is continuous on the closed interval. Show that f is continuous at x = 2.
+contraction	Noun	縮小。A map that brings points closer together.	A contraction mapping has a unique fixed point. The map is a contraction with ratio 1/2.
+covering	Noun	被覆。A collection of sets whose union is the whole space.	Every open covering has a finite subcovering. The covering space wraps around twice.
+cycle	Noun	輪体、サイクル。A closed loop with no boundary.	Every cycle in the graph has even length. A cycle that bounds is said to be null-homologous.
+dense	Adj	稠密な。Coming arbitrarily close to every point.	The rationals are dense in the reals. The set of such points is dense in the interval.
+discrete	Adj	離散的な。Made of separated points, not continuous.	The data are discrete, not continuous. Use a discrete probability distribution here.
+distance	Noun	距離。How far apart two things are.	Find the distance between the two points. The shortest distance from the point to the line.
+domain	Noun	定義域。The set of inputs a function accepts.	State the domain of the function. The domain excludes x = 0.
+embedding	Noun	埋め込み。An injection that preserves the structure.	The circle embeds in the plane. An embedding identifies one space with a subspace of another.
+fiber bundle	Noun	ファイバー束。A space that looks locally like a product.	A Möbius band is a non-trivial fibre bundle. Each fibre of the bundle is a copy of the same space.
+fixed point	Noun	不動点。A point left unchanged by a map.	Find the fixed points of the iteration. The iteration converges to the fixed point where x = g(x).
+fundamental group	Noun	基本群。The group of loops in a space, up to deformation.	The fundamental group of the circle is ℤ. A simply connected space has trivial fundamental group.
+homeomorphism	Noun	同相写像。A continuous bijection with continuous inverse.	A cup and a doughnut are homeomorphic. A homeomorphism preserves all topological properties.
+homology	Noun	ホモロジー。An algebraic invariant counting holes.	The homology groups of the sphere are easy to compute. Homology distinguishes spaces of different genus.
+homotopy	Noun	ホモトピー。A continuous deformation from one map to another.	The two paths are homotopic. A homotopy shrinks the loop to a point.
+immersion	Noun	はめ込み。A map that is locally an embedding but may self-intersect.	The curve is an immersion with one double point. An immersion need not be injective.
+interior	Noun	内部。The points strictly inside a region.	The maximum occurs in the interior, not on the boundary. The interior of the closed disc is the open disc.
+knot	Noun	結び目。A closed loop embedded in three-dimensional space.	The trefoil is the simplest non-trivial knot. Two knots are equivalent if one can be deformed into the other.
+manifold	Noun	多様体。A space that looks locally like ordinary flat space.	A sphere is a two-dimensional manifold. Every point of a manifold has a neighbourhood like ℝⁿ.
+metric space	Noun	距離空間。A set with a notion of distance.	Show that this defines a metric space. In a metric space the triangle inequality holds.
+obstruction	Noun	障害。Something preventing a construction from going through.	The obstruction to extending the map lies in the second cohomology. The only obstruction is the sign.
+open	Adj	開いた。Containing none of its boundary points.	The open interval (0, 1) excludes its endpoints. Every point of an open set has a neighbourhood inside it.
+orientation	Noun	向き。A consistent choice of direction.	Reversing the orientation changes the sign of the integral. The Möbius band has no consistent orientation.
+path	Noun	道。A continuous route from one point to another.	Integrate along the path from A to B. Any two points are joined by a path.
+simplex	Noun	単体。The simplest shape of a given dimension: point, segment, triangle, tetrahedron.	A 2-simplex is a triangle. Build the space from simplices.
+skeleton	Noun	骨格。The lower-dimensional part of a structure.	The 1-skeleton consists of the vertices and edges. Build up the space skeleton by skeleton.
+smooth	Adj	滑らかな。Differentiable as many times as needed.	The curve is smooth with no corners. Assume f is a smooth function.
+surgery	Noun	手術。Cutting out a piece of a space and gluing in another.	Surgery changes the topology of the manifold. Perform surgery along the embedded circle.
+topological space	Noun	位相空間。A set with a notion of which subsets are open.	Every metric space is a topological space. Define a topology to make it a topological space.
+topology	Noun	位相幾何学、位相。The study of properties unchanged by stretching.	Topology does not distinguish a cup from a doughnut. Give the set the discrete topology.
+applied mathematics	Expression	応用数学。Mathematics used to model the real world.	This module covers applied mathematics, including mechanics. Applied mathematics turns a physical problem into equations.
+mathematical physics	Expression	数理物理。The mathematics behind physical theories.	Differential equations are the language of mathematical physics. Mathematical physics made the wave equation central.
+numerical analysis	Expression	数値解析。Finding approximate answers by computation.	Use numerical analysis when no exact solution exists. Numerical analysis studies how errors accumulate.
+probability	Noun	確率。The chance of an event, between 0 and 1.	Find the probability that both events occur. The probability distribution is given in the table.
+statistics	Noun	統計。The collection and interpretation of data.	Use statistics to test the hypothesis. The statistics suggest a positive correlation.
