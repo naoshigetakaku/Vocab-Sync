@@ -28,8 +28,16 @@ in the HTML; there is no build step.
 
 ## The other half
 
-`apps-script/ImportFromInbox.gs` takes the four columns from an **Inbox** tab
-of the spreadsheet and files them as words.
+The 300 words that came out of that triage are already baked into
+`apps-script/AddMathGlossary.gs`, so there is nothing to paste: run
+`addMathGlossary()` and they are filed under **Math Glossary**. Its sibling
+`apps-script/AddConnectors.gs` does the same for 78 C1 academic connectors
+under **Academic Connectors**. Both skip anything already in the folder, so
+running one twice is harmless.
+
+`apps-script/ImportFromInbox.gs` is the general route, for a list that does
+not have a script of its own yet. It takes the four columns from an **Inbox**
+tab of the spreadsheet and files them as words.
 
 1. `setupInbox()` — makes the tab, once.
 2. Paste into A1 (or under the header).
